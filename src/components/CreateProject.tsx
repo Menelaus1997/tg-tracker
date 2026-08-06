@@ -13,7 +13,7 @@ const DEFAULT_COLORS = [
 export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject }) => {
   const [name, setName] = useState('');
   const [projectId, setProjectId] = useState('#V1');
-  const [template, setTemplate] = useState('general');
+  const [template, setTemplate] = useState('Загальний');
   const [colors, setColors] = useState<string[]>(DEFAULT_COLORS);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
 
@@ -22,7 +22,6 @@ export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject })
   const handleCustomColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newColor = e.target.value;
     if (newColor) {
-      // Замінюємо колір саме за тим індексом, який зараз виділений галочкою
       setColors((prevColors) => {
         const updated = [...prevColors];
         updated[selectedIndex] = newColor;
@@ -91,9 +90,8 @@ export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject })
                 cursor: 'pointer'
               }}
             >
-              <option value="general">Загальний шаблон</option>
+              <option value="Загальний">Загальний шаблон</option>
             </select>
-            {/* Трикутна стрілочка */}
             <div style={{
               position: 'absolute',
               right: '14px',
@@ -142,7 +140,6 @@ export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject })
               );
             })}
 
-            {/* Кнопка + (замінює активну позицію) */}
             <button
               type="button"
               onClick={() => colorInputRef.current?.click()}
@@ -172,7 +169,6 @@ export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject })
           </div>
         </div>
 
-        {/* Кнопка Створити проект */}
         <button
           type="submit"
           style={{
