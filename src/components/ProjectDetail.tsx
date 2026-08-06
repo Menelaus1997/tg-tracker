@@ -38,6 +38,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [newStageTitle, setNewStageTitle] = useState('');
   const [newSubStageTitles, setNewSubStageTitles] = useState<{ [stageId: string]: string }>({});
 
+  const [allStagesCollapsed, setAllStagesCollapsed] = useState<boolean>(false);
   const [collapsedStages, setCollapsedStages] = useState<{ [stageId: string]: boolean }>({});
 
   const [editingStageId, setEditingStageId] = useState<string | null>(null);
@@ -50,7 +51,20 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [saveAsTemplateChecked, setSaveAsTemplateChecked] = useState(false);
   const [templateName, setTemplateName] = useState('');
 
+  const [editingTimeStageId, setEditingTimeStageId] = useState<string | null>(null);
+  const [manualHoursInput, setManualHoursInput] = useState<string>('');
+
   const isArchived = project.status === 'archived';
+
+  const toggleAllStages = () => {
+    const nextState = !allStagesCollapsed;
+    setAllStagesCollapsed(nextState);
+    const updated: { [key: string]: boolean } = {};
+    stages.forEach((st) => {
+      updated[st.id] = nextState;
+    });
+    setCollapsedStages(updated);
+  };
 
   const toggleStageCollapse = (stageId: string) => {
     setCollapsedStages((prev) => ({ ...prev, [stageId]: !prev[stageId] }));
@@ -126,7 +140,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const handleAddStage = (e: React.FormEvent) => {
     e.preventDefault();
     if (isArchived || !newStageTitle.trim()) return;
-    setStages([...stages, { id: Date.now().toString(), title: newStageTitle.trim(), subStages: [] }]);
+    setStages([...stages, { id: Date.now().toString(), title: newStageTitle.trim(), subStages: [], loggedSeconds: 0 }]);
     setNewStageTitle('');
   };
 
@@ -145,11 +159,14 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     const title = newSubStageTitles[stageId];
     if (!title || !title.trim()) return;
 
+    // Автоматично вибираємо лише чистий текст (без вручну введених номерів)
+    const cleanTitle = title.trim().replace(/^\d+[\.\)]\s*/, '');
+
     setStages(stages.map((st) => {
       if (st.id === stageId) {
         return {
           ...st,
-          subStages: [...st.subStages, { id: Date.now().toString(), title: title.trim(), completed: false }]
+          subStages: [...st.subStages, { id: Date.now().toString(), title: cleanTitle, completed: false }]
         };
       }
       return st;
@@ -159,11 +176,12 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   };
 
   const handleSaveEditedSubStage = (stageId: string, subStageId: string) => {
+    const cleanTitle = editingSubStageTitle.trim().replace(/^\d+[\.\)]\s*/, '');
     setStages(stages.map((st) => {
       if (st.id === stageId) {
         return {
           ...st,
-          subStages: st.subStages.map(sub => sub.id === subStageId ? { ...sub, title: editingSubStageTitle } : sub)
+          subStages: st.subStages.map(sub => sub.id === subStageId ? { ...sub, title: cleanTitle } : sub)
         };
       }
       return st;
@@ -192,6 +210,39 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       }
       return st;
     }));
+  };
+
+  // Таймер та дедлайни для Стадій 2, 3, 4, 5, 6
+  const isTimeAndDeadlineAllowed = (index: number) => {
+    return index >= 1 && index <= 5; // Стадії #2, #3, #4, #5, #6 (індекси 1..5)
+  };
+
+  const toggleTimer = (stageId: string) => {
+    setStages(stages.map(st => {
+      if (st.id === stageId) {
+        return { ...st, isTimerRunning: !st.isTimerRunning };
+      }
+      return st;
+    }));
+  };
+
+  const handleSaveManualTime = (stageId: string) => {
+    const hours = parseFloat(manualHoursInput);
+    if (!isNaN(hours) && hours >= 0) {
+      const seconds = Math.round(hours * 3600);
+      setStages(stages.map(st => st.id === stageId ? { ...st, loggedSeconds: seconds } : st));
+    }
+    setEditingTimeStageId(null);
+  };
+
+  const handleDateChange = (stageId: string, field: 'startDate' | 'endDate', value: string) => {
+    setStages(stages.map(st => st.id === stageId ? { ...st, [field]: value } : st));
+  };
+
+  const formatSecondsToHM = (totalSec: number = 0) => {
+    const hrs = Math.floor(totalSec / 3600);
+    const mins = Math.floor((totalSec % 3600) / 60);
+    return `${hrs}г ${mins}хв`;
   };
 
   const handleFinalSave = () => {
@@ -330,14 +381,27 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* РОЗДІЛ 2: Стадії проекту */}
+      {/* РОЗДІЛ 2: Стадії проекту зі спадним меню для всієї секції */}
       <div style={{ marginBottom: '30px' }}>
-        <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>Стадії проекту</h3>
+        <div 
+          onClick={toggleAllStages}
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginBottom: '12px' }}
+        >
+          <span style={{
+            display: 'inline-block',
+            transition: 'transform 0.2s ease',
+            transform: allStagesCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+            fontSize: '12px'
+          }}>
+            ▼
+          </span>
+          <h3 style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>Стадії проекту</h3>
+        </div>
 
         {!isArchived && (
           <form onSubmit={handleAddStage} style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
             <input
-              type="text" placeholder="Нова стадія (напр. 1. Концепція)"
+              type="text" placeholder="Нова стадія (напр. Стадія 7)"
               value={newStageTitle} onChange={(e) => setNewStageTitle(e.target.value)}
               style={{ ...inputStyle, flex: 1 }}
             />
@@ -346,11 +410,14 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {stages.map((st) => {
+          {stages.map((st, index) => {
             const isCollapsed = collapsedStages[st.id];
+            const allowTimeAndDeadline = isTimeAndDeadlineAllowed(index);
 
             return (
               <div key={st.id} style={{ padding: '14px', borderRadius: '10px', backgroundColor: '#f2f2f7' }}>
+                
+                {/* Шапка стадії */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isCollapsed ? '0px' : '10px' }}>
                   {editingStageId === st.id ? (
                     <div style={{ display: 'flex', gap: '6px', flex: 1 }}>
@@ -383,23 +450,25 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 </div>
 
                 {!isCollapsed && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginLeft: '4px', marginTop: '6px' }}>
-                    {st.subStages.map((sub, index) => (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginLeft: '4px', marginTop: '6px' }}>
+                    
+                    {/* Список підстадій з АВТОМАТИЧНОЮ нумерацією */}
+                    {st.subStages.map((sub, subIdx) => (
                       <div key={sub.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '4px' }}>
                         
                         {!isArchived && (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0px' }}>
                             <button
-                              disabled={index === 0}
-                              onClick={() => moveSubStage(st.id, index, 'up')}
-                              style={{ ...arrowBtnStyle, opacity: index === 0 ? 0.2 : 1 }}
+                              disabled={subIdx === 0}
+                              onClick={() => moveSubStage(st.id, subIdx, 'up')}
+                              style={{ ...arrowBtnStyle, opacity: subIdx === 0 ? 0.2 : 1 }}
                             >
                               ▲
                             </button>
                             <button
-                              disabled={index === st.subStages.length - 1}
-                              onClick={() => moveSubStage(st.id, index, 'down')}
-                              style={{ ...arrowBtnStyle, opacity: index === st.subStages.length - 1 ? 0.2 : 1 }}
+                              disabled={subIdx === st.subStages.length - 1}
+                              onClick={() => moveSubStage(st.id, subIdx, 'down')}
+                              style={{ ...arrowBtnStyle, opacity: subIdx === st.subStages.length - 1 ? 0.2 : 1 }}
                             >
                               ▼
                             </button>
@@ -415,7 +484,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: isArchived ? 'default' : 'pointer', flex: 1 }}>
                             <input type="checkbox" checked={sub.completed} disabled={isArchived} onChange={() => handleToggleSubStage(st.id, sub.id)} />
                             <span style={{ textDecoration: sub.completed ? 'line-through' : 'none', color: sub.completed ? '#8e8e93' : '#1c1c1e' }}>
-                              {sub.title}
+                              {/* АВТОМАЧНА НУМЕРАЦІЯ: subIdx + 1 */}
+                              {subIdx + 1}. {sub.title}
                             </span>
                           </label>
                         )}
@@ -430,15 +500,101 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     ))}
 
                     {!isArchived && (
-                      <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+                      <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
                         <input
-                          type="text" placeholder="+ Підстадія (напр. Виїзд на об'єкт)"
+                          type="text" placeholder="+ Підстадія (напр. Обмірний план)"
                           value={newSubStageTitles[st.id] || ''} onChange={(e) => setNewSubStageTitles({ ...newSubStageTitles, [st.id]: e.target.value })}
                           style={{ ...inputStyle, fontSize: '13px', padding: '6px 8px' }}
                         />
                         <button onClick={() => handleAddSubStage(st.id)} style={greenBtnStyle}>+</button>
                       </div>
                     )}
+
+                    {/* Блок Таймера та Дедлайнів (ТІЛЬКИ ДЛЯ СТАДІЙ 2, 3, 4, 5, 6) */}
+                    {allowTimeAndDeadline && (
+                      <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid #e5e5ea', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        
+                        {/* ⏱️ Таймер */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#ffffff', padding: '8px 12px', borderRadius: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '14px', fontWeight: 600 }}>⏱️ Час: {formatSecondsToHM(st.loggedSeconds)}</span>
+                            
+                            {!isArchived && (
+                              <button
+                                onClick={() => {
+                                  setEditingTimeStageId(st.id);
+                                  setManualHoursInput(((st.loggedSeconds || 0) / 3600).toFixed(1));
+                                }}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px' }}
+                                title="Редагувати години"
+                              >
+                                ✏️
+                              </button>
+                            )}
+                          </div>
+
+                          {!isArchived && (
+                            <button
+                              onClick={() => toggleTimer(st.id)}
+                              style={{
+                                padding: '4px 12px',
+                                borderRadius: '6px',
+                                border: 'none',
+                                backgroundColor: st.isTimerRunning ? '#ff3b30' : '#34c759',
+                                color: '#ffffff',
+                                fontWeight: 600,
+                                fontSize: '12px',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {st.isTimerRunning ? '⏸ Пауза' : '▶ Старт'}
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Ручна підгонка часу */}
+                        {editingTimeStageId === st.id && (
+                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                            <input
+                              type="number"
+                              step="0.1"
+                              placeholder="Години"
+                              value={manualHoursInput}
+                              onChange={(e) => setManualHoursInput(e.target.value)}
+                              style={{ ...inputStyle, padding: '4px 8px', fontSize: '12px', width: '100px' }}
+                            />
+                            <button onClick={() => handleSaveManualTime(st.id)} style={{ ...greenBtnStyle, padding: '4px 8px', fontSize: '12px' }}>Зберегти</button>
+                            <button onClick={() => setEditingTimeStageId(null)} style={{ background: 'none', border: 'none', fontSize: '12px', cursor: 'pointer' }}>✕</button>
+                          </div>
+                        )}
+
+                        {/* 📅 Дедлайни */}
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <div style={{ flex: 1 }}>
+                            <label style={{ fontSize: '11px', color: '#636366', fontWeight: 500 }}>Дата початку</label>
+                            <input
+                              type="date"
+                              disabled={isArchived}
+                              value={st.startDate || ''}
+                              onChange={(e) => handleDateChange(st.id, 'startDate', e.target.value)}
+                              style={{ ...inputStyle, padding: '4px 6px', fontSize: '12px' }}
+                            />
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <label style={{ fontSize: '11px', color: '#ff3b30', fontWeight: 500 }}>Дедлайн (Здача)</label>
+                            <input
+                              type="date"
+                              disabled={isArchived}
+                              value={st.endDate || ''}
+                              onChange={(e) => handleDateChange(st.id, 'endDate', e.target.value)}
+                              style={{ ...inputStyle, padding: '4px 6px', fontSize: '12px' }}
+                            />
+                          </div>
+                        </div>
+
+                      </div>
+                    )}
+
                   </div>
                 )}
               </div>
