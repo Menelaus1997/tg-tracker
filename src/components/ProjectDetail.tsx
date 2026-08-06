@@ -194,7 +194,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     }));
   };
 
-  // Прямий виклик збереження проекту та шаблону
   const handleFinalSave = () => {
     onUpdateProject({
       ...project,
@@ -352,8 +351,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
             return (
               <div key={st.id} style={{ padding: '14px', borderRadius: '10px', backgroundColor: '#f2f2f7' }}>
-                
-                {/* Шапка стадії з однаковою пропорційною стрілочкою */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isCollapsed ? '0px' : '10px' }}>
                   {editingStageId === st.id ? (
                     <div style={{ display: 'flex', gap: '6px', flex: 1 }}>
@@ -365,7 +362,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       onClick={() => toggleStageCollapse(st.id)}
                       style={{ fontWeight: 600, fontSize: '15px', color: '#1c1c1e', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}
                     >
-                      {/* Фіксована стрілочка, що просто повертається на 90 градусів */}
                       <span style={{ 
                         display: 'inline-block', 
                         transition: 'transform 0.2s ease', 
