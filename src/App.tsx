@@ -3,6 +3,7 @@ import { BottomNavigation } from './components/BottomNavigation';
 import { CreateProject } from './components/CreateProject';
 import { ProjectDetail } from './components/ProjectDetail';
 import { Analytics } from './components/Analytics';
+import { TeamTab } from './components/TeamTab';
 import { TabType } from './types';
 
 export interface CustomField {
@@ -27,6 +28,13 @@ export interface Stage {
   isTimerRunning?: boolean;
 }
 
+export interface TeamMember {
+  id: string;
+  fullName: string;
+  telegramUsername: string;
+  role: 'Керівник' | 'Кресляр' | 'Візуалізатор' | 'Комплектатор';
+}
+
 export interface Project {
   uid: string;
   id: string;
@@ -37,6 +45,7 @@ export interface Project {
   generalInfoList?: string[];
   customFields: CustomField[];
   stages: Stage[];
+  teamMembers?: TeamMember[];
 }
 
 export interface SavedTemplate {
@@ -88,7 +97,6 @@ export const App: React.FC = () => {
     localStorage.setItem('app_templates', JSON.stringify(templates));
   }, [templates]);
 
-  // Таймер-інтервал для активних секунд
   useEffect(() => {
     const interval = setInterval(() => {
       setProjects((prevProjects) =>
@@ -112,7 +120,6 @@ export const App: React.FC = () => {
   const handleCreateProject = (newProj: { id: string; name: string; template: string; color: string }) => {
     const selectedTemplateObj = templates.find(t => t.id === newProj.template);
     
-    // Беремо лише структуру стадій і customFields
     const templateStages = selectedTemplateObj 
       ? JSON.parse(JSON.stringify(selectedTemplateObj.stages))
       : [];
@@ -126,27 +133,42 @@ export const App: React.FC = () => {
       status: 'active',
       generalInfoList: [],
       customFields: templateCustomFields,
-      stages: templateStages
+      stages: templateStages,
+      teamMembers: []
     };
     setProjects((prev) => [...prev, created]);
     setActiveTab('projects');
   };
 
-  const handleSaveAsTemplate = (name: string, stages: Stage[], customFields: CustomField[]) => {
-    // Зберігаємо ЛИШЕ стадії та поля, без імен та ID проектів
+  const handleSaveAsTemplate = (name: string, stages: Stage[], customFields: CustomField[]): boolean => {
+    const existingIndex = templates.findIndex(t => t.name.trim().toLowerCase() === name.trim().toLowerCase());
+
     const cleanedStages = stages.map(st => ({
       id: st.id,
       title: st.title,
       subStages: st.subStages.map(sub => ({ id: sub.id, title: sub.title, completed: false }))
     }));
 
-    const newTemplate: SavedTemplate = {
-      id: Date.now().toString(),
-      name,
-      stages: cleanedStages,
-      customFields: JSON.parse(JSON.stringify(customFields))
-    };
-    setTemplates((prev) => [...prev, newTemplate]);
+    if (existingIndex !== -1) {
+      if (window.confirm(`Шаблон з назвою "${name}" вже існує. Замінити його?`)) {
+        setTemplates(prev => prev.map((t, i) => i === existingIndex ? {
+          ...t,
+          stages: cleanedStages,
+          customFields: JSON.parse(JSON.stringify(customFields))
+        } : t));
+        return true;
+      }
+      return false;
+    } else {
+      const newTemplate: SavedTemplate = {
+        id: Date.now().toString(),
+        name: name.trim(),
+        stages: cleanedStages,
+        customFields: JSON.parse(JSON.stringify(customFields))
+      };
+      setTemplates((prev) => [...prev, newTemplate]);
+      return true;
+    }
   };
 
   const handleDeleteTemplate = (templateId: string) => {
@@ -335,7 +357,7 @@ export const App: React.FC = () => {
         </div>
       )}
 
-      {activeTab === 'boq' && <div style={{ padding: '20px', color: '#1c1c1e' }}>Розділ Об’єми</div>}
+      {activeTab === 'boq' && <TeamTab projects={projects} onUpdateProjects={setProjects} />}
       
       {activeTab === 'analytics' && <Analytics projects={projects} />}
 
