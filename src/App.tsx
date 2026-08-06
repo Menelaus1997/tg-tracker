@@ -23,6 +23,7 @@ export interface Stage {
 }
 
 export interface Project {
+  uid: string;
   id: string;
   name: string;
   template: string;
@@ -43,26 +44,26 @@ export interface SavedTemplate {
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('create');
   
-  // Збереження проектів у localStorage
   const [projects, setProjects] = useState<Project[]>(() => {
     const saved = localStorage.getItem('app_projects');
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Збереження шаблонів у localStorage
   const [templates, setTemplates] = useState<SavedTemplate[]>(() => {
     const saved = localStorage.getItem('app_templates');
     return saved ? JSON.parse(saved) : [];
   });
 
   const [isAdmin] = useState<boolean>(true);
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedProjectUid, setSelectedProjectUid] = useState<string | null>(null);
+  const [showTemplatesArchive, setShowTemplatesArchive] = useState<boolean>(false);
 
+  // Стан для модальних вікон
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
-    type: 'archive' | 'delete' | null;
-    projectId: string | null;
-  }>({ isOpen: false, type: null, projectId: null });
+    type: 'archive' | 'delete' | 'permanent_delete' | null;
+    projectUid: string | null;
+  }>({ isOpen: false, type: null, projectUid: null });
 
   useEffect(() => {
     localStorage.setItem('app_projects', JSON.stringify(projects));
@@ -77,6 +78,7 @@ export const App: React.FC = () => {
     
     const created: Project = {
       ...newProj,
+      uid: `${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
       status: 'active',
       generalInfoList: [],
       customFields: selectedTemplateObj ? JSON.parse(JSON.stringify(selectedTemplateObj.customFields)) : [],
@@ -96,30 +98,40 @@ export const App: React.FC = () => {
     setTemplates((prev) => [...prev, newTemplate]);
   };
 
-  const openConfirm = (type: 'archive' | 'delete', projectId: string) => {
-    setConfirmModal({ isOpen: true, type, projectId });
+  const handleDeleteTemplate = (templateId: string) => {
+    setTemplates((prev) => prev.filter((t) => t.id !== templateId));
+  };
+
+  const openConfirm = (type: 'archive' | 'delete' | 'permanent_delete', projectUid: string) => {
+    setConfirmModal({ isOpen: true, type, projectUid });
   };
 
   const handleConfirmAction = () => {
-    const { type, projectId } = confirmModal;
-    if (!projectId || !type) return;
+    const { type, projectUid } = confirmModal;
+    if (!projectUid || !type) return;
 
-    if (type === 'delete' && !isAdmin) {
+    if ((type === 'delete' || type === 'permanent_delete') && !isAdmin) {
       alert('Тільки адміністратор має права для видалення проектів!');
-      setConfirmModal({ isOpen: false, type: null, projectId: null });
+      setConfirmModal({ isOpen: false, type: null, projectUid: null });
       return;
     }
 
-    setProjects((prev) =>
-      prev.map((p) => (p.id === projectId ? { ...p, status: type === 'delete' ? 'deleted' : 'archived' } : p))
-    );
+    if (type === 'permanent_delete') {
+      // Повне видалення з пам'яті
+      setProjects((prev) => prev.filter((p) => p.uid !== projectUid));
+    } else {
+      // Переміщення в корзину або архів
+      setProjects((prev) =>
+        prev.map((p) => (p.uid === projectUid ? { ...p, status: type === 'delete' ? 'deleted' : 'archived' } : p))
+      );
+    }
 
-    setConfirmModal({ isOpen: false, type: null, projectId: null });
+    setConfirmModal({ isOpen: false, type: null, projectUid: null });
   };
 
-  const restoreProject = (id: string) => {
+  const restoreProject = (uid: string) => {
     setProjects((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, status: 'active' } : p))
+      prev.map((p) => (p.uid === uid ? { ...p, status: 'active' } : p))
     );
   };
 
@@ -127,7 +139,7 @@ export const App: React.FC = () => {
   const archivedProjects = projects.filter((p) => p.status === 'archived');
   const deletedProjects = projects.filter((p) => p.status === 'deleted');
 
-  const selectedProject = projects.find((p) => p.id === selectedProjectId);
+  const selectedProject = projects.find((p) => p.uid === selectedProjectUid);
 
   return (
     <div style={{
@@ -148,22 +160,23 @@ export const App: React.FC = () => {
           <ProjectDetail
             project={selectedProject}
             onUpdateProject={(updated) => {
-              setProjects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+              setProjects((prev) => prev.map((p) => (p.uid === updated.uid ? updated : p)));
             }}
             onSaveAsTemplate={handleSaveAsTemplate}
-            onBack={() => setSelectedProjectId(null)}
+            onBack={() => setSelectedProjectUid(null)}
           />
         ) : (
           <div style={{ padding: '20px', color: '#1c1c1e', maxWidth: '500px', margin: '0 auto' }}>
             <h2 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '16px' }}>Проекти</h2>
 
+            {/* Активні проекти */}
             {activeProjects.length === 0 ? (
               <p style={{ color: '#8e8e93' }}>Немає активних проектів.</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {activeProjects.map((prj) => (
                   <div
-                    key={prj.id}
+                    key={prj.uid}
                     style={{
                       padding: '16px',
                       borderRadius: '12px',
@@ -173,9 +186,8 @@ export const App: React.FC = () => {
                       alignItems: 'center'
                     }}
                   >
-                    {/* Клікабельна вся плашка без олівця */}
                     <div 
-                      onClick={() => setSelectedProjectId(prj.id)}
+                      onClick={() => setSelectedProjectUid(prj.uid)}
                       style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', flex: 1 }}
                     >
                       <span style={{
@@ -193,63 +205,130 @@ export const App: React.FC = () => {
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <button onClick={() => openConfirm('archive', prj.id)} style={iconBtnStyle} title="Архівувати">📦</button>
-                      <button onClick={() => openConfirm('delete', prj.id)} style={iconBtnStyle} title="Видалити">🗑️</button>
+                      <button onClick={() => openConfirm('archive', prj.uid)} style={iconBtnStyle} title="Архівувати">📦</button>
+                      <button onClick={() => openConfirm('delete', prj.uid)} style={iconBtnStyle} title="У корзину">🗑️</button>
                     </div>
                   </div>
                 ))}
               </div>
             )}
 
+            {/* Архів проектів */}
             {archivedProjects.length > 0 && (
               <div style={{ marginTop: '30px' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#8e8e93', marginBottom: '10px' }}>📦 Архів проектів</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {archivedProjects.map((prj) => (
-                    <div key={prj.id} style={{ padding: '12px 16px', backgroundColor: '#f9f9f9', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', opacity: 0.8 }}>
-                      <div onClick={() => setSelectedProjectId(prj.id)} style={{ cursor: 'pointer' }}>
+                    <div key={prj.uid} style={{ padding: '12px 16px', backgroundColor: '#f9f9f9', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', opacity: 0.8 }}>
+                      <div onClick={() => setSelectedProjectUid(prj.uid)} style={{ cursor: 'pointer' }}>
                         <span style={{ fontWeight: 600 }}>{prj.name}</span> <span style={{ fontSize: '12px', color: '#8e8e93' }}>({prj.id})</span>
                       </div>
-                      <button onClick={() => restoreProject(prj.id)} style={smallBtnStyle}>Розархівувати</button>
+                      <button onClick={() => restoreProject(prj.uid)} style={smallBtnStyle}>Розархівувати</button>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
+            {/* Корзина проектів із можливістю безповоротного видалення */}
             {deletedProjects.length > 0 && (
               <div style={{ marginTop: '30px' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#ff3b30', marginBottom: '10px' }}>🗑️ Корзина</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {deletedProjects.map((prj) => (
-                    <div key={prj.id} style={{ padding: '12px 16px', backgroundColor: '#fff0f0', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div key={prj.uid} style={{ padding: '12px 16px', backgroundColor: '#fff0f0', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
                         <span style={{ fontWeight: 600 }}>{prj.name}</span> <span style={{ fontSize: '12px', color: '#8e8e93' }}>({prj.id})</span>
                       </div>
-                      <button onClick={() => restoreProject(prj.id)} style={{ ...smallBtnStyle, backgroundColor: '#34c759', color: '#fff' }}>Відновити</button>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button onClick={() => restoreProject(prj.uid)} style={{ ...smallBtnStyle, backgroundColor: '#34c759', color: '#fff' }}>Відновити</button>
+                        <button onClick={() => openConfirm('permanent_delete', prj.uid)} style={iconBtnStyle} title="Видалити остаточно">🗑️</button>
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
             )}
+
+            {/* Архів шаблонів */}
+            <div style={{ marginTop: '40px', borderTop: '1px solid #e5e5ea', paddingTop: '20px' }}>
+              <button
+                onClick={() => setShowTemplatesArchive(!showTemplatesArchive)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#007aff',
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <span>{showTemplatesArchive ? '▼' : '►'}</span>
+                <span>📁 Архів шаблонів ({templates.length})</span>
+              </button>
+
+              {showTemplatesArchive && (
+                <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {templates.length === 0 ? (
+                    <div style={{ fontSize: '13px', color: '#8e8e93', paddingLeft: '16px' }}>Немає збережених шаблонів</div>
+                  ) : (
+                    templates.map((tmpl) => (
+                      <div
+                        key={tmpl.id}
+                        style={{
+                          padding: '10px 14px',
+                          backgroundColor: '#f2f2f7',
+                          borderRadius: '8px',
+                          display: 'flex',
+                          justify: 'space-between',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <span style={{ fontSize: '14px', fontWeight: 500 }}>{tmpl.name}</span>
+                        <button
+                          onClick={() => handleDeleteTemplate(tmpl.id)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}
+                          title="Видалити шаблон"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
           </div>
         )
       )}
 
+      {/* Модальне вікно підтвердження */}
       {confirmModal.isOpen && (
         <div style={modalOverlayStyle}>
           <div style={modalContentStyle}>
             <h3 style={{ marginTop: 0, fontSize: '18px' }}>
-              {confirmModal.type === 'archive' ? 'Архівувати проект?' : 'Видалити проект в корзину?'}
+              {confirmModal.type === 'archive' && 'Архівувати проект?'}
+              {confirmModal.type === 'delete' && 'Перемістити проект в корзину?'}
+              {confirmModal.type === 'permanent_delete' && 'Видалити проект безповоротно?'}
             </h3>
+            
             <p style={{ fontSize: '14px', color: '#636366' }}>
-              {confirmModal.type === 'archive'
-                ? 'Проект буде перенесено в архів. Всі дані зафіксуються без можливості редагування.'
-                : 'Ви впевнені? Проект потрапить у корзину.'}
+              {confirmModal.type === 'archive' && 'Проект буде перенесено в архів.'}
+              {confirmModal.type === 'delete' && 'Проект потрапить у корзину, звідки його можна відновлювати або вилучити.'}
+              {confirmModal.type === 'permanent_delete' && 'Цю дію неможливо скасувати. Проект буде повністю видалено з пам’яті.'}
             </p>
+
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
-              <button onClick={() => setConfirmModal({ isOpen: false, type: null, projectId: null })} style={{ ...modalBtnStyle, backgroundColor: '#e5e5ea', color: '#1c1c1e' }}>Скасувати</button>
-              <button onClick={handleConfirmAction} style={{ ...modalBtnStyle, backgroundColor: confirmModal.type === 'delete' ? '#ff3b30' : '#007aff', color: '#ffffff' }}>Так, підтверджую</button>
+              <button onClick={() => setConfirmModal({ isOpen: false, type: null, projectUid: null })} style={{ ...modalBtnStyle, backgroundColor: '#e5e5ea', color: '#1c1c1e' }}>Скасувати</button>
+              <button onClick={handleConfirmAction} style={{ ...modalBtnStyle, backgroundColor: confirmModal.type === 'permanent_delete' || confirmModal.type === 'delete' ? '#ff3b30' : '#007aff', color: '#ffffff' }}>
+                {confirmModal.type === 'permanent_delete' ? 'Видалити назавжди' : 'Підтвердити'}
+              </button>
             </div>
           </div>
         </div>
