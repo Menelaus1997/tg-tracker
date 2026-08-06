@@ -22,11 +22,11 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, o
       left: 0,
       right: 0,
       height: '60px',
-      backgroundColor: '#1c1c1e',
+      backgroundColor: '#ffffff',
       display: 'flex',
-      justifyContent: 'space-around',
+      justify: 'space-around',
       alignItems: 'center',
-      borderTop: '1px solid #2c2c2e',
+      borderTop: '1px solid #e5e5ea',
       paddingBottom: 'env(safe-area-inset-bottom)',
       zIndex: 1000
     }}>
@@ -43,7 +43,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, o
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: '26px',
-              opacity: isActive ? 1 : 0.4,
+              opacity: isActive ? 1 : 0.35,
               transform: isActive ? 'scale(1.15)' : 'scale(1)',
               transition: 'all 0.2s ease',
               cursor: 'pointer',
