@@ -12,18 +12,16 @@ const DEFAULT_COLORS = [
 
 export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject }) => {
   const [name, setName] = useState('');
-  const [projectId, setProjectId] = useState(`PRJ-${Math.floor(1000 + Math.random() * 9000)}`);
-  const [template, setTemplate] = useState('custom');
+  const [projectId, setProjectId] = useState('#V1');
+  const [template, setTemplate] = useState('general');
   const [colors, setColors] = useState<string[]>(DEFAULT_COLORS);
   const [selectedColor, setSelectedColor] = useState(DEFAULT_COLORS[0]);
-  const [showTemplatesArchive, setShowTemplatesArchive] = useState(false);
 
   const colorInputRef = useRef<HTMLInputElement>(null);
 
   const handleCustomColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newColor = e.target.value;
     if (newColor) {
-      // Замінюємо останній колір у стекі з 9 кольорів
       const updatedColors = [...colors.slice(0, 8), newColor];
       setColors(updatedColors);
       setSelectedColor(newColor);
@@ -43,7 +41,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject })
   };
 
   return (
-    <div style={{ padding: '20px', backgroundColor: '#ffffff', color: '#1c1c1e', maxWidth: '500px', margin: '0 auto', minHeight: '100vh' }}>
+    <div style={{ padding: '20px', backgroundColor: '#ffffff', color: '#1c1c1e', maxWidth: '500px', margin: '0 auto' }}>
       <h2 style={{ marginBottom: '20px', fontSize: '22px', fontWeight: 700, color: '#1c1c1e' }}>
         Створення проекту
       </h2>
@@ -67,6 +65,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject })
           <label style={{ fontSize: '14px', fontWeight: 500, color: '#636366' }}>ID проекту</label>
           <input
             type="text"
+            placeholder="#V1"
             value={projectId}
             onChange={(e) => setProjectId(e.target.value)}
             style={inputStyle}
@@ -75,16 +74,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject })
 
         {/* 3. Шаблон */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <label style={{ fontSize: '14px', fontWeight: 500, color: '#636366' }}>Шаблон</label>
-            <button
-              type="button"
-              onClick={() => setShowTemplatesArchive(!showTemplatesArchive)}
-              style={{ background: 'none', border: 'none', color: '#007aff', fontSize: '13px', cursor: 'pointer', padding: 0 }}
-            >
-              {showTemplatesArchive ? 'Сховати архів' : '📦 Архів шаблонів'}
-            </button>
-          </div>
+          <label style={{ fontSize: '14px', fontWeight: 500, color: '#636366' }}>Шаблон</label>
 
           <div style={{ position: 'relative' }}>
             <select
@@ -98,12 +88,9 @@ export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject })
                 cursor: 'pointer'
               }}
             >
-              <option value="custom">Кастомізований проект (свій варіант)</option>
-              <option value="interior_design">Дизайн інтер'єру (базовий)</option>
-              <option value="measurement">Обміри та креслення</option>
-              <option value="full_construction">Повний ремонт / Кошторис</option>
+              <option value="general">Загальний шаблон</option>
             </select>
-            {/* Трикутна стрілочка списку */}
+            {/* Трикутна стрілочка */}
             <div style={{
               position: 'absolute',
               right: '14px',
@@ -117,18 +104,6 @@ export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject })
               borderTop: '6px solid #1c1c1e'
             }} />
           </div>
-
-          {/* Відображення Архіву Шаблонів */}
-          {showTemplatesArchive && (
-            <div style={{ marginTop: '8px', padding: '12px', backgroundColor: '#f2f2f7', borderRadius: '10px', fontSize: '13px' }}>
-              <div style={{ fontWeight: 600, marginBottom: '6px' }}>Передналаштовані шаблони:</div>
-              <ul style={{ paddingLeft: '18px', margin: 0, color: '#3a3a3c', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <li><b>Дизайн інтер'єру:</b> Креслення, 3D візуалізація, специфікації матеріалів.</li>
-                <li><b>Обміри та креслення:</b> План обмірів, експлікація приміщень, прив'язки інженерії.</li>
-                <li><b>Повний ремонт:</b> Демонтаж, монтаж, оздоблення, підрахунок об'ємів BOQ.</li>
-              </ul>
-            </div>
-          )}
         </div>
 
         {/* 4. Колір (9 кольорів + кнопка +) */}
@@ -164,7 +139,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject })
               );
             })}
 
-            {/* Кнопка + (10-та у рядку) */}
+            {/* Кнопка + */}
             <button
               type="button"
               onClick={() => colorInputRef.current?.click()}
@@ -194,7 +169,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject })
           </div>
         </div>
 
-        {/* Кнопка Створити */}
+        {/* Кнопка Створити проект */}
         <button
           type="submit"
           style={{
