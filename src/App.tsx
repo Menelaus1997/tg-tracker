@@ -44,21 +44,35 @@ export interface SavedTemplate {
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('create');
   
+  // Автоматична коригувальна завантаження зі зняттям блокувань
   const [projects, setProjects] = useState<Project[]>(() => {
-    const saved = localStorage.getItem('app_projects');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('app_projects');
+      if (!saved) return [];
+      const parsed: any[] = JSON.parse(saved);
+
+      // Примусово створюємо унікальний uid для кожного об'єкта
+      return parsed.map((p, idx) => ({
+        ...p,
+        uid: p.uid || `${Date.now()}-${idx}-${Math.random().toString(36).substr(2, 5)}`
+      }));
+    } catch (e) {
+      return [];
+    }
   });
 
   const [templates, setTemplates] = useState<SavedTemplate[]>(() => {
-    const saved = localStorage.getItem('app_templates');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('app_templates');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
   });
 
-  const [isAdmin] = useState<boolean>(true);
   const [selectedProjectUid, setSelectedProjectUid] = useState<string | null>(null);
   const [showTemplatesArchive, setShowTemplatesArchive] = useState<boolean>(false);
 
-  // Стан для модальних вікон
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     type: 'archive' | 'delete' | 'permanent_delete' | null;
@@ -78,7 +92,7 @@ export const App: React.FC = () => {
     
     const created: Project = {
       ...newProj,
-      uid: `${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      uid: `${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
       status: 'active',
       generalInfoList: [],
       customFields: selectedTemplateObj ? JSON.parse(JSON.stringify(selectedTemplateObj.customFields)) : [],
@@ -106,21 +120,14 @@ export const App: React.FC = () => {
     setConfirmModal({ isOpen: true, type, projectUid });
   };
 
+  // Виправлена функція видалення (без заблокованих перевірок)
   const handleConfirmAction = () => {
     const { type, projectUid } = confirmModal;
     if (!projectUid || !type) return;
 
-    if ((type === 'delete' || type === 'permanent_delete') && !isAdmin) {
-      alert('Тільки адміністратор має права для видалення проектів!');
-      setConfirmModal({ isOpen: false, type: null, projectUid: null });
-      return;
-    }
-
     if (type === 'permanent_delete') {
-      // Повне видалення з пам'яті
       setProjects((prev) => prev.filter((p) => p.uid !== projectUid));
     } else {
-      // Переміщення в корзину або архів
       setProjects((prev) =>
         prev.map((p) => (p.uid === projectUid ? { ...p, status: type === 'delete' ? 'deleted' : 'archived' } : p))
       );
@@ -133,6 +140,14 @@ export const App: React.FC = () => {
     setProjects((prev) =>
       prev.map((p) => (p.uid === uid ? { ...p, status: 'active' } : p))
     );
+  };
+
+  // Функція ручного примусового очищення кешу проектів
+  const handleClearProjectsCache = () => {
+    if (window.confirm('Ви дійсно бажаєте повністю очистити кеш проектів?')) {
+      setProjects([]);
+      localStorage.removeItem('app_projects');
+    }
   };
 
   const activeProjects = projects.filter((p) => p.status === 'active');
@@ -230,7 +245,7 @@ export const App: React.FC = () => {
               </div>
             )}
 
-            {/* Корзина проектів із можливістю безповоротного видалення */}
+            {/* Корзина */}
             {deletedProjects.length > 0 && (
               <div style={{ marginTop: '30px' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#ff3b30', marginBottom: '10px' }}>🗑️ Корзина</h3>
@@ -252,7 +267,7 @@ export const App: React.FC = () => {
             )}
 
             {/* Архів шаблонів */}
-            <div style={{ marginTop: '40px', borderTop: '1px solid #e5e5ea', paddingTop: '20px' }}>
+            <div style={{ marginTop: '30px', borderTop: '1px solid #e5e5ea', paddingTop: '16px' }}>
               <button
                 onClick={() => setShowTemplatesArchive(!showTemplatesArchive)}
                 style={{
@@ -304,6 +319,23 @@ export const App: React.FC = () => {
               )}
             </div>
 
+            {/* Кнопка екстреного скидання кешу проектів */}
+            <div style={{ marginTop: '24px', textAlign: 'center' }}>
+              <button
+                onClick={handleClearProjectsCache}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#8e8e93',
+                  fontSize: '12px',
+                  textDecoration: 'underline',
+                  cursor: 'pointer'
+                }}
+              >
+                Очистити всі завислі проекти (Скинути кеш)
+              </button>
+            </div>
+
           </div>
         )
       )}
@@ -320,14 +352,22 @@ export const App: React.FC = () => {
             
             <p style={{ fontSize: '14px', color: '#636366' }}>
               {confirmModal.type === 'archive' && 'Проект буде перенесено в архів.'}
-              {confirmModal.type === 'delete' && 'Проект потрапить у корзину, звідки його можна відновлювати або вилучити.'}
-              {confirmModal.type === 'permanent_delete' && 'Цю дію неможливо скасувати. Проект буде повністю видалено з пам’яті.'}
+              {confirmModal.type === 'delete' && 'Проект потрапить у корзину.'}
+              {confirmModal.type === 'permanent_delete' && 'Проект буде повністю видалено з пам’яті.'}
             </p>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
               <button onClick={() => setConfirmModal({ isOpen: false, type: null, projectUid: null })} style={{ ...modalBtnStyle, backgroundColor: '#e5e5ea', color: '#1c1c1e' }}>Скасувати</button>
-              <button onClick={handleConfirmAction} style={{ ...modalBtnStyle, backgroundColor: confirmModal.type === 'permanent_delete' || confirmModal.type === 'delete' ? '#ff3b30' : '#007aff', color: '#ffffff' }}>
-                {confirmModal.type === 'permanent_delete' ? 'Видалити назавжди' : 'Підтвердити'}
+              <button 
+                onClick={handleConfirmAction} 
+                style={{ 
+                  ...modalBtnStyle, 
+                  backgroundColor: confirmModal.type === 'permanent_delete' || confirmModal.type === 'delete' ? '#ff3b30' : '#007aff', 
+                  color: '#ffffff',
+                  cursor: 'pointer'
+                }}
+              >
+                Підтвердити
               </button>
             </div>
           </div>
@@ -347,6 +387,6 @@ const iconBtnStyle: React.CSSProperties = { background: 'none', border: 'none', 
 const smallBtnStyle: React.CSSProperties = { padding: '4px 8px', borderRadius: '6px', border: 'none', backgroundColor: '#e5e5ea', fontSize: '12px', cursor: 'pointer' };
 const modalOverlayStyle: React.CSSProperties = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 };
 const modalContentStyle: React.CSSProperties = { backgroundColor: '#ffffff', padding: '20px', borderRadius: '14px', maxWidth: '360px', width: '90%', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' };
-const modalBtnStyle: React.CSSProperties = { padding: '8px 14px', borderRadius: '8px', border: 'none', fontWeight: 600, fontSize: '14px', cursor: 'pointer' };
+const modalBtnStyle: React.CSSProperties = { padding: '8px 14px', borderRadius: '8px', border: 'none', fontWeight: 600, fontSize: '14px' };
 
 export default App;
