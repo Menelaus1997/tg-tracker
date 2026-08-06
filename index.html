@@ -2,204 +2,667 @@
 <html lang="uk">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Трекер Проектів</title>
-  <!-- Telegram Web App SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
       --bg-color: var(--tg-theme-bg-color, #f4f5f7);
       --card-bg: var(--tg-theme-secondary-bg-color, #ffffff);
       --text-color: var(--tg-theme-text-color, #222222);
       --hint-color: var(--tg-theme-hint-color, #888888);
-      --button-color: var(--tg-theme-button-color, #0088cc);
+      --button-color: var(--tg-theme-button-color, #3390ec);
       --button-text: var(--tg-theme-button-text-color, #ffffff);
+      --danger-color: #e53935;
+      --success-color: #4caf50;
     }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       background-color: var(--bg-color);
       color: var(--text-color);
       margin: 0;
-      padding: 12px;
+      padding: 0 0 70px 0;
       box-sizing: border-box;
     }
-    h2, h3 { margin-top: 0; }
+
+    /* Bottom Navigation */
+    .nav-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: var(--card-bg);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      border-top: 1px solid rgba(0,0,0,0.1);
+      z-index: 100;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 11px;
+      color: var(--hint-color);
+      cursor: pointer;
+      border: none;
+      background: none;
+      width: 33%;
+    }
+
+    .nav-item.active {
+      color: var(--button-color);
+      font-weight: bold;
+    }
+
+    .nav-icon { font-size: 18px; margin-bottom: 2px; }
+
+    /* Views */
+    .view { display: none; padding: 15px; }
+    .view.active { display: block; }
+
+    /* Cards */
     .card {
       background: var(--card-bg);
       border-radius: 12px;
-      padding: 14px;
-      margin-bottom: 12px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      padding: 15px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.03);
     }
-    select, input[type="date"], input[type="text"], button {
+
+    h2, h3 { margin-top: 0; margin-bottom: 8px; }
+
+    input, select, button {
       width: 100%;
       padding: 10px;
-      margin-top: 6px;
       margin-bottom: 10px;
       border-radius: 8px;
-      border: 1px solid #ccc;
+      border: 1px solid #ddd;
       box-sizing: border-box;
       font-size: 14px;
     }
-    button.btn-main {
+
+    button.btn-primary {
       background-color: var(--button-color);
       color: var(--button-text);
-      font-weight: bold;
       border: none;
+      font-weight: 600;
       cursor: pointer;
     }
-    .stage-item {
-      border-bottom: 1px solid #eee;
-      padding-bottom: 10px;
+
+    /* Progress Bar */
+    .progress-bar-bg {
+      background: #e0e0e0;
+      border-radius: 6px;
+      height: 8px;
+      width: 100%;
+      overflow: hidden;
+      margin: 6px 0 12px 0;
+    }
+
+    .progress-bar-fill {
+      background: var(--button-color);
+      height: 100%;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    /* Stage Header & Timer */
+    .stage-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .stage-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .stage-timer-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(51, 144, 236, 0.08);
+      padding: 8px 12px;
+      border-radius: 8px;
       margin-bottom: 10px;
     }
-    .stage-item:last-child { border-bottom: none; }
-    .dates-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
+
+    .timer-display {
+      font-family: monospace;
+      font-weight: bold;
+      font-size: 14px;
+      color: var(--button-color);
+      cursor: pointer;
     }
-    .subtask-list {
-      margin-top: 8px;
-      padding-left: 5px;
+
+    .btn-timer {
+      width: auto;
+      padding: 6px 14px;
+      margin: 0;
+      font-size: 12px;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      color: white;
     }
+
+    .btn-timer.start { background-color: var(--success-color); }
+    .btn-timer.stop { background-color: var(--danger-color); }
+
+    /* Subtask Item */
     .subtask-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
       background: rgba(0,0,0,0.02);
-      padding: 6px 8px;
+      padding: 8px 10px;
       border-radius: 6px;
-      margin-bottom: 4px;
-      font-size: 13px;
+      margin-bottom: 6px;
     }
-    .subtask-item.done {
-      text-decoration: line-through;
-      opacity: 0.6;
-    }
-    .time-badge {
-      font-size: 10px;
-      color: var(--hint-color);
-      display: block;
-    }
-    .add-subtask-flex {
+
+    .subtask-left {
       display: flex;
-      gap: 6px;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
     }
-    .add-subtask-flex input { margin: 0; }
-    .add-subtask-flex button { margin: 0; width: auto; white-space: nowrap; }
+
+    .subtask-left input[type="checkbox"] {
+      width: auto;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .subtask-text {
+      font-size: 14px;
+    }
+
+    .subtask-text.completed {
+      text-decoration: line-through;
+      color: var(--hint-color);
+    }
+
+    .subtask-actions button {
+      width: auto;
+      padding: 4px 8px;
+      margin: 0 0 0 4px;
+      font-size: 12px;
+      background: none;
+      border: 1px solid #ccc;
+    }
+
+    .drive-link {
+      display: inline-block;
+      color: var(--button-color);
+      text-decoration: none;
+      font-weight: 600;
+      word-break: break-all;
+    }
+
+    .chart-container {
+      position: relative;
+      margin: auto;
+      height: 250px;
+      width: 100%;
+    }
+
+    .toggle-btn {
+      background: none;
+      border: none;
+      font-size: 14px;
+      cursor: pointer;
+      padding: 0;
+      width: auto;
+      margin: 0;
+      color: var(--hint-color);
+    }
   </style>
 </head>
 <body>
 
-  <div class="card">
-    <h2>Створити новий проект</h2>
-    <label>Тип продукту:</label>
-    <select id="productType" onchange="initProject()">
-      <option value="complex">Комплексний дизайн-проект (5 етапів)</option>
-      <option value="basic">Базові креслення (3 етапи)</option>
-    </select>
+  <!-- VIEW 1: Projects List -->
+  <div id="view-projects" class="view active">
+    <h2>Ваші Проекти</h2>
+    <div class="card">
+      <h3>Створити Новий Проект</h3>
+      <input type="text" id="new-project-name" placeholder="Назва (напр. ЖК Франка 12)">
+      <select id="new-project-template">
+        <option value="full_5">Повний Дизайн-Проект (5 етапів)</option>
+        <option value="basic_3">Базовий Проект / Обміри (3 етапи)</option>
+      </select>
+      <button class="btn-primary" onclick="createProject()">+ Створити Проект</button>
+    </div>
+
+    <div id="projects-list"></div>
   </div>
 
-  <div id="stagesContainer"></div>
+  <!-- VIEW 2: Active Project Details -->
+  <div id="view-details" class="view">
+    <div id="project-details-content">
+      <p style="color: var(--hint-color);">Оберіть проект у вкладці "Проекти"</p>
+    </div>
+  </div>
+
+  <!-- VIEW 3: Dashboard & Analytics -->
+  <div id="view-dashboard" class="view">
+    <h2>Дашборд Робочого Часу</h2>
+    <div class="card">
+      <h3 id="dash-project-name">Аналітика Проекту</h3>
+      <p id="dash-total-hours" style="font-weight: 600; font-size: 16px; color: var(--button-color);">Загальний час: 0 год 0 хв</p>
+      <div class="chart-container">
+        <canvas id="timeChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <div class="nav-bar">
+    <button class="nav-item active" onclick="switchTab('projects', this)">
+      <span class="nav-icon">📁</span>
+      <span>Проекти</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('details', this)">
+      <span class="nav-icon">⏱️</span>
+      <span>Проект</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('dashboard', this)">
+      <span class="nav-icon">📊</span>
+      <span>Дашборд</span>
+    </button>
+  </div>
 
   <script>
-    const tg = window.Telegram.WebApp;
-    tg.expand(); // Розгортаємо на весь екран
+    const tg = window.Telegram?.WebApp;
+    if (tg) tg.expand();
 
-    const products = {
-      complex: ["1. Обмір", "2. Планувальні рішення", "3. Візуалізації", "4. Специфікація", "5. Креслення"],
-      basic: ["1. Обмір", "2. Планувальні рішення", "3. Креслення"]
+    // App State
+    let projects = JSON.parse(localStorage.getItem('tg_projects_v4') || '[]');
+    let currentProjectId = projects.length > 0 ? projects[0].id : null;
+    // Map of active stage timers: key = "projId-stageIdx", value = startTimeTimestamp
+    let activeTimers = JSON.parse(localStorage.getItem('tg_active_timers_v4') || '{}');
+    let timerInterval = null;
+    let chartInstance = null;
+
+    // Standard Templates
+    const templates = {
+      full_5: [
+        { name: "1. Обміри та ТЗ", collapsed: false, seconds: 0, subtasks: [ { title: "Обмірний план", done: false }, { title: "Фотофіксація", done: false }, { title: "ТЗ / Бриф", done: false } ] },
+        { name: "2. Планувальні рішення", collapsed: false, seconds: 0, subtasks: [ { title: "Варіант 1", done: false }, { title: "Варіант 2", done: false }, { title: "Підсумковий план", done: false } ] },
+        { name: "3. 3D Візуалізація", collapsed: false, seconds: 0, subtasks: [ { title: "Концепція / Мудборд", done: false }, { title: "3D Чернетки", done: false }, { title: "Фінальні рендери", done: false } ] },
+        { name: "4. Робочі Креслення", collapsed: false, seconds: 0, subtasks: [ { title: "Демонтаж", done: false }, { title: "Монтаж", done: false }, { title: "Електрика", done: false }, { title: "Сантехніка", done: false }, { title: "Розгортки стін", done: false } ] },
+        { name: "5. Специфікації та Відомості", collapsed: false, seconds: 0, subtasks: [ { title: "Відомість оздоблення", done: false }, { title: "Специфікація освітлення", done: false }, { title: "Меблеві відомості", done: false } ] }
+      ],
+      basic_3: [
+        { name: "1. Обміри та Концепція", collapsed: false, seconds: 0, subtasks: [ { title: "Обмірний план", done: false }, { title: "Планувальне рішення", done: false } ] },
+        { name: "2. Базові Креслення", collapsed: false, seconds: 0, subtasks: [ { title: "План демонтажу", done: false }, { title: "План монтажу", done: false }, { title: "План електрики", done: false } ] },
+        { name: "3. Підсумкова Здача", collapsed: false, seconds: 0, subtasks: [ { title: "Альбом креслень PDF", done: false }, { title: "Передача вихідних файлів", done: false } ] }
+      ]
     };
 
-    let projectData = [];
-
-    function initProject() {
-      const type = document.getElementById("productType").value;
-      projectData = products[type].map(stageName => ({
-        name: stageName,
-        startDate: "",
-        endDate: "",
-        subtasks: []
-      }));
-      renderStages();
+    function saveState() {
+      localStorage.setItem('tg_projects_v4', JSON.stringify(projects));
+      localStorage.setItem('tg_active_timers_v4', JSON.stringify(activeTimers));
     }
 
-    function renderStages() {
-      const container = document.getElementById("stagesContainer");
+    function switchTab(tabName, el) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      
+      document.getElementById(`view-${tabName}`).classList.add('active');
+      if (el) el.classList.add('active');
+
+      if (tabName === 'details') renderDetails();
+      if (tabName === 'dashboard') renderDashboard();
+    }
+
+    function formatTime(totalSeconds) {
+      const h = Math.floor(totalSeconds / 3600);
+      const m = Math.floor((totalSeconds % 3600) / 60);
+      const s = totalSeconds % 60;
+      return `${h > 0 ? h + 'г ' : ''}${m}хв ${s < 10 ? '0' : ''}${s}с`;
+    }
+
+    function formatHoursDecimal(totalSeconds) {
+      return (totalSeconds / 3600).toFixed(2);
+    }
+
+    function createProject() {
+      const nameInput = document.getElementById('new-project-name');
+      const templateSelect = document.getElementById('new-project-template');
+      
+      if (!nameInput.value.trim()) return alert("Введіть назву проекту!");
+
+      const selectedTpl = templates[templateSelect.value];
+      const newProj = {
+        id: Date.now(),
+        name: nameInput.value.trim(),
+        driveUrl: "",
+        stages: JSON.parse(JSON.stringify(selectedTpl))
+      };
+
+      projects.push(newProj);
+      currentProjectId = newProj.id;
+      saveState();
+      
+      nameInput.value = "";
+      renderProjectsList();
+      switchTab('details', document.querySelectorAll('.nav-item')[1]);
+    }
+
+    function renderProjectsList() {
+      const container = document.getElementById('projects-list');
       container.innerHTML = "";
 
-      projectData.forEach((stage, sIdx) => {
-        const stageEl = document.createElement("div");
-        stageEl.className = "card stage-item";
-        stageEl.innerHTML = `
-          <h3>${stage.name}</h3>
-          <div class="dates-grid">
-            <div>
-              <label style="font-size: 12px; color: var(--hint-color)">Старт:</label>
-              <input type="date" value="${stage.startDate}" onchange="updateDate(${sIdx}, 'startDate', this.value)">
-            </div>
-            <div>
-              <label style="font-size: 12px; color: var(--hint-color)">Фініш:</label>
-              <input type="date" value="${stage.endDate}" onchange="updateDate(${sIdx}, 'endDate', this.value)">
-            </div>
-          </div>
+      if (projects.length === 0) {
+        container.innerHTML = "<p style='color: var(--hint-color);'>Немає активних проектів</p>";
+        return;
+      }
 
-          <div style="margin-top: 10px;">
-            <strong style="font-size: 13px;">Підзадачі / Аркуші:</strong>
-            <div class="subtask-list" id="subtasks-${sIdx}">
-              ${stage.subtasks.map((sub, subIdx) => `
-                <div class="subtask-item ${sub.done ? 'done' : ''}">
-                  <div>
-                    <input type="checkbox" ${sub.done ? 'checked' : ''} onchange="toggleSubtask(${sIdx}, ${subIdx})">
-                    <span>${sub.title}</span>
-                    ${sub.completedAt ? `<span class="time-badge">Закрито: ${sub.completedAt}</span>` : ''}
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-
-            <div class="add-subtask-flex" style="margin-top: 6px;">
-              <input type="text" id="input-${sIdx}" placeholder="Назва аркуша/задачі (напр. Аркуш 1)">
-              <button class="btn-main" onclick="addSubtask(${sIdx})">+</button>
-            </div>
+      projects.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3>${p.name}</h3>
+            ${p.id === currentProjectId ? '<span style="color:var(--button-color); font-size:12px; font-weight:bold;">● Активний</span>' : ''}
           </div>
+          <button class="btn-primary" onclick="selectProject(${p.id})">Відкрити Проект</button>
+          <button onclick="deleteProject(${p.id})" style="background:none; border:none; color:red; cursor:pointer; margin-top:5px; font-size:12px;">Видалити проект</button>
         `;
-        container.appendChild(stageEl);
+        container.appendChild(card);
       });
     }
 
-    function updateDate(sIdx, field, val) {
-      projectData[sIdx][field] = val;
+    function selectProject(id) {
+      currentProjectId = id;
+      renderProjectsList();
+      switchTab('details', document.querySelectorAll('.nav-item')[1]);
+    }
+
+    function deleteProject(id) {
+      if (!confirm("Видалити проект?")) return;
+      projects = projects.filter(p => p.id !== id);
+      if (currentProjectId === id) currentProjectId = projects.length > 0 ? projects[0].id : null;
+      saveState();
+      renderProjectsList();
+    }
+
+    function renderDetails() {
+      const container = document.getElementById('project-details-content');
+      const proj = projects.find(p => p.id === currentProjectId);
+
+      if (!proj) {
+        container.innerHTML = "<p style='color: var(--hint-color);'>Оберіть або створіть проект у вкладці 'Проекти'.</p>";
+        return;
+      }
+
+      let html = `
+        <h2>${proj.name}</h2>
+        <div class="card">
+          <label style="font-size:12px; color:var(--hint-color);">Гугл Диск / Робочі файли:</label>
+          <input type="url" value="${proj.driveUrl || ''}" placeholder="https://drive.google.com/..." onchange="updateDriveUrl(this.value)">
+          ${proj.driveUrl ? `<a href="${proj.driveUrl}" target="_blank" class="drive-link">🔗 Відкрити Google Drive</a>` : ''}
+        </div>
+      `;
+
+      proj.stages.forEach((stage, sIdx) => {
+        const timerKey = `${proj.id}-${sIdx}`;
+        const isRunning = !!activeTimers[timerKey];
+        let currentSecs = stage.seconds || 0;
+        
+        if (isRunning) {
+          const elapsed = Math.floor((Date.now() - activeTimers[timerKey]) / 1000);
+          currentSecs += elapsed;
+        }
+
+        // Calculate progress percentage
+        const totalSubs = stage.subtasks.length;
+        const doneSubs = stage.subtasks.filter(s => s.done).length;
+        const progressPercent = totalSubs > 0 ? Math.round((doneSubs / totalSubs) * 100) : 0;
+
+        html += `
+          <div class="card">
+            <div class="stage-header">
+              <div class="stage-title-wrap" onclick="toggleStageCollapse(${sIdx})">
+                <button class="toggle-btn">${stage.collapsed ? '▶' : '🔽'}</button>
+                <h3 style="margin:0;">${stage.name}</h3>
+              </div>
+              <span style="font-weight:bold; font-size:13px; color:var(--button-color);">${progressPercent}%</span>
+            </div>
+
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" style="width: ${progressPercent}%;"></div>
+            </div>
+
+            <!-- Stage Timer -->
+            <div class="stage-timer-row">
+              <span class="timer-display" title="Натисніть для ручного редагування" onclick="manualEditStageTime(${sIdx})">
+                ⏱️ ${formatTime(currentSecs)} ${isRunning ? '⏳' : ''}
+              </span>
+              ${isRunning ? 
+                `<button class="btn-timer stop" onclick="toggleStageTimer(${sIdx})">⏹ Стоп</button>` : 
+                `<button class="btn-timer start" onclick="toggleStageTimer(${sIdx})">▶ Старт</button>`
+              }
+            </div>
+
+            <!-- Subtasks Container (Collapsible) -->
+            <div style="display: ${stage.collapsed ? 'none' : 'block'};">
+              <div id="subtasks-${sIdx}">
+                ${stage.subtasks.map((sub, subIdx) => `
+                  <div class="subtask-item">
+                    <div class="subtask-left">
+                      <input type="checkbox" ${sub.done ? 'checked' : ''} onchange="toggleSubtaskDone(${sIdx}, ${subIdx})">
+                      <span class="subtask-text ${sub.done ? 'completed' : ''}">${sub.title}</span>
+                    </div>
+                    <div class="subtask-actions">
+                      <button onclick="editSubtaskTitle(${sIdx}, ${subIdx})">✏️</button>
+                      <button onclick="deleteSubtask(${sIdx}, ${subIdx})">🗑️</button>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+              <div style="display:flex; gap:5px; margin-top:10px;">
+                <input type="text" id="new-sub-input-${sIdx}" placeholder="Назва аркуша/підзадачі" style="margin-bottom:0;">
+                <button class="btn-primary" style="width:50px; margin-bottom:0;" onclick="addSubtask(${sIdx})">+</button>
+              </div>
+            </div>
+
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    function toggleStageCollapse(sIdx) {
+      const proj = projects.find(p => p.id === currentProjectId);
+      if (proj) {
+        proj.stages[sIdx].collapsed = !proj.stages[sIdx].collapsed;
+        saveState();
+        renderDetails();
+      }
+    }
+
+    function toggleSubtaskDone(sIdx, subIdx) {
+      const proj = projects.find(p => p.id === currentProjectId);
+      if (proj) {
+        proj.stages[sIdx].subtasks[subIdx].done = !proj.stages[sIdx].subtasks[subIdx].done;
+        saveState();
+        renderDetails();
+      }
+    }
+
+    function updateDriveUrl(val) {
+      const proj = projects.find(p => p.id === currentProjectId);
+      if (proj) {
+        proj.driveUrl = val;
+        saveState();
+        renderDetails();
+      }
+    }
+
+    function toggleStageTimer(sIdx) {
+      const proj = projects.find(p => p.id === currentProjectId);
+      if (!proj) return;
+
+      const timerKey = `${proj.id}-${sIdx}`;
+
+      if (activeTimers[timerKey]) {
+        // Stop timer
+        const elapsed = Math.floor((Date.now() - activeTimers[timerKey]) / 1000);
+        proj.stages[sIdx].seconds = (proj.stages[sIdx].seconds || 0) + elapsed;
+        delete activeTimers[timerKey];
+      } else {
+        // Start timer for stage
+        activeTimers[timerKey] = Date.now();
+      }
+
+      checkTimerLoopState();
+      saveState();
+      renderDetails();
+    }
+
+    function checkTimerLoopState() {
+      const hasActive = Object.keys(activeTimers).length > 0;
+      if (hasActive && !timerInterval) {
+        timerInterval = setInterval(() => {
+          if (document.getElementById('view-details').classList.contains('active')) {
+            renderDetails();
+          }
+        }, 1000);
+      } else if (!hasActive && timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+    }
+
+    function manualEditStageTime(sIdx) {
+      const proj = projects.find(p => p.id === currentProjectId);
+      if (!proj) return;
+      
+      const timerKey = `${proj.id}-${sIdx}`;
+      const stage = proj.stages[sIdx];
+      const currentMinutes = Math.round((stage.seconds || 0) / 60);
+      
+      const newMinutesStr = prompt(`Введіть новий час для етапу "${stage.name}" у ХВИЛИНАХ:`, currentMinutes);
+      if (newMinutesStr !== null && !isNaN(newMinutesStr)) {
+        const mins = parseInt(newMinutesStr);
+        stage.seconds = mins > 0 ? mins * 60 : 0;
+        
+        if (activeTimers[timerKey]) {
+          activeTimers[timerKey] = Date.now();
+        }
+
+        saveState();
+        renderDetails();
+      }
+    }
+
+    function editSubtaskTitle(sIdx, subIdx) {
+      const proj = projects.find(p => p.id === currentProjectId);
+      if (!proj) return;
+
+      const sub = proj.stages[sIdx].subtasks[subIdx];
+      const newTitle = prompt("Введіть нову назву аркуша/підзадачі:", sub.title);
+      if (newTitle !== null && newTitle.trim() !== "") {
+        sub.title = newTitle.trim();
+        saveState();
+        renderDetails();
+      }
+    }
+
+    function deleteSubtask(sIdx, subIdx) {
+      const proj = projects.find(p => p.id === currentProjectId);
+      if (!proj || !confirm("Видалити цей аркуш/підзадачу?")) return;
+
+      proj.stages[sIdx].subtasks.splice(subIdx, 1);
+      saveState();
+      renderDetails();
     }
 
     function addSubtask(sIdx) {
-      const input = document.getElementById(`input-${sIdx}`);
+      const input = document.getElementById(`new-sub-input-${sIdx}`);
       if (!input.value.trim()) return;
       
-      projectData[sIdx].subtasks.push({
-        title: input.value.trim(),
-        done: false,
-        completedAt: null
-      });
-      input.value = "";
-      renderStages();
-    }
-
-    function toggleSubtask(sIdx, subIdx) {
-      const sub = projectData[sIdx].subtasks[subIdx];
-      sub.done = !sub.done;
-      if (sub.done) {
-        const now = new Date();
-        sub.completedAt = now.toLocaleDateString() + " " + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-      } else {
-        sub.completedAt = null;
+      const proj = projects.find(p => p.id === currentProjectId);
+      if (proj) {
+        proj.stages[sIdx].subtasks.push({ title: input.value.trim(), done: false });
+        saveState();
+        renderDetails();
       }
-      renderStages();
     }
 
-    // Ініціалізація при відкритті
-    initProject();
+    function renderDashboard() {
+      const proj = projects.find(p => p.id === currentProjectId);
+      const nameEl = document.getElementById('dash-project-name');
+      const totalHoursEl = document.getElementById('dash-total-hours');
+
+      if (!proj) {
+        nameEl.innerText = "Проект не обрано";
+        totalHoursEl.innerText = "";
+        return;
+      }
+
+      nameEl.innerText = `Аналітика: ${proj.name}`;
+      
+      const labels = [];
+      const hoursData = [];
+      let grandTotalSecs = 0;
+
+      proj.stages.forEach((st, sIdx) => {
+        const timerKey = `${proj.id}-${sIdx}`;
+        let secs = st.seconds || 0;
+        if (activeTimers[timerKey]) {
+          secs += Math.floor((Date.now() - activeTimers[timerKey]) / 1000);
+        }
+        labels.push(st.name);
+        hoursData.push(formatHoursDecimal(secs));
+        grandTotalSecs += secs;
+      });
+
+      const totalH = Math.floor(grandTotalSecs / 3600);
+      const totalM = Math.floor((grandTotalSecs % 3600) / 60);
+      totalHoursEl.innerText = `Загальний витрачений час: ${totalH} год ${totalM} хв`;
+
+      // Render Chart
+      const ctx = document.getElementById('timeChart').getContext('2d');
+      if (chartInstance) chartInstance.destroy();
+
+      chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Витрачено годин на етап',
+            data: hoursData,
+            backgroundColor: '#3390ec',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { beginAtZero: true, title: { display: true, text: 'Години' } }
+          }
+        }
+      });
+    }
+
+    // Init timer loop check
+    checkTimerLoopState();
+
+    // Init List
+    renderProjectsList();
   </script>
 </body>
 </html>
