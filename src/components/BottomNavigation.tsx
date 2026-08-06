@@ -7,12 +7,12 @@ interface BottomNavigationProps {
 }
 
 export const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabChange }) => {
-  const tabs: { id: TabType; label: string; icon: string }[] = [
-    { id: 'create', label: 'Створити', icon: '➕' },
-    { id: 'projects', label: 'Проекти', icon: '📁' },
-    { id: 'boq', label: 'Об’єми', icon: '📐' },
-    { id: 'analytics', label: 'Аналітика', icon: '📊' },
-    { id: 'settings', label: 'Налаштування', icon: '⚙️' },
+  const tabs: { id: TabType; icon: string }[] = [
+    { id: 'create', icon: '➕' },
+    { id: 'projects', icon: '📁' },
+    { id: 'boq', icon: '📐' },
+    { id: 'analytics', icon: '📊' },
+    { id: 'settings', icon: '⚙️' },
   ];
 
   return (
@@ -21,7 +21,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, o
       bottom: 0,
       left: 0,
       right: 0,
-      height: '65px',
+      height: '60px',
       backgroundColor: '#1c1c1e',
       display: 'flex',
       justifyContent: 'space-around',
@@ -40,17 +40,18 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, o
               background: 'none',
               border: 'none',
               display: 'flex',
-              flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              color: isActive ? '#3897f0' : '#8e8e93',
-              fontSize: '11px',
+              fontSize: '26px',
+              opacity: isActive ? 1 : 0.4,
+              transform: isActive ? 'scale(1.15)' : 'scale(1)',
+              transition: 'all 0.2s ease',
               cursor: 'pointer',
-              flex: 1
+              flex: 1,
+              height: '100%'
             }}
           >
-            <span style={{ fontSize: '20px', marginBottom: '2px' }}>{tab.icon}</span>
-            <span>{tab.label}</span>
+            {tab.icon}
           </button>
         );
       })}
