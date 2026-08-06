@@ -1,19 +1,23 @@
 import React, { useState } from 'react';
-import { TabType } from './types';
 import { BottomNavigation } from './components/BottomNavigation';
+import { CreateProject } from './components/CreateProject';
+import { TabType } from './types';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabType>('projects');
+  const [activeTab, setActiveTab] = useState<TabType>('create');
 
   return (
-    <div style={{ paddingBottom: '75px', minHeight: '100vh', backgroundColor: '#000', color: '#fff' }}>
-      <main style={{ padding: '16px' }}>
-        {activeTab === 'create' && <div><h2>➕ Створення проекту</h2></div>}
-        {activeTab === 'projects' && <div><h2>📁 Існуючі проекти</h2></div>}
-        {activeTab === 'boq' && <div><h2>📐 Відомість об'ємів</h2></div>}
-        {activeTab === 'analytics' && <div><h2>📊 Аналітика</h2></div>}
-        {activeTab === 'settings' && <div><h2>⚙️ Налаштування</h2></div>}
-      </main>
+    <div style={{
+      minHeight: '100vh',
+      backgroundColor: '#000000',
+      paddingBottom: '80px',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    }}>
+      {activeTab === 'create' && <CreateProject />}
+      {activeTab === 'projects' && <div style={{ padding: '20px', color: '#fff' }}>Розділ Проекти</div>}
+      {activeTab === 'boq' && <div style={{ padding: '20px', color: '#fff' }}>Розділ Об’єми</div>}
+      {activeTab === 'analytics' && <div style={{ padding: '20px', color: '#fff' }}>Розділ Аналітика</div>}
+      {activeTab === 'settings' && <div style={{ padding: '20px', color: '#fff' }}>Розділ Налаштування</div>}
 
       <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
