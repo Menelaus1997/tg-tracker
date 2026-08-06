@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BottomNavigation } from './components/BottomNavigation';
 import { CreateProject } from './components/CreateProject';
 import { ProjectDetail } from './components/ProjectDetail';
@@ -42,8 +42,19 @@ export interface SavedTemplate {
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('create');
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [templates, setTemplates] = useState<SavedTemplate[]>([]);
+  
+  // Збереження проектів у localStorage
+  const [projects, setProjects] = useState<Project[]>(() => {
+    const saved = localStorage.getItem('app_projects');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Збереження шаблонів у localStorage
+  const [templates, setTemplates] = useState<SavedTemplate[]>(() => {
+    const saved = localStorage.getItem('app_templates');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   const [isAdmin] = useState<boolean>(true);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
@@ -53,7 +64,14 @@ export const App: React.FC = () => {
     projectId: string | null;
   }>({ isOpen: false, type: null, projectId: null });
 
-  // Створення проекту на основі обраного шаблону
+  useEffect(() => {
+    localStorage.setItem('app_projects', JSON.stringify(projects));
+  }, [projects]);
+
+  useEffect(() => {
+    localStorage.setItem('app_templates', JSON.stringify(templates));
+  }, [templates]);
+
   const handleCreateProject = (newProj: { id: string; name: string; template: string; color: string }) => {
     const selectedTemplateObj = templates.find(t => t.id === newProj.template);
     
@@ -68,7 +86,6 @@ export const App: React.FC = () => {
     setActiveTab('projects');
   };
 
-  // Збереження нового шаблону
   const handleSaveAsTemplate = (name: string, stages: Stage[], customFields: CustomField[]) => {
     const newTemplate: SavedTemplate = {
       id: Date.now().toString(),
@@ -156,6 +173,7 @@ export const App: React.FC = () => {
                       alignItems: 'center'
                     }}
                   >
+                    {/* Клікабельна вся плашка без олівця */}
                     <div 
                       onClick={() => setSelectedProjectId(prj.id)}
                       style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', flex: 1 }}
@@ -175,9 +193,8 @@ export const App: React.FC = () => {
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <button onClick={() => setSelectedProjectId(prj.id)} style={iconBtnStyle}>✏️</button>
-                      <button onClick={() => openConfirm('archive', prj.id)} style={iconBtnStyle}>📦</button>
-                      <button onClick={() => openConfirm('delete', prj.id)} style={iconBtnStyle}>🗑️</button>
+                      <button onClick={() => openConfirm('archive', prj.id)} style={iconBtnStyle} title="Архівувати">📦</button>
+                      <button onClick={() => openConfirm('delete', prj.id)} style={iconBtnStyle} title="Видалити">🗑️</button>
                     </div>
                   </div>
                 ))}
