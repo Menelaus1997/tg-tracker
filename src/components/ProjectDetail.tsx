@@ -4,7 +4,7 @@ import { Project, CustomField, Stage } from '../App';
 interface ProjectDetailProps {
   project: Project;
   onUpdateProject: (updatedProject: Project) => void;
-  onSaveAsTemplate?: (templateName: string, stages: Stage[], customFields: CustomField[]) => void;
+  onSaveAsTemplate: (templateName: string, stages: Stage[], customFields: CustomField[]) => void;
   onBack: () => void;
 }
 
@@ -38,7 +38,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [newStageTitle, setNewStageTitle] = useState('');
   const [newSubStageTitles, setNewSubStageTitles] = useState<{ [stageId: string]: string }>({});
 
-  // Стан для спадного меню (згортання стадій)
   const [collapsedStages, setCollapsedStages] = useState<{ [stageId: string]: boolean }>({});
 
   const [editingStageId, setEditingStageId] = useState<string | null>(null);
@@ -195,6 +194,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     }));
   };
 
+  // Прямий виклик збереження проекту та шаблону
   const handleFinalSave = () => {
     onUpdateProject({
       ...project,
@@ -206,7 +206,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       stages
     });
 
-    if (saveAsTemplateChecked && templateName.trim() && onSaveAsTemplate) {
+    if (saveAsTemplateChecked && templateName.trim()) {
       onSaveAsTemplate(templateName.trim(), stages, customFields);
     }
 
@@ -331,7 +331,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* РОЗДІЛ 2: Стадії проекту зі спадним меню (Collapse) */}
+      {/* РОЗДІЛ 2: Стадії проекту */}
       <div style={{ marginBottom: '30px' }}>
         <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>Стадії проекту</h3>
 
@@ -353,7 +353,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             return (
               <div key={st.id} style={{ padding: '14px', borderRadius: '10px', backgroundColor: '#f2f2f7' }}>
                 
-                {/* Шапка стадії зі стрілочкою спадного меню */}
+                {/* Шапка стадії з однаковою пропорційною стрілочкою */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isCollapsed ? '0px' : '10px' }}>
                   {editingStageId === st.id ? (
                     <div style={{ display: 'flex', gap: '6px', flex: 1 }}>
@@ -365,7 +365,15 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       onClick={() => toggleStageCollapse(st.id)}
                       style={{ fontWeight: 600, fontSize: '15px', color: '#1c1c1e', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}
                     >
-                      <span>{isCollapsed ? '►' : '▼'}</span>
+                      {/* Фіксована стрілочка, що просто повертається на 90 градусів */}
+                      <span style={{ 
+                        display: 'inline-block', 
+                        transition: 'transform 0.2s ease', 
+                        transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+                        fontSize: '12px'
+                      }}>
+                        ▼
+                      </span>
                       <span>{st.title}</span>
                     </div>
                   )}
@@ -378,7 +386,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   )}
                 </div>
 
-                {/* Вміст стадії (Спадний список) */}
                 {!isCollapsed && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginLeft: '4px', marginTop: '6px' }}>
                     {st.subStages.map((sub, index) => (
