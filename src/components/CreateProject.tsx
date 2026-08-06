@@ -15,16 +15,19 @@ export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject })
   const [projectId, setProjectId] = useState('#V1');
   const [template, setTemplate] = useState('general');
   const [colors, setColors] = useState<string[]>(DEFAULT_COLORS);
-  const [selectedColor, setSelectedColor] = useState(DEFAULT_COLORS[0]);
+  const [selectedIndex, setSelectedIndex] = useState<number>(0);
 
   const colorInputRef = useRef<HTMLInputElement>(null);
 
   const handleCustomColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newColor = e.target.value;
     if (newColor) {
-      const updatedColors = [...colors.slice(0, 8), newColor];
-      setColors(updatedColors);
-      setSelectedColor(newColor);
+      // Замінюємо колір саме за тим індексом, який зараз виділений галочкою
+      setColors((prevColors) => {
+        const updated = [...prevColors];
+        updated[selectedIndex] = newColor;
+        return updated;
+      });
     }
   };
 
@@ -36,7 +39,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject })
       id: projectId,
       name: name,
       template: template,
-      color: selectedColor
+      color: colors[selectedIndex]
     });
   };
 
@@ -110,13 +113,13 @@ export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject })
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <label style={{ fontSize: '14px', fontWeight: 500, color: '#636366' }}>Колір</label>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap' }}>
-            {colors.map((color) => {
-              const isSelected = selectedColor === color;
+            {colors.map((color, index) => {
+              const isSelected = selectedIndex === index;
               return (
                 <button
-                  key={color}
+                  key={index}
                   type="button"
-                  onClick={() => setSelectedColor(color)}
+                  onClick={() => setSelectedIndex(index)}
                   style={{
                     width: '32px',
                     height: '32px',
@@ -139,7 +142,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject })
               );
             })}
 
-            {/* Кнопка + */}
+            {/* Кнопка + (замінює активну позицію) */}
             <button
               type="button"
               onClick={() => colorInputRef.current?.click()}
