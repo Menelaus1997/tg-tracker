@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Project, CustomField, Stage } from '../App';
 
 interface ProjectDetailProps {
@@ -20,65 +20,83 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   onSaveAsTemplate,
   onBack
 }) => {
-  // Основні дані проекту
   const [isEditingMain, setIsEditingMain] = useState(false);
   const [name, setName] = useState(project.name);
   const [projectId, setProjectId] = useState(project.id);
-  const [color, setColor] = useState(project.color);
+  const [colors, setColors] = useState<string[]>(DEFAULT_COLORS);
+  const [selectedColor, setSelectedColor] = useState(project.color);
+  const colorInputRef = useRef<HTMLInputElement>(null);
 
-  // Загальні дані (посилання/адреса)
-  const [generalInfo, setGeneralInfo] = useState(project.generalInfo || '');
+  // Загальні дані (Список посилань/адрес)
+  const [generalInfoList, setGeneralInfoList] = useState<string[]>(project.generalInfoList || []);
+  const [newGeneralInput, setNewGeneralInput] = useState('');
 
-  // Поля та стадії
-  const [customFields, setCustomFields] = useState<CustomField[]>(
-    project.customFields?.length > 0 ? project.customFields : [{ id: '1', name: '', unit: '' }]
-  );
+  // Параметри
+  const [customFields, setCustomFields] = useState<CustomField[]>(project.customFields || []);
   const [newFieldName, setNewFieldName] = useState('');
   const [newFieldUnit, setNewFieldUnit] = useState('');
 
+  // Стадії
   const [stages, setStages] = useState<Stage[]>(project.stages || []);
   const [newStageTitle, setNewStageTitle] = useState('');
   const [newSubStageTitles, setNewSubStageTitles] = useState<{ [stageId: string]: string }>({});
 
-  // Редагування стадій/підстадій на місці
   const [editingStageId, setEditingStageId] = useState<string | null>(null);
   const [editingStageTitle, setEditingStageTitle] = useState('');
 
   const [editingSubStageId, setEditingSubStageId] = useState<string | null>(null);
   const [editingSubStageTitle, setEditingSubStageTitle] = useState('');
 
-  // Модальне вікно шаблону
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [saveAsTemplateChecked, setSaveAsTemplateChecked] = useState(false);
   const [templateName, setTemplateName] = useState('');
 
   const isArchived = project.status === 'archived';
 
-  // --- Збереження основної інформації проекту ---
+  // Зміна кольору через +
+  const handleCustomColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newCol = e.target.value;
+    if (newCol) {
+      setColors((prev) => [...prev.slice(0, 8), newCol]);
+      setSelectedColor(newCol);
+    }
+  };
+
   const handleSaveMainInfo = () => {
     setIsEditingMain(false);
     onUpdateProject({
       ...project,
       name,
       id: projectId,
-      color,
-      generalInfo,
+      color: selectedColor,
+      generalInfoList,
       customFields,
       stages
     });
   };
 
-  // --- Параметри об'єкта ---
+  // --- Загальні дані ---
+  const handleAddGeneralInfo = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newGeneralInput.trim() || isArchived) return;
+    setGeneralInfoList([...generalInfoList, newGeneralInput.trim()]);
+    setNewGeneralInput('');
+  };
+
+  const handleRemoveGeneralInfo = (index: number) => {
+    if (isArchived) return;
+    setGeneralInfoList(generalInfoList.filter((_, i) => i !== index));
+  };
+
+  // --- Параметри ---
   const handleAddCustomField = (e: React.FormEvent) => {
     e.preventDefault();
     if (isArchived || (!newFieldName.trim() && !newFieldUnit.trim())) return;
 
-    const newField: CustomField = {
-      id: Date.now().toString(),
-      name: newFieldName.trim(),
-      unit: newFieldUnit.trim()
-    };
-    setCustomFields([...customFields, newField]);
+    setCustomFields([
+      ...customFields,
+      { id: Date.now().toString(), name: newFieldName.trim(), unit: newFieldUnit.trim() }
+    ]);
     setNewFieldName('');
     setNewFieldUnit('');
   };
@@ -88,17 +106,29 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     setCustomFields(customFields.filter((f) => f.id !== id));
   };
 
-  // --- Стадії та Підстадії (CRUD) ---
+  // --- Переміщення підстадій ⬆️ / ⬇️ ---
+  const moveSubStage = (stageId: string, index: number, direction: 'up' | 'down') => {
+    if (isArchived) return;
+    setStages(stages.map((st) => {
+      if (st.id === stageId) {
+        const updatedSubs = [...st.subStages];
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        if (targetIndex < 0 || targetIndex >= updatedSubs.length) return st;
+
+        const temp = updatedSubs[index];
+        updatedSubs[index] = updatedSubs[targetIndex];
+        updatedSubs[targetIndex] = temp;
+        return { ...st, subStages: updatedSubs };
+      }
+      return st;
+    }));
+  };
+
+  // --- Стадії та Підстадії ---
   const handleAddStage = (e: React.FormEvent) => {
     e.preventDefault();
     if (isArchived || !newStageTitle.trim()) return;
-
-    const newStage: Stage = {
-      id: Date.now().toString(),
-      title: newStageTitle.trim(),
-      subStages: []
-    };
-    setStages([...stages, newStage]);
+    setStages([...stages, { id: Date.now().toString(), title: newStageTitle.trim(), subStages: [] }]);
     setNewStageTitle('');
   };
 
@@ -121,10 +151,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       if (st.id === stageId) {
         return {
           ...st,
-          subStages: [
-            ...st.subStages,
-            { id: Date.now().toString(), title: title.trim(), completed: false }
-          ]
+          subStages: [...st.subStages, { id: Date.now().toString(), title: title.trim(), completed: false }]
         };
       }
       return st;
@@ -150,10 +177,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     if (isArchived) return;
     setStages(stages.map((st) => {
       if (st.id === stageId) {
-        return {
-          ...st,
-          subStages: st.subStages.filter(sub => sub.id !== subStageId)
-        };
+        return { ...st, subStages: st.subStages.filter(sub => sub.id !== subStageId) };
       }
       return st;
     }));
@@ -165,23 +189,20 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       if (st.id === stageId) {
         return {
           ...st,
-          subStages: st.subStages.map((sub) =>
-            sub.id === subStageId ? { ...sub, completed: !sub.completed } : sub
-          )
+          subStages: st.subStages.map((sub) => sub.id === subStageId ? { ...sub, completed: !sub.completed } : sub)
         };
       }
       return st;
     }));
   };
 
-  // --- Фінальне збереження змін ---
   const handleFinalSave = () => {
     onUpdateProject({
       ...project,
       name,
       id: projectId,
-      color,
-      generalInfo,
+      color: selectedColor,
+      generalInfoList,
       customFields,
       stages
     });
@@ -195,29 +216,22 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
   return (
     <div style={{ padding: '20px', backgroundColor: '#ffffff', color: '#1c1c1e', maxWidth: '500px', margin: '0 auto' }}>
-      {/* Кнопка "Назад" та Назва/ID/Колір з редагуванням */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button onClick={onBack} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer' }}>←</button>
-          
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ width: '18px', height: '18px', borderRadius: '50%', backgroundColor: color, flexShrink: 0 }} />
+            <span style={{ width: '18px', height: '18px', borderRadius: '50%', backgroundColor: selectedColor, flexShrink: 0 }} />
             <h2 style={{ fontSize: '20px', fontWeight: 700, margin: 0 }}>{name}</h2>
             <span style={{ fontSize: '13px', color: '#8e8e93' }}>({projectId})</span>
           </div>
         </div>
 
         {!isArchived && (
-          <button
-            onClick={() => setIsEditingMain(!isEditingMain)}
-            style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer' }}
-          >
-            ✏️
-          </button>
+          <button onClick={() => setIsEditingMain(!isEditingMain)} style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer' }}>✏️</button>
         )}
       </div>
 
-      {/* Панель редагування основних даних (Назва, ID, Колір) */}
+      {/* Редагування імені/ID/кольору з підтрикою кнопки + */}
       {isEditingMain && (
         <div style={{ padding: '14px', backgroundColor: '#f2f2f7', borderRadius: '12px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div>
@@ -230,22 +244,29 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           </div>
           <div>
             <label style={labelStyle}>Колір проекту</label>
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
-              {DEFAULT_COLORS.map((c) => (
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'nowrap', alignItems: 'center', marginTop: '4px' }}>
+              {colors.map((c) => (
                 <button
                   key={c}
                   type="button"
-                  onClick={() => setColor(c)}
+                  onClick={() => setSelectedColor(c)}
                   style={{
-                    width: '24px',
-                    height: '24px',
-                    borderRadius: '50%',
-                    backgroundColor: c,
-                    border: color === c ? '2px solid #000' : 'none',
-                    cursor: 'pointer'
+                    width: '26px', height: '26px', borderRadius: '50%', backgroundColor: c, border: 'none',
+                    cursor: 'pointer', boxShadow: selectedColor === c ? '0 0 0 2px #ffffff, 0 0 0 4px #007aff' : 'none', flexShrink: 0
                   }}
                 />
               ))}
+              <button
+                type="button"
+                onClick={() => colorInputRef.current?.click()}
+                style={{
+                  width: '26px', height: '26px', borderRadius: '50%', backgroundColor: '#e5e5ea', border: 'none',
+                  color: '#636366', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                }}
+              >
+                +
+              </button>
+              <input ref={colorInputRef} type="color" onChange={handleCustomColorChange} style={{ display: 'none' }} />
             </div>
           </div>
           <button onClick={handleSaveMainInfo} style={{ ...greenBtnStyle, marginTop: '6px' }}>Застосувати</button>
@@ -256,20 +277,35 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       <div style={{ marginBottom: '28px' }}>
         <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>Параметри об'єкта</h3>
 
-        {/* 1. Загальні дані (Адреса / Google Drive) */}
-        <div style={{ marginBottom: '12px' }}>
+        {/* 1. Загальні дані з зеленою кнопкою "Додати" */}
+        <div style={{ marginBottom: '16px' }}>
           <label style={labelStyle}>Загальні дані (Адреса / Посилання)</label>
-          <input
-            type="text"
-            placeholder="Введіть адресу об'єкта або посилання на Google Диск"
-            value={generalInfo}
-            disabled={isArchived}
-            onChange={(e) => setGeneralInfo(e.target.value)}
-            style={inputStyle}
-          />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
+            {generalInfoList.map((info, idx) => (
+              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', backgroundColor: '#f9f9f9', borderRadius: '8px', fontSize: '14px' }}>
+                <span>{info}</span>
+                {!isArchived && (
+                  <button onClick={() => handleRemoveGeneralInfo(idx)} style={{ background: 'none', border: 'none', color: '#ff3b30', cursor: 'pointer' }}>✕</button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {!isArchived && (
+            <form onSubmit={handleAddGeneralInfo} style={{ display: 'flex', gap: '8px' }}>
+              <input
+                type="text"
+                placeholder="м.Київ вул.Героїв крут / Посилання"
+                value={newGeneralInput}
+                onChange={(e) => setNewGeneralInput(e.target.value)}
+                style={{ ...inputStyle, flex: 1 }}
+              />
+              <button type="submit" style={greenBtnStyle}>Додати</button>
+            </form>
+          )}
         </div>
 
-        {/* Список доданих параметрів */}
+        {/* Список параметрів */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
           {customFields.map((field) => (
             <div key={field.id} style={{ display: 'flex', gap: '8px', alignItems: 'center', backgroundColor: '#f9f9f9', padding: '8px 10px', borderRadius: '8px' }}>
@@ -282,21 +318,16 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           ))}
         </div>
 
-        {/* Форма додавання нового параметра з зеленою кнопкою "Додати" */}
         {!isArchived && (
           <form onSubmit={handleAddCustomField} style={{ display: 'flex', gap: '8px' }}>
             <input
-              type="text"
-              placeholder="Назва (напр. Площа)"
-              value={newFieldName}
-              onChange={(e) => setNewFieldName(e.target.value)}
+              type="text" placeholder="Назва (напр. Площа)"
+              value={newFieldName} onChange={(e) => setNewFieldName(e.target.value)}
               style={{ ...inputStyle, flex: 2 }}
             />
             <input
-              type="text"
-              placeholder="Од. вим. (напр. м²)"
-              value={newFieldUnit}
-              onChange={(e) => setNewFieldUnit(e.target.value)}
+              type="text" placeholder="Од. вим. (напр. м²)"
+              value={newFieldUnit} onChange={(e) => setNewFieldUnit(e.target.value)}
               style={{ ...inputStyle, flex: 1 }}
             />
             <button type="submit" style={greenBtnStyle}>Додати</button>
@@ -304,38 +335,29 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* РОЗДІЛ 2: Стадії проекту */}
+      {/* РОЗДІЛ 2: Стадії проекту зі стрілочками ⬆️ / ⬇️ */}
       <div style={{ marginBottom: '30px' }}>
         <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>Стадії проекту</h3>
 
         {!isArchived && (
           <form onSubmit={handleAddStage} style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
             <input
-              type="text"
-              placeholder="Нова стадія (напр. 1. Концепція)"
-              value={newStageTitle}
-              onChange={(e) => setNewStageTitle(e.target.value)}
+              type="text" placeholder="Нова стадія (напр. 1. Концепція)"
+              value={newStageTitle} onChange={(e) => setNewStageTitle(e.target.value)}
               style={{ ...inputStyle, flex: 1 }}
             />
             <button type="submit" style={greenBtnStyle}>Додати</button>
           </form>
         )}
 
-        {/* Список стадій */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {stages.map((st) => (
             <div key={st.id} style={{ padding: '14px', borderRadius: '10px', backgroundColor: '#f2f2f7' }}>
               
-              {/* Шапка стадії (З можливістю редагування/видалення) */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                 {editingStageId === st.id ? (
                   <div style={{ display: 'flex', gap: '6px', flex: 1 }}>
-                    <input
-                      type="text"
-                      value={editingStageTitle}
-                      onChange={(e) => setEditingStageTitle(e.target.value)}
-                      style={{ ...inputStyle, padding: '4px 8px' }}
-                    />
+                    <input type="text" value={editingStageTitle} onChange={(e) => setEditingStageTitle(e.target.value)} style={{ ...inputStyle, padding: '4px 8px' }} />
                     <button onClick={() => handleSaveEditedStage(st.id)} style={{ ...greenBtnStyle, padding: '4px 8px', fontSize: '12px' }}>✓</button>
                   </div>
                 ) : (
@@ -350,28 +372,39 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 )}
               </div>
 
-              {/* Підстадії */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginLeft: '8px' }}>
-                {st.subStages.map((sub) => (
-                  <div key={sub.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              {/* Список підстадій із лівими стрілочками ⬆️ ⬇️ */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginLeft: '4px' }}>
+                {st.subStages.map((sub, index) => (
+                  <div key={sub.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '4px' }}>
+                    
+                    {/* Стрілочки переміщення зліва */}
+                    {!isArchived && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0px' }}>
+                        <button
+                          disabled={index === 0}
+                          onClick={() => moveSubStage(st.id, index, 'up')}
+                          style={{ ...arrowBtnStyle, opacity: index === 0 ? 0.2 : 1 }}
+                        >
+                          ▲
+                        </button>
+                        <button
+                          disabled={index === st.subStages.length - 1}
+                          onClick={() => moveSubStage(st.id, index, 'down')}
+                          style={{ ...arrowBtnStyle, opacity: index === st.subStages.length - 1 ? 0.2 : 1 }}
+                        >
+                          ▼
+                        </button>
+                      </div>
+                    )}
+
                     {editingSubStageId === sub.id ? (
                       <div style={{ display: 'flex', gap: '6px', flex: 1 }}>
-                        <input
-                          type="text"
-                          value={editingSubStageTitle}
-                          onChange={(e) => setEditingSubStageTitle(e.target.value)}
-                          style={{ ...inputStyle, padding: '4px 8px', fontSize: '13px' }}
-                        />
+                        <input type="text" value={editingSubStageTitle} onChange={(e) => setEditingSubStageTitle(e.target.value)} style={{ ...inputStyle, padding: '4px 8px', fontSize: '13px' }} />
                         <button onClick={() => handleSaveEditedSubStage(st.id, sub.id)} style={{ ...greenBtnStyle, padding: '4px 8px', fontSize: '12px' }}>✓</button>
                       </div>
                     ) : (
                       <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: isArchived ? 'default' : 'pointer', flex: 1 }}>
-                        <input
-                          type="checkbox"
-                          checked={sub.completed}
-                          disabled={isArchived}
-                          onChange={() => handleToggleSubStage(st.id, sub.id)}
-                        />
+                        <input type="checkbox" checked={sub.completed} disabled={isArchived} onChange={() => handleToggleSubStage(st.id, sub.id)} />
                         <span style={{ textDecoration: sub.completed ? 'line-through' : 'none', color: sub.completed ? '#8e8e93' : '#1c1c1e' }}>
                           {sub.title}
                         </span>
@@ -387,14 +420,11 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   </div>
                 ))}
 
-                {/* Додавання підстадії */}
                 {!isArchived && (
                   <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
                     <input
-                      type="text"
-                      placeholder="+ Підстадія (напр. Виїзд на об'єкт)"
-                      value={newSubStageTitles[st.id] || ''}
-                      onChange={(e) => setNewSubStageTitles({ ...newSubStageTitles, [st.id]: e.target.value })}
+                      type="text" placeholder="+ Підстадія (напр. Виїзд на об'єкт)"
+                      value={newSubStageTitles[st.id] || ''} onChange={(e) => setNewSubStageTitles({ ...newSubStageTitles, [st.id]: e.target.value })}
                       style={{ ...inputStyle, fontSize: '13px', padding: '6px 8px' }}
                     />
                     <button onClick={() => handleAddSubStage(st.id)} style={greenBtnStyle}>+</button>
@@ -406,49 +436,31 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         </div>
       </div>
 
-      {/* РОЗДІЛ 3: Кнопка Зберегти Зміни */}
       {!isArchived && (
         <button
           onClick={() => setShowSaveModal(true)}
-          style={{
-            width: '100%',
-            padding: '14px',
-            backgroundColor: '#007aff',
-            color: '#ffffff',
-            border: 'none',
-            borderRadius: '12px',
-            fontSize: '16px',
-            fontWeight: 600,
-            cursor: 'pointer'
-          }}
+          style={{ width: '100%', padding: '14px', backgroundColor: '#007aff', color: '#ffffff', border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}
         >
           Зберегти зміни
         </button>
       )}
 
-      {/* Модальне вікно Збереження / Збереження як Шаблон */}
       {showSaveModal && (
         <div style={modalOverlayStyle}>
           <div style={modalContentStyle}>
             <h3 style={{ marginTop: 0, fontSize: '18px' }}>Збереження проекту</h3>
-            <p style={{ fontSize: '14px', color: '#636366' }}>Основні дані проекту успішно оновлено.</p>
+            <p style={{ fontSize: '14px', color: '#636366' }}>Основні дані проекту оновлено.</p>
 
             <div style={{ marginTop: '14px', marginBottom: '14px' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer', fontWeight: 500 }}>
-                <input
-                  type="checkbox"
-                  checked={saveAsTemplateChecked}
-                  onChange={(e) => setSaveAsTemplateChecked(e.target.checked)}
-                />
-                Зберегти цю структуру як шаблон?
+                <input type="checkbox" checked={saveAsTemplateChecked} onChange={(e) => setSaveAsTemplateChecked(e.target.checked)} />
+                Зберегти цю структуру як новий шаблон?
               </label>
 
               {saveAsTemplateChecked && (
                 <input
-                  type="text"
-                  placeholder="Введіть назву шаблону"
-                  value={templateName}
-                  onChange={(e) => setTemplateName(e.target.value)}
+                  type="text" placeholder="Введіть назву шаблону"
+                  value={templateName} onChange={(e) => setTemplateName(e.target.value)}
                   style={{ ...inputStyle, marginTop: '10px' }}
                 />
               )}
@@ -465,68 +477,11 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   );
 };
 
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '10px 12px',
-  backgroundColor: '#ffffff',
-  border: '1px solid #e5e5ea',
-  borderRadius: '8px',
-  fontSize: '14px',
-  color: '#1c1c1e',
-  outline: 'none',
-  boxSizing: 'border-box'
-};
-
-const labelStyle: React.CSSProperties = {
-  fontSize: '13px',
-  fontWeight: 500,
-  color: '#636366',
-  marginBottom: '4px',
-  display: 'block'
-};
-
-const greenBtnStyle: React.CSSProperties = {
-  padding: '10px 14px',
-  backgroundColor: '#34c759',
-  color: '#ffffff',
-  border: 'none',
-  borderRadius: '8px',
-  fontWeight: 600,
-  fontSize: '14px',
-  cursor: 'pointer',
-  whiteSpace: 'nowrap'
-};
-
-const iconStyle: React.CSSProperties = {
-  background: 'none',
-  border: 'none',
-  cursor: 'pointer',
-  fontSize: '14px',
-  padding: '2px'
-};
-
-const btnStyle: React.CSSProperties = {
-  padding: '8px 14px',
-  borderRadius: '8px',
-  border: 'none',
-  fontWeight: 600,
-  fontSize: '14px',
-  cursor: 'pointer'
-};
-
-const modalOverlayStyle: React.CSSProperties = {
-  position: 'fixed',
-  top: 0, left: 0, right: 0, bottom: 0,
-  backgroundColor: 'rgba(0,0,0,0.4)',
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  zIndex: 2000
-};
-
-const modalContentStyle: React.CSSProperties = {
-  backgroundColor: '#ffffff',
-  padding: '20px',
-  borderRadius: '14px',
-  maxWidth: '360px',
-  width: '90%',
-  boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
-};
+const inputStyle: React.CSSProperties = { width: '100%', padding: '10px 12px', backgroundColor: '#ffffff', border: '1px solid #e5e5ea', borderRadius: '8px', fontSize: '14px', color: '#1c1c1e', outline: 'none', boxSizing: 'border-box' };
+const labelStyle: React.CSSProperties = { fontSize: '13px', fontWeight: 500, color: '#636366', marginBottom: '4px', display: 'block' };
+const greenBtnStyle: React.CSSProperties = { padding: '10px 14px', backgroundColor: '#34c759', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 600, fontSize: '14px', cursor: 'pointer', whiteSpace: 'nowrap' };
+const iconStyle: React.CSSProperties = { background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', padding: '2px' };
+const arrowBtnStyle: React.CSSProperties = { background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#007aff', padding: '0 2px', lineHeight: 1 };
+const btnStyle: React.CSSProperties = { padding: '8px 14px', borderRadius: '8px', border: 'none', fontWeight: 600, fontSize: '14px', cursor: 'pointer' };
+const modalOverlayStyle: React.CSSProperties = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 };
+const modalContentStyle: React.CSSProperties = { backgroundColor: '#ffffff', padding: '20px', borderRadius: '14px', maxWidth: '360px', width: '90%', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' };
