@@ -4,6 +4,7 @@ import { SavedTemplate } from '../App';
 interface CreateProjectProps {
   onCreateProject: (project: { id: string; name: string; template: string; color: string }) => void;
   availableTemplates?: SavedTemplate[];
+  onDeleteTemplate?: (templateId: string) => void;
 }
 
 const DEFAULT_COLORS = [
@@ -12,12 +13,17 @@ const DEFAULT_COLORS = [
   '#d84315', '#8e24aa', '#3f51b5'
 ];
 
-export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject, availableTemplates = [] }) => {
+export const CreateProject: React.FC<CreateProjectProps> = ({ 
+  onCreateProject, 
+  availableTemplates = [],
+  onDeleteTemplate 
+}) => {
   const [name, setName] = useState('');
   const [projectId, setProjectId] = useState('#V1');
   const [template, setTemplate] = useState('general');
   const [colors, setColors] = useState<string[]>(DEFAULT_COLORS);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
+  const [showTemplatesArchive, setShowTemplatesArchive] = useState<boolean>(false);
 
   const colorInputRef = useRef<HTMLInputElement>(null);
 
@@ -156,6 +162,59 @@ export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject, a
           Створити проект
         </button>
       </form>
+
+      {/* Сірий підкреслений напис "Архів шаблонів" під кнопкою */}
+      <div style={{ marginTop: '16px', textAlign: 'center' }}>
+        <button
+          type="button"
+          onClick={() => setShowTemplatesArchive(!showTemplatesArchive)}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#8e8e93',
+            fontSize: '13px',
+            textDecoration: 'underline',
+            cursor: 'pointer',
+            padding: '4px'
+          }}
+        >
+          Архів шаблонів ({availableTemplates.length})
+        </button>
+
+        {showTemplatesArchive && (
+          <div style={{ marginTop: '12px', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {availableTemplates.length === 0 ? (
+              <div style={{ fontSize: '13px', color: '#8e8e93', textAlign: 'center' }}>Немає збережених шаблонів</div>
+            ) : (
+              availableTemplates.map((tmpl) => (
+                <div
+                  key={tmpl.id}
+                  style={{
+                    padding: '10px 14px',
+                    backgroundColor: '#f2f2f7',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    justify: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  <span style={{ fontSize: '14px', fontWeight: 500, color: '#1c1c1e' }}>{tmpl.name}</span>
+                  {onDeleteTemplate && (
+                    <button
+                      type="button"
+                      onClick={() => onDeleteTemplate(tmpl.id)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}
+                      title="Видалити шаблон"
+                    >
+                      🗑️
+                    </button>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
