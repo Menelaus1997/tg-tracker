@@ -1,12 +1,14 @@
 import React, { useState, useRef } from 'react';
-import { Project, CustomField, Stage } from '../App';
+import { Project, CustomField, Stage, TeamMember } from '../App';
 
 interface ProjectDetailProps {
   project: Project;
   onUpdateProject: (updatedProject: Project) => void;
-  onSaveAsTemplate: (templateName: string, stages: Stage[], customFields: CustomField[]) => void;
+  onSaveAsTemplate: (templateName: string, stages: Stage[], customFields: CustomField[]) => boolean;
   onBack: () => void;
 }
+
+export type RoleType = 'Кресляр' | 'Візуалізатор' | 'Комплектатор' | 'Виконроб' | 'Керівник' | 'Кошторисник';
 
 const DEFAULT_COLORS = [
   '#00a84f', '#009688', '#7c4dff', 
@@ -38,7 +40,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [newStageTitle, setNewStageTitle] = useState('');
   const [newSubStageTitles, setNewSubStageTitles] = useState<{ [stageId: string]: string }>({});
 
-  // Стан згортання всієї секції стадій (за замовчуванням розгорнута)
   const [isAllStagesSectionHidden, setIsAllStagesSectionHidden] = useState<boolean>(false);
   const [collapsedStages, setCollapsedStages] = useState<{ [stageId: string]: boolean }>({});
 
@@ -47,6 +48,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
   const [editingSubStageId, setEditingSubStageId] = useState<string | null>(null);
   const [editingSubStageTitle, setEditingSubStageTitle] = useState('');
+
+  // Стан для розділу "Команда" всередині проекту
+  const [isTeamSectionHidden, setIsTeamSectionHidden] = useState<boolean>(false);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(project.teamMembers || []);
+  const [memberFullName, setMemberFullName] = useState('');
+  const [memberTelegram, setMemberTelegram] = useState('');
+  const [memberRole, setMemberRole] = useState<RoleType>('Кресляр');
 
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [saveAsTemplateChecked, setSaveAsTemplateChecked] = useState(false);
@@ -78,7 +86,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       color: selectedColor,
       generalInfoList,
       customFields,
-      stages
+      stages,
+      teamMembers
     });
   };
 
@@ -234,7 +243,44 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     return `${hrs}г ${mins}хв`;
   };
 
+  // Додавання учасника в Команду
+  const handleAddTeamMember = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!memberFullName.trim() || isArchived) return;
+
+    const newM: TeamMember = {
+      id: Date.now().toString(),
+      fullName: memberFullName.trim(),
+      telegramUsername: memberTelegram.trim().replace(/^@/, ''),
+      role: memberRole
+    };
+
+    setTeamMembers([...teamMembers, newM]);
+    setMemberFullName('');
+    setMemberTelegram('');
+    setMemberRole('Кресляр');
+  };
+
+  const handleRemoveTeamMember = (id: string) => {
+    if (isArchived) return;
+    setTeamMembers(teamMembers.filter(m => m.id !== id));
+  };
+
+  const getTelegramGroupLink = () => {
+    const text = encodeURIComponent(
+      `Проект: ${name} (${projectId})\n` +
+      `Команда:\n` +
+      teamMembers.map(m => `- ${m.fullName} (@${m.telegramUsername}) — ${m.role}`).join('\n')
+    );
+    return `https://t.me/share/url?url=${text}`;
+  };
+
   const handleFinalSave = () => {
+    if (saveAsTemplateChecked && templateName.trim()) {
+      const success = onSaveAsTemplate(templateName.trim(), stages, customFields);
+      if (!success) return;
+    }
+
     onUpdateProject({
       ...project,
       name,
@@ -242,12 +288,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       color: selectedColor,
       generalInfoList,
       customFields,
-      stages
+      stages,
+      teamMembers
     });
-
-    if (saveAsTemplateChecked && templateName.trim()) {
-      onSaveAsTemplate(templateName.trim(), stages, customFields);
-    }
 
     setShowSaveModal(false);
   };
@@ -370,8 +413,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* РОЗДІЛ 2: Стадії проекту з ПОВНИМ приховуванням всієї території нижче */}
-      <div style={{ marginBottom: '30px' }}>
+      {/* РОЗДІЛ 2: Стадії проекту */}
+      <div style={{ marginBottom: '24px' }}>
         <div 
           onClick={() => setIsAllStagesSectionHidden(!isAllStagesSectionHidden)}
           style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginBottom: isAllStagesSectionHidden ? '0px' : '12px' }}
@@ -387,7 +430,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           <h3 style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>Стадії проекту</h3>
         </div>
 
-        {/* Якщо приховано - ВЕСЬ блоковий контент нижче НЕ показується */}
         {!isAllStagesSectionHidden && (
           <>
             {!isArchived && (
@@ -587,6 +629,116 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               })}
             </div>
           </>
+        )}
+      </div>
+
+      {/* РОЗДІЛ 3: Команда (Додано в проект одразу після стадій) */}
+      <div style={{ marginBottom: '30px' }}>
+        <div 
+          onClick={() => setIsTeamSectionHidden(!isTeamSectionHidden)}
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginBottom: isTeamSectionHidden ? '0px' : '12px' }}
+        >
+          <span style={{
+            display: 'inline-block',
+            transition: 'transform 0.2s ease',
+            transform: isTeamSectionHidden ? 'rotate(-90deg)' : 'rotate(0deg)',
+            fontSize: '12px'
+          }}>
+            ▼
+          </span>
+          <h3 style={{ fontSize: '16px', fontWeight: 600, margin: 0, color: '#1c1c1e' }}>Команда</h3>
+        </div>
+
+        {!isTeamSectionHidden && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {!isArchived && (
+              <form onSubmit={handleAddTeamMember} style={{ padding: '14px', backgroundColor: '#f2f2f7', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '12px', color: '#8e8e93', fontWeight: 500 }}>Строка 1: Ім'я та прізвище</label>
+                  <input
+                    type="text"
+                    placeholder="напр. Іван Іванов"
+                    value={memberFullName}
+                    onChange={(e) => setMemberFullName(e.target.value)}
+                    required
+                    style={{ ...inputStyle, marginTop: '2px' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '12px', color: '#8e8e93', fontWeight: 500 }}>Строка 2: Нікнейм в ТГ</label>
+                  <input
+                    type="text"
+                    placeholder="напр. nickname"
+                    value={memberTelegram}
+                    onChange={(e) => setMemberTelegram(e.target.value)}
+                    style={{ ...inputStyle, marginTop: '2px' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '12px', color: '#8e8e93', fontWeight: 500 }}>Строка 3: Роль</label>
+                  <select
+                    value={memberRole}
+                    onChange={(e) => setMemberRole(e.target.value as RoleType)}
+                    style={{ ...inputStyle, marginTop: '2px' }}
+                  >
+                    <option value="Кресляр">Кресляр</option>
+                    <option value="Візуалізатор">Візуалізатор</option>
+                    <option value="Комплектатор">Комплектатор</option>
+                    <option value="Виконроб">Виконроб</option>
+                    <option value="Керівник">Керівник</option>
+                    <option value="Кошторисник">Кошторисник</option>
+                  </select>
+                </div>
+
+                <button type="submit" style={{ ...greenBtnStyle, marginTop: '4px' }}>Додати</button>
+              </form>
+            )}
+
+            {/* Список доданих членів команди */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {teamMembers.length === 0 ? (
+                <div style={{ fontSize: '13px', color: '#8e8e93' }}>Учасників ще не додано.</div>
+              ) : (
+                teamMembers.map((m) => (
+                  <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '14px', color: '#1c1c1e' }}>{m.fullName}</div>
+                      <div style={{ fontSize: '12px', color: '#007aff' }}>
+                        {m.role} {m.telegramUsername && `• @${m.telegramUsername}`}
+                      </div>
+                    </div>
+                    {!isArchived && (
+                      <button onClick={() => handleRemoveTeamMember(m.id)} style={{ background: 'none', border: 'none', color: '#ff3b30', cursor: 'pointer' }}>✕</button>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+
+            {teamMembers.length > 0 && (
+              <a
+                href={getTelegramGroupLink()}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  display: 'block',
+                  textAlign: 'center',
+                  padding: '12px',
+                  backgroundColor: '#0088cc',
+                  color: '#ffffff',
+                  borderRadius: '10px',
+                  textDecoration: 'none',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                  marginTop: '4px'
+                }}
+              >
+                ✈️ Створити чат проекту в Telegram
+              </a>
+            )}
+          </div>
         )}
       </div>
 
