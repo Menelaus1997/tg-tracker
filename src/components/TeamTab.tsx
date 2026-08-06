@@ -6,13 +6,16 @@ interface TeamTabProps {
   onUpdateProjects: React.Dispatch<React.SetStateAction<Project[]>>;
 }
 
+export type RoleType = 'Кресляр' | 'Візуалізатор' | 'Комплектатор' | 'Виконроб' | 'Керівник' | 'Кошторисник';
+
 export const TeamTab: React.FC<TeamTabProps> = ({ projects, onUpdateProjects }) => {
   const activeProjects = projects.filter((p) => p.status === 'active');
   const [selectedUid, setSelectedUid] = useState<string>(activeProjects[0]?.uid || '');
 
+  // Стан для 3 рядків форми
   const [fullName, setFullName] = useState('');
   const [telegramUsername, setTelegramUsername] = useState('');
-  const [role, setRole] = useState<'Керівник' | 'Кресляр' | 'Візуалізатор' | 'Комплектатор'>('Кресляр');
+  const [role, setRole] = useState<RoleType>('Кресляр');
 
   const selectedProject = projects.find((p) => p.uid === selectedUid);
 
@@ -20,6 +23,7 @@ export const TeamTab: React.FC<TeamTabProps> = ({ projects, onUpdateProjects }) 
     e.preventDefault();
     if (!fullName.trim() || !selectedUid) return;
 
+    // Додаємо усі 3 рядки як єдину цілісну картку
     const newMember: TeamMember = {
       id: Date.now().toString(),
       fullName: fullName.trim(),
@@ -35,8 +39,10 @@ export const TeamTab: React.FC<TeamTabProps> = ({ projects, onUpdateProjects }) 
       )
     );
 
+    // Очищення форми
     setFullName('');
     setTelegramUsername('');
+    setRole('Кресляр');
   };
 
   const handleRemoveMember = (memberId: string) => {
@@ -49,11 +55,14 @@ export const TeamTab: React.FC<TeamTabProps> = ({ projects, onUpdateProjects }) 
     );
   };
 
-  // Посилання для створення чату/групи в Telegram з автозаповненням
   const getTelegramGroupLink = () => {
     if (!selectedProject) return '#';
-    const text = encodeURIComponent(`Проект: ${selectedProject.name} (${selectedProject.id})\nУчасники:\n` +
-      (selectedProject.teamMembers || []).map(m => `- ${m.fullName} (@${m.telegramUsername}) — ${m.role}`).join('\n')
+    const text = encodeURIComponent(
+      `Проект: ${selectedProject.name} (${selectedProject.id})\n` +
+      `Учасники команди:\n` +
+      (selectedProject.teamMembers || [])
+        .map((m) => `- ${m.fullName} (@${m.telegramUsername}) — ${m.role}`)
+        .join('\n')
     );
     return `https://t.me/share/url?url=${text}`;
   };
@@ -67,7 +76,7 @@ export const TeamTab: React.FC<TeamTabProps> = ({ projects, onUpdateProjects }) 
       ) : (
         <>
           {/* Вибір проекту */}
-          <div style={{ marginBottom: '16px' }}>
+          <div style={{ marginBottom: '20px' }}>
             <label style={labelStyle}>Оберіть проект</label>
             <select
               value={selectedUid}
@@ -84,56 +93,115 @@ export const TeamTab: React.FC<TeamTabProps> = ({ projects, onUpdateProjects }) 
 
           {selectedProject && (
             <>
-              {/* Форма додавання учасника */}
-              <form onSubmit={handleAddMember} style={{ padding: '14px', backgroundColor: '#f2f2f7', borderRadius: '12px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <h4 style={{ margin: 0, fontSize: '14px' }}>Додати виконавця</h4>
-                
-                <input
-                  type="text"
-                  placeholder="Прізвище та Ім'я"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required
-                  style={inputStyle}
-                />
+              {/* Форма додавання 3 рядків однією кнопкою */}
+              <form
+                onSubmit={handleAddMember}
+                style={{
+                  padding: '16px',
+                  backgroundColor: '#f2f2f7',
+                  borderRadius: '14px',
+                  marginBottom: '24px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px'
+                }}
+              >
+                <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 600 }}>Додати учасника в команду</h4>
 
-                <input
-                  type="text"
-                  placeholder="Нікнейм в Telegram (напр. nickname)"
-                  value={telegramUsername}
-                  onChange={(e) => setTelegramUsername(e.target.value)}
-                  style={inputStyle}
-                />
+                {/* Строка 1: Ім'я та прізвище */}
+                <div>
+                  <label style={subLabelStyle}>Строка 1: Ім'я та прізвище</label>
+                  <input
+                    type="text"
+                    placeholder="напр. Іван Іванов"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required
+                    style={inputStyle}
+                  />
+                </div>
 
-                <select value={role} onChange={(e) => setRole(e.target.value as any)} style={inputStyle}>
-                  <option value="Керівник">Керівник</option>
-                  <option value="Кресляр">Кресляр</option>
-                  <option value="Візуалізатор">Візуалізатор</option>
-                  <option value="Комплектатор">Комплектатор</option>
-                </select>
+                {/* Строка 2: Нікнейм в ТГ */}
+                <div>
+                  <label style={subLabelStyle}>Строка 2: Нікнейм в ТГ</label>
+                  <input
+                    type="text"
+                    placeholder="напр. nickname"
+                    value={telegramUsername}
+                    onChange={(e) => setTelegramUsername(e.target.value)}
+                    style={inputStyle}
+                  />
+                </div>
 
-                <button type="submit" style={greenBtnStyle}>Додати в команду</button>
+                {/* Строка 3: Спадне меню ролей */}
+                <div>
+                  <label style={subLabelStyle}>Строка 3: Роль</label>
+                  <select
+                    value={role}
+                    onChange={(e) => setRole(e.target.value as RoleType)}
+                    style={inputStyle}
+                  >
+                    <option value="Кресляр">Кресляр</option>
+                    <option value="Візуалізатор">Візуалізатор</option>
+                    <option value="Комплектатор">Комплектатор</option>
+                    <option value="Виконроб">Виконроб</option>
+                    <option value="Керівник">Керівник</option>
+                    <option value="Кошторисник">Кошторисник</option>
+                  </select>
+                </div>
+
+                {/* Єдина кнопка додати для 3 рядків */}
+                <button type="submit" style={greenBtnStyle}>
+                  Додати учасника
+                </button>
               </form>
 
-              {/* Список доданих учасників */}
-              <div style={{ marginBottom: '20px' }}>
-                <h4 style={{ fontSize: '15px', marginBottom: '10px' }}>Учасники команди ({selectedProject.teamMembers?.length || 0})</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {(selectedProject.teamMembers || []).map((member) => (
-                    <div key={member.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: '14px' }}>{member.fullName}</div>
-                        <div style={{ fontSize: '12px', color: '#8e8e93' }}>
-                          {member.role} {member.telegramUsername && `• @${member.telegramUsername}`}
+              {/* Список доданих спеціалістів */}
+              <div style={{ marginBottom: '24px' }}>
+                <h4 style={{ fontSize: '15px', fontWeight: 600, marginBottom: '12px' }}>
+                  Склад команди ({selectedProject.teamMembers?.length || 0})
+                </h4>
+
+                {(!selectedProject.teamMembers || selectedProject.teamMembers.length === 0) ? (
+                  <p style={{ fontSize: '13px', color: '#8e8e93' }}>Учасників ще не додано.</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {selectedProject.teamMembers.map((member) => (
+                      <div
+                        key={member.id}
+                        style={{
+                          display: 'flex',
+                          justify: 'space-between',
+                          alignItems: 'center',
+                          padding: '12px 14px',
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #e5e5ea',
+                          borderRadius: '10px'
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: '15px', color: '#1c1c1e' }}>
+                            {member.fullName}
+                          </div>
+                          <div style={{ fontSize: '13px', color: '#007aff', marginTop: '2px' }}>
+                            {member.role} {member.telegramUsername && `• @${member.telegramUsername}`}
+                          </div>
                         </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveMember(member.id)}
+                          style={{ background: 'none', border: 'none', color: '#ff3b30', fontSize: '16px', cursor: 'pointer' }}
+                        >
+                          ✕
+                        </button>
                       </div>
-                      <button onClick={() => handleRemoveMember(member.id)} style={{ background: 'none', border: 'none', color: '#ff3b30', cursor: 'pointer' }}>✕</button>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {/* Кнопка створення чату */}
+              {/* Кнопка запуску чату */}
               <a
                 href={getTelegramGroupLink()}
                 target="_blank"
@@ -141,13 +209,13 @@ export const TeamTab: React.FC<TeamTabProps> = ({ projects, onUpdateProjects }) 
                 style={{
                   display: 'block',
                   textAlign: 'center',
-                  padding: '12px',
+                  padding: '14px',
                   backgroundColor: '#0088cc',
                   color: '#ffffff',
-                  borderRadius: '10px',
+                  borderRadius: '12px',
                   textDecoration: 'none',
                   fontWeight: 600,
-                  fontSize: '14px'
+                  fontSize: '15px'
                 }}
               >
                 ✈️ Створити чат проекту в Telegram
@@ -161,5 +229,6 @@ export const TeamTab: React.FC<TeamTabProps> = ({ projects, onUpdateProjects }) 
 };
 
 const inputStyle: React.CSSProperties = { width: '100%', padding: '10px 12px', backgroundColor: '#ffffff', border: '1px solid #e5e5ea', borderRadius: '8px', fontSize: '14px', color: '#1c1c1e', outline: 'none', boxSizing: 'border-box' };
-const labelStyle: React.CSSProperties = { fontSize: '13px', fontWeight: 500, color: '#636366', marginBottom: '4px', display: 'block' };
-const greenBtnStyle: React.CSSProperties = { padding: '10px 14px', backgroundColor: '#34c759', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 600, fontSize: '14px', cursor: 'pointer' };
+const labelStyle: React.CSSProperties = { fontSize: '13px', fontWeight: 600, color: '#636366', marginBottom: '6px', display: 'block' };
+const subLabelStyle: React.CSSProperties = { fontSize: '12px', fontWeight: 500, color: '#8e8e93', marginBottom: '4px', display: 'block' };
+const greenBtnStyle: React.CSSProperties = { width: '100%', padding: '12px', backgroundColor: '#34c759', color: '#ffffff', border: 'none', borderRadius: '10px', fontWeight: 600, fontSize: '14px', cursor: 'pointer', marginTop: '4px' };
