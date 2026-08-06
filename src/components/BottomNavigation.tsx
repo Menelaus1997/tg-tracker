@@ -7,54 +7,71 @@ interface BottomNavigationProps {
 }
 
 export const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabChange }) => {
-  const tabs: { id: TabType; icon: string }[] = [
-    { id: 'create', icon: '➕' },
-    { id: 'projects', icon: '📁' },
-    { id: 'boq', icon: '📐' },
-    { id: 'analytics', icon: '📊' },
-    { id: 'settings', icon: '⚙️' },
-  ];
-
   return (
-    <nav style={{
+    <div style={{
       position: 'fixed',
       bottom: 0,
       left: 0,
       right: 0,
       height: '60px',
       backgroundColor: '#ffffff',
+      borderTop: '1px solid #e5e5ea',
       display: 'flex',
       justify: 'space-around',
       alignItems: 'center',
-      borderTop: '1px solid #e5e5ea',
-      paddingBottom: 'env(safe-area-inset-bottom)',
       zIndex: 1000
     }}>
-      {tabs.map((tab) => {
-        const isActive = activeTab === tab.id;
-        return (
-          <button
-            key={tab.id}
-            onClick={() => onTabChange(tab.id)}
-            style={{
-              background: 'none',
-              border: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '26px',
-              opacity: isActive ? 1 : 0.35,
-              transform: isActive ? 'scale(1.15)' : 'scale(1)',
-              transition: 'all 0.2s ease',
-              cursor: 'pointer',
-              flex: 1,
-              height: '100%'
-            }}
-          >
-            {tab.icon}
-          </button>
-        );
-      })}
-    </nav>
+      <button
+        onClick={() => onTabChange('create')}
+        style={{ ...navBtnStyle, color: activeTab === 'create' ? '#007aff' : '#8e8e93' }}
+      >
+        <span style={{ fontSize: '20px' }}>➕</span>
+        <span style={{ fontSize: '10px', marginTop: '2px' }}>Створити</span>
+      </button>
+
+      <button
+        onClick={() => onTabChange('projects')}
+        style={{ ...navBtnStyle, color: activeTab === 'projects' ? '#007aff' : '#8e8e93' }}
+      >
+        <span style={{ fontSize: '20px' }}>📁</span>
+        <span style={{ fontSize: '10px', marginTop: '2px' }}>Проекти</span>
+      </button>
+
+      {/* НОВА ВКЛАДКА КОМАНДА */}
+      <button
+        onClick={() => onTabChange('team')}
+        style={{ ...navBtnStyle, color: activeTab === 'team' ? '#007aff' : '#8e8e93' }}
+      >
+        <span style={{ fontSize: '20px' }}>👥</span>
+        <span style={{ fontSize: '10px', marginTop: '2px' }}>Команда</span>
+      </button>
+
+      <button
+        onClick={() => onTabChange('analytics')}
+        style={{ ...navBtnStyle, color: activeTab === 'analytics' ? '#007aff' : '#8e8e93' }}
+      >
+        <span style={{ fontSize: '20px' }}>📊</span>
+        <span style={{ fontSize: '10px', marginTop: '2px' }}>Аналітика</span>
+      </button>
+
+      <button
+        onClick={() => onTabChange('settings')}
+        style={{ ...navBtnStyle, color: activeTab === 'settings' ? '#007aff' : '#8e8e93' }}
+      >
+        <span style={{ fontSize: '20px' }}>⚙️</span>
+        <span style={{ fontSize: '10px', marginTop: '2px' }}>Налаштування</span>
+      </button>
+    </div>
   );
+};
+
+const navBtnStyle: React.CSSProperties = {
+  background: 'none',
+  border: 'none',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justify: 'center',
+  cursor: 'pointer',
+  padding: '4px'
 };
