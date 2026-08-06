@@ -26,8 +26,12 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
             return (
               <div key={prj.uid} style={{ padding: '16px', backgroundColor: '#f2f2f7', borderRadius: '14px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <div style={{ fontWeight: 700, fontSize: '16px' }}>{prj.name} <span style={{ fontSize: '12px', color: '#8e8e93' }}>({prj.id})</span></div>
-                  <div style={{ fontWeight: 700, color: '#007aff', fontSize: '15px' }}>{formatHours(totalProjectSec)} год.</div>
+                  <div style={{ fontWeight: 700, fontSize: '16px' }}>
+                    {prj.name} <span style={{ fontSize: '12px', color: '#8e8e93' }}>({prj.id})</span>
+                  </div>
+                  <div style={{ fontWeight: 700, color: '#007aff', fontSize: '15px' }}>
+                    {formatHours(totalProjectSec)} год.
+                  </div>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
