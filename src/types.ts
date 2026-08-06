@@ -1,1 +1,1 @@
-export type TabType = 'create' | 'projects' | 'team' | 'boq' | 'analytics' | 'settings';
+export type TabType = 'create' | 'projects' | 'boq' | 'analytics' | 'settings';
