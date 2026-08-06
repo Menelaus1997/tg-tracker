@@ -38,7 +38,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [newStageTitle, setNewStageTitle] = useState('');
   const [newSubStageTitles, setNewSubStageTitles] = useState<{ [stageId: string]: string }>({});
 
-  const [allStagesCollapsed, setAllStagesCollapsed] = useState<boolean>(false);
+  // Стан згортання всієї секції стадій (за замовчуванням розгорнута)
+  const [isAllStagesSectionHidden, setIsAllStagesSectionHidden] = useState<boolean>(false);
   const [collapsedStages, setCollapsedStages] = useState<{ [stageId: string]: boolean }>({});
 
   const [editingStageId, setEditingStageId] = useState<string | null>(null);
@@ -55,16 +56,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [manualHoursInput, setManualHoursInput] = useState<string>('');
 
   const isArchived = project.status === 'archived';
-
-  const toggleAllStages = () => {
-    const nextState = !allStagesCollapsed;
-    setAllStagesCollapsed(nextState);
-    const updated: { [key: string]: boolean } = {};
-    stages.forEach((st) => {
-      updated[st.id] = nextState;
-    });
-    setCollapsedStages(updated);
-  };
 
   const toggleStageCollapse = (stageId: string) => {
     setCollapsedStages((prev) => ({ ...prev, [stageId]: !prev[stageId] }));
@@ -159,7 +150,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     const title = newSubStageTitles[stageId];
     if (!title || !title.trim()) return;
 
-    // Автоматично вибираємо лише чистий текст (без вручну введених номерів)
     const cleanTitle = title.trim().replace(/^\d+[\.\)]\s*/, '');
 
     setStages(stages.map((st) => {
@@ -212,9 +202,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     }));
   };
 
-  // Таймер та дедлайни для Стадій 2, 3, 4, 5, 6
   const isTimeAndDeadlineAllowed = (index: number) => {
-    return index >= 1 && index <= 5; // Стадії #2, #3, #4, #5, #6 (індекси 1..5)
+    return index >= 1 && index <= 5;
   };
 
   const toggleTimer = (stageId: string) => {
@@ -381,16 +370,16 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* РОЗДІЛ 2: Стадії проекту зі спадним меню для всієї секції */}
+      {/* РОЗДІЛ 2: Стадії проекту з ПОВНИМ приховуванням всієї території нижче */}
       <div style={{ marginBottom: '30px' }}>
         <div 
-          onClick={toggleAllStages}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginBottom: '12px' }}
+          onClick={() => setIsAllStagesSectionHidden(!isAllStagesSectionHidden)}
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginBottom: isAllStagesSectionHidden ? '0px' : '12px' }}
         >
           <span style={{
             display: 'inline-block',
             transition: 'transform 0.2s ease',
-            transform: allStagesCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+            transform: isAllStagesSectionHidden ? 'rotate(-90deg)' : 'rotate(0deg)',
             fontSize: '12px'
           }}>
             ▼
@@ -398,209 +387,207 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           <h3 style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>Стадії проекту</h3>
         </div>
 
-        {!isArchived && (
-          <form onSubmit={handleAddStage} style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-            <input
-              type="text" placeholder="Нова стадія (напр. Стадія 7)"
-              value={newStageTitle} onChange={(e) => setNewStageTitle(e.target.value)}
-              style={{ ...inputStyle, flex: 1 }}
-            />
-            <button type="submit" style={greenBtnStyle}>Додати</button>
-          </form>
-        )}
+        {/* Якщо приховано - ВЕСЬ блоковий контент нижче НЕ показується */}
+        {!isAllStagesSectionHidden && (
+          <>
+            {!isArchived && (
+              <form onSubmit={handleAddStage} style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                <input
+                  type="text" placeholder="Нова стадія (напр. Стадія 7)"
+                  value={newStageTitle} onChange={(e) => setNewStageTitle(e.target.value)}
+                  style={{ ...inputStyle, flex: 1 }}
+                />
+                <button type="submit" style={greenBtnStyle}>Додати</button>
+              </form>
+            )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {stages.map((st, index) => {
-            const isCollapsed = collapsedStages[st.id];
-            const allowTimeAndDeadline = isTimeAndDeadlineAllowed(index);
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {stages.map((st, index) => {
+                const isCollapsed = collapsedStages[st.id];
+                const allowTimeAndDeadline = isTimeAndDeadlineAllowed(index);
 
-            return (
-              <div key={st.id} style={{ padding: '14px', borderRadius: '10px', backgroundColor: '#f2f2f7' }}>
-                
-                {/* Шапка стадії */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isCollapsed ? '0px' : '10px' }}>
-                  {editingStageId === st.id ? (
-                    <div style={{ display: 'flex', gap: '6px', flex: 1 }}>
-                      <input type="text" value={editingStageTitle} onChange={(e) => setEditingStageTitle(e.target.value)} style={{ ...inputStyle, padding: '4px 8px' }} />
-                      <button onClick={() => handleSaveEditedStage(st.id)} style={{ ...greenBtnStyle, padding: '4px 8px', fontSize: '12px' }}>✓</button>
-                    </div>
-                  ) : (
-                    <div 
-                      onClick={() => toggleStageCollapse(st.id)}
-                      style={{ fontWeight: 600, fontSize: '15px', color: '#1c1c1e', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}
-                    >
-                      <span style={{ 
-                        display: 'inline-block', 
-                        transition: 'transform 0.2s ease', 
-                        transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
-                        fontSize: '12px'
-                      }}>
-                        ▼
-                      </span>
-                      <span>{st.title}</span>
-                    </div>
-                  )}
-
-                  {!isArchived && editingStageId !== st.id && (
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      <button onClick={() => { setEditingStageId(st.id); setEditingStageTitle(st.title); }} style={iconStyle}>✏️</button>
-                      <button onClick={() => handleDeleteStage(st.id)} style={iconStyle}>🗑️</button>
-                    </div>
-                  )}
-                </div>
-
-                {!isCollapsed && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginLeft: '4px', marginTop: '6px' }}>
+                return (
+                  <div key={st.id} style={{ padding: '14px', borderRadius: '10px', backgroundColor: '#f2f2f7' }}>
                     
-                    {/* Список підстадій з АВТОМАТИЧНОЮ нумерацією */}
-                    {st.subStages.map((sub, subIdx) => (
-                      <div key={sub.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isCollapsed ? '0px' : '10px' }}>
+                      {editingStageId === st.id ? (
+                        <div style={{ display: 'flex', gap: '6px', flex: 1 }}>
+                          <input type="text" value={editingStageTitle} onChange={(e) => setEditingStageTitle(e.target.value)} style={{ ...inputStyle, padding: '4px 8px' }} />
+                          <button onClick={() => handleSaveEditedStage(st.id)} style={{ ...greenBtnStyle, padding: '4px 8px', fontSize: '12px' }}>✓</button>
+                        </div>
+                      ) : (
+                        <div 
+                          onClick={() => toggleStageCollapse(st.id)}
+                          style={{ fontWeight: 600, fontSize: '15px', color: '#1c1c1e', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}
+                        >
+                          <span style={{ 
+                            display: 'inline-block', 
+                            transition: 'transform 0.2s ease', 
+                            transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+                            fontSize: '12px'
+                          }}>
+                            ▼
+                          </span>
+                          <span>{st.title}</span>
+                        </div>
+                      )}
+
+                      {!isArchived && editingStageId !== st.id && (
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button onClick={() => { setEditingStageId(st.id); setEditingStageTitle(st.title); }} style={iconStyle}>✏️</button>
+                          <button onClick={() => handleDeleteStage(st.id)} style={iconStyle}>🗑️</button>
+                        </div>
+                      )}
+                    </div>
+
+                    {!isCollapsed && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginLeft: '4px', marginTop: '6px' }}>
                         
-                        {!isArchived && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0px' }}>
-                            <button
-                              disabled={subIdx === 0}
-                              onClick={() => moveSubStage(st.id, subIdx, 'up')}
-                              style={{ ...arrowBtnStyle, opacity: subIdx === 0 ? 0.2 : 1 }}
-                            >
-                              ▲
-                            </button>
-                            <button
-                              disabled={subIdx === st.subStages.length - 1}
-                              onClick={() => moveSubStage(st.id, subIdx, 'down')}
-                              style={{ ...arrowBtnStyle, opacity: subIdx === st.subStages.length - 1 ? 0.2 : 1 }}
-                            >
-                              ▼
-                            </button>
-                          </div>
-                        )}
-
-                        {editingSubStageId === sub.id ? (
-                          <div style={{ display: 'flex', gap: '6px', flex: 1 }}>
-                            <input type="text" value={editingSubStageTitle} onChange={(e) => setEditingSubStageTitle(e.target.value)} style={{ ...inputStyle, padding: '4px 8px', fontSize: '13px' }} />
-                            <button onClick={() => handleSaveEditedSubStage(st.id, sub.id)} style={{ ...greenBtnStyle, padding: '4px 8px', fontSize: '12px' }}>✓</button>
-                          </div>
-                        ) : (
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: isArchived ? 'default' : 'pointer', flex: 1 }}>
-                            <input type="checkbox" checked={sub.completed} disabled={isArchived} onChange={() => handleToggleSubStage(st.id, sub.id)} />
-                            <span style={{ textDecoration: sub.completed ? 'line-through' : 'none', color: sub.completed ? '#8e8e93' : '#1c1c1e' }}>
-                              {/* АВТОМАЧНА НУМЕРАЦІЯ: subIdx + 1 */}
-                              {subIdx + 1}. {sub.title}
-                            </span>
-                          </label>
-                        )}
-
-                        {!isArchived && editingSubStageId !== sub.id && (
-                          <div style={{ display: 'flex', gap: '4px' }}>
-                            <button onClick={() => { setEditingSubStageId(sub.id); setEditingSubStageTitle(sub.title); }} style={{ ...iconStyle, fontSize: '13px' }}>✏️</button>
-                            <button onClick={() => handleDeleteSubStage(st.id, sub.id)} style={{ ...iconStyle, fontSize: '13px' }}>🗑️</button>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-
-                    {!isArchived && (
-                      <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
-                        <input
-                          type="text" placeholder="+ Підстадія (напр. Обмірний план)"
-                          value={newSubStageTitles[st.id] || ''} onChange={(e) => setNewSubStageTitles({ ...newSubStageTitles, [st.id]: e.target.value })}
-                          style={{ ...inputStyle, fontSize: '13px', padding: '6px 8px' }}
-                        />
-                        <button onClick={() => handleAddSubStage(st.id)} style={greenBtnStyle}>+</button>
-                      </div>
-                    )}
-
-                    {/* Блок Таймера та Дедлайнів (ТІЛЬКИ ДЛЯ СТАДІЙ 2, 3, 4, 5, 6) */}
-                    {allowTimeAndDeadline && (
-                      <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid #e5e5ea', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        
-                        {/* ⏱️ Таймер */}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#ffffff', padding: '8px 12px', borderRadius: '8px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ fontSize: '14px', fontWeight: 600 }}>⏱️ Час: {formatSecondsToHM(st.loggedSeconds)}</span>
+                        {st.subStages.map((sub, subIdx) => (
+                          <div key={sub.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '4px' }}>
                             
                             {!isArchived && (
-                              <button
-                                onClick={() => {
-                                  setEditingTimeStageId(st.id);
-                                  setManualHoursInput(((st.loggedSeconds || 0) / 3600).toFixed(1));
-                                }}
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px' }}
-                                title="Редагувати години"
-                              >
-                                ✏️
-                              </button>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0px' }}>
+                                <button
+                                  disabled={subIdx === 0}
+                                  onClick={() => moveSubStage(st.id, subIdx, 'up')}
+                                  style={{ ...arrowBtnStyle, opacity: subIdx === 0 ? 0.2 : 1 }}
+                                >
+                                  ▲
+                                </button>
+                                <button
+                                  disabled={subIdx === st.subStages.length - 1}
+                                  onClick={() => moveSubStage(st.id, subIdx, 'down')}
+                                  style={{ ...arrowBtnStyle, opacity: subIdx === st.subStages.length - 1 ? 0.2 : 1 }}
+                                >
+                                  ▼
+                                </button>
+                              </div>
+                            )}
+
+                            {editingSubStageId === sub.id ? (
+                              <div style={{ display: 'flex', gap: '6px', flex: 1 }}>
+                                <input type="text" value={editingSubStageTitle} onChange={(e) => setEditingSubStageTitle(e.target.value)} style={{ ...inputStyle, padding: '4px 8px', fontSize: '13px' }} />
+                                <button onClick={() => handleSaveEditedSubStage(st.id, sub.id)} style={{ ...greenBtnStyle, padding: '4px 8px', fontSize: '12px' }}>✓</button>
+                              </div>
+                            ) : (
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: isArchived ? 'default' : 'pointer', flex: 1 }}>
+                                <input type="checkbox" checked={sub.completed} disabled={isArchived} onChange={() => handleToggleSubStage(st.id, sub.id)} />
+                                <span style={{ textDecoration: sub.completed ? 'line-through' : 'none', color: sub.completed ? '#8e8e93' : '#1c1c1e' }}>
+                                  {subIdx + 1}. {sub.title}
+                                </span>
+                              </label>
+                            )}
+
+                            {!isArchived && editingSubStageId !== sub.id && (
+                              <div style={{ display: 'flex', gap: '4px' }}>
+                                <button onClick={() => { setEditingSubStageId(sub.id); setEditingSubStageTitle(sub.title); }} style={{ ...iconStyle, fontSize: '13px' }}>✏️</button>
+                                <button onClick={() => handleDeleteSubStage(st.id, sub.id)} style={{ ...iconStyle, fontSize: '13px' }}>🗑️</button>
+                              </div>
                             )}
                           </div>
+                        ))}
 
-                          {!isArchived && (
-                            <button
-                              onClick={() => toggleTimer(st.id)}
-                              style={{
-                                padding: '4px 12px',
-                                borderRadius: '6px',
-                                border: 'none',
-                                backgroundColor: st.isTimerRunning ? '#ff3b30' : '#34c759',
-                                color: '#ffffff',
-                                fontWeight: 600,
-                                fontSize: '12px',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              {st.isTimerRunning ? '⏸ Пауза' : '▶ Старт'}
-                            </button>
-                          )}
-                        </div>
-
-                        {/* Ручна підгонка часу */}
-                        {editingTimeStageId === st.id && (
-                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        {!isArchived && (
+                          <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
                             <input
-                              type="number"
-                              step="0.1"
-                              placeholder="Години"
-                              value={manualHoursInput}
-                              onChange={(e) => setManualHoursInput(e.target.value)}
-                              style={{ ...inputStyle, padding: '4px 8px', fontSize: '12px', width: '100px' }}
+                              type="text" placeholder="+ Підстадія (напр. Обмірний план)"
+                              value={newSubStageTitles[st.id] || ''} onChange={(e) => setNewSubStageTitles({ ...newSubStageTitles, [st.id]: e.target.value })}
+                              style={{ ...inputStyle, fontSize: '13px', padding: '6px 8px' }}
                             />
-                            <button onClick={() => handleSaveManualTime(st.id)} style={{ ...greenBtnStyle, padding: '4px 8px', fontSize: '12px' }}>Зберегти</button>
-                            <button onClick={() => setEditingTimeStageId(null)} style={{ background: 'none', border: 'none', fontSize: '12px', cursor: 'pointer' }}>✕</button>
+                            <button onClick={() => handleAddSubStage(st.id)} style={greenBtnStyle}>+</button>
                           </div>
                         )}
 
-                        {/* 📅 Дедлайни */}
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <div style={{ flex: 1 }}>
-                            <label style={{ fontSize: '11px', color: '#636366', fontWeight: 500 }}>Дата початку</label>
-                            <input
-                              type="date"
-                              disabled={isArchived}
-                              value={st.startDate || ''}
-                              onChange={(e) => handleDateChange(st.id, 'startDate', e.target.value)}
-                              style={{ ...inputStyle, padding: '4px 6px', fontSize: '12px' }}
-                            />
+                        {allowTimeAndDeadline && (
+                          <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid #e5e5ea', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#ffffff', padding: '8px 12px', borderRadius: '8px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '14px', fontWeight: 600 }}>⏱️ Час: {formatSecondsToHM(st.loggedSeconds)}</span>
+                                
+                                {!isArchived && (
+                                  <button
+                                    onClick={() => {
+                                      setEditingTimeStageId(st.id);
+                                      setManualHoursInput(((st.loggedSeconds || 0) / 3600).toFixed(1));
+                                    }}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px' }}
+                                    title="Редагувати години"
+                                  >
+                                    ✏️
+                                  </button>
+                                )}
+                              </div>
+
+                              {!isArchived && (
+                                <button
+                                  onClick={() => toggleTimer(st.id)}
+                                  style={{
+                                    padding: '4px 12px',
+                                    borderRadius: '6px',
+                                    border: 'none',
+                                    backgroundColor: st.isTimerRunning ? '#ff3b30' : '#34c759',
+                                    color: '#ffffff',
+                                    fontWeight: 600,
+                                    fontSize: '12px',
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  {st.isTimerRunning ? '⏸ Пауза' : '▶ Старт'}
+                                </button>
+                              )}
+                            </div>
+
+                            {editingTimeStageId === st.id && (
+                              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  placeholder="Години"
+                                  value={manualHoursInput}
+                                  onChange={(e) => setManualHoursInput(e.target.value)}
+                                  style={{ ...inputStyle, padding: '4px 8px', fontSize: '12px', width: '100px' }}
+                                />
+                                <button onClick={() => handleSaveManualTime(st.id)} style={{ ...greenBtnStyle, padding: '4px 8px', fontSize: '12px' }}>Зберегти</button>
+                                <button onClick={() => setEditingTimeStageId(null)} style={{ background: 'none', border: 'none', fontSize: '12px', cursor: 'pointer' }}>✕</button>
+                              </div>
+                            )}
+
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <div style={{ flex: 1 }}>
+                                <label style={{ fontSize: '11px', color: '#636366', fontWeight: 500 }}>Дата початку</label>
+                                <input
+                                  type="date"
+                                  disabled={isArchived}
+                                  value={st.startDate || ''}
+                                  onChange={(e) => handleDateChange(st.id, 'startDate', e.target.value)}
+                                  style={{ ...inputStyle, padding: '4px 6px', fontSize: '12px' }}
+                                />
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <label style={{ fontSize: '11px', color: '#ff3b30', fontWeight: 500 }}>Дедлайн (Здача)</label>
+                                <input
+                                  type="date"
+                                  disabled={isArchived}
+                                  value={st.endDate || ''}
+                                  onChange={(e) => handleDateChange(st.id, 'endDate', e.target.value)}
+                                  style={{ ...inputStyle, padding: '4px 6px', fontSize: '12px' }}
+                                />
+                              </div>
+                            </div>
+
                           </div>
-                          <div style={{ flex: 1 }}>
-                            <label style={{ fontSize: '11px', color: '#ff3b30', fontWeight: 500 }}>Дедлайн (Здача)</label>
-                            <input
-                              type="date"
-                              disabled={isArchived}
-                              value={st.endDate || ''}
-                              onChange={(e) => handleDateChange(st.id, 'endDate', e.target.value)}
-                              style={{ ...inputStyle, padding: '4px 6px', fontSize: '12px' }}
-                            />
-                          </div>
-                        </div>
+                        )}
 
                       </div>
                     )}
-
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
 
       {!isArchived && (
