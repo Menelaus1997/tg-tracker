@@ -3,7 +3,6 @@ import { BottomNavigation } from './components/BottomNavigation';
 import { CreateProject } from './components/CreateProject';
 import { ProjectDetail } from './components/ProjectDetail';
 import { Analytics } from './components/Analytics';
-import { TeamTab } from './components/TeamTab';
 import { TabType } from './types';
 
 export interface CustomField {
@@ -32,7 +31,7 @@ export interface TeamMember {
   id: string;
   fullName: string;
   telegramUsername: string;
-  role: 'Керівник' | 'Кресляр' | 'Візуалізатор' | 'Комплектатор';
+  role: 'Кресляр' | 'Візуалізатор' | 'Комплектатор' | 'Виконроб' | 'Керівник' | 'Кошторисник';
 }
 
 export interface Project {
@@ -357,7 +356,7 @@ export const App: React.FC = () => {
         </div>
       )}
 
-      {activeTab === 'boq' && <TeamTab projects={projects} onUpdateProjects={setProjects} />}
+      {activeTab === 'boq' && <div style={{ padding: '20px', color: '#1c1c1e' }}>Розділ Відомість об'ємів робіт (ВОР)</div>}
       
       {activeTab === 'analytics' && <Analytics projects={projects} />}
 
