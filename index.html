@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Трекер Проектів</title>
+  <!-- Telegram Web App SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg-color: var(--tg-theme-bg-color, #f4f5f7);
+      --card-bg: var(--tg-theme-secondary-bg-color, #ffffff);
+      --text-color: var(--tg-theme-text-color, #222222);
+      --hint-color: var(--tg-theme-hint-color, #888888);
+      --button-color: var(--tg-theme-button-color, #0088cc);
+      --button-text: var(--tg-theme-button-text-color, #ffffff);
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 12px;
+      box-sizing: border-box;
+    }
+    h2, h3 { margin-top: 0; }
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    select, input[type="date"], input[type="text"], button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    button.btn-main {
+      background-color: var(--button-color);
+      color: var(--button-text);
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+    }
+    .stage-item {
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+      margin-bottom: 10px;
+    }
+    .stage-item:last-child { border-bottom: none; }
+    .dates-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .subtask-list {
+      margin-top: 8px;
+      padding-left: 5px;
+    }
+    .subtask-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0,0,0,0.02);
+      padding: 6px 8px;
+      border-radius: 6px;
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+    .subtask-item.done {
+      text-decoration: line-through;
+      opacity: 0.6;
+    }
+    .time-badge {
+      font-size: 10px;
+      color: var(--hint-color);
+      display: block;
+    }
+    .add-subtask-flex {
+      display: flex;
+      gap: 6px;
+    }
+    .add-subtask-flex input { margin: 0; }
+    .add-subtask-flex button { margin: 0; width: auto; white-space: nowrap; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2>Створити новий проект</h2>
+    <label>Тип продукту:</label>
+    <select id="productType" onchange="initProject()">
+      <option value="complex">Комплексний дизайн-проект (5 етапів)</option>
+      <option value="basic">Базові креслення (3 етапи)</option>
+    </select>
+  </div>
+
+  <div id="stagesContainer"></div>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand(); // Розгортаємо на весь екран
+
+    const products = {
+      complex: ["1. Обмір", "2. Планувальні рішення", "3. Візуалізації", "4. Специфікація", "5. Креслення"],
+      basic: ["1. Обмір", "2. Планувальні рішення", "3. Креслення"]
+    };
+
+    let projectData = [];
+
+    function initProject() {
+      const type = document.getElementById("productType").value;
+      projectData = products[type].map(stageName => ({
+        name: stageName,
+        startDate: "",
+        endDate: "",
+        subtasks: []
+      }));
+      renderStages();
+    }
+
+    function renderStages() {
+      const container = document.getElementById("stagesContainer");
+      container.innerHTML = "";
+
+      projectData.forEach((stage, sIdx) => {
+        const stageEl = document.createElement("div");
+        stageEl.className = "card stage-item";
+        stageEl.innerHTML = `
+          <h3>${stage.name}</h3>
+          <div class="dates-grid">
+            <div>
+              <label style="font-size: 12px; color: var(--hint-color)">Старт:</label>
+              <input type="date" value="${stage.startDate}" onchange="updateDate(${sIdx}, 'startDate', this.value)">
+            </div>
+            <div>
+              <label style="font-size: 12px; color: var(--hint-color)">Фініш:</label>
+              <input type="date" value="${stage.endDate}" onchange="updateDate(${sIdx}, 'endDate', this.value)">
+            </div>
+          </div>
+
+          <div style="margin-top: 10px;">
+            <strong style="font-size: 13px;">Підзадачі / Аркуші:</strong>
+            <div class="subtask-list" id="subtasks-${sIdx}">
+              ${stage.subtasks.map((sub, subIdx) => `
+                <div class="subtask-item ${sub.done ? 'done' : ''}">
+                  <div>
+                    <input type="checkbox" ${sub.done ? 'checked' : ''} onchange="toggleSubtask(${sIdx}, ${subIdx})">
+                    <span>${sub.title}</span>
+                    ${sub.completedAt ? `<span class="time-badge">Закрито: ${sub.completedAt}</span>` : ''}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+
+            <div class="add-subtask-flex" style="margin-top: 6px;">
+              <input type="text" id="input-${sIdx}" placeholder="Назва аркуша/задачі (напр. Аркуш 1)">
+              <button class="btn-main" onclick="addSubtask(${sIdx})">+</button>
+            </div>
+          </div>
+        `;
+        container.appendChild(stageEl);
+      });
+    }
+
+    function updateDate(sIdx, field, val) {
+      projectData[sIdx][field] = val;
+    }
+
+    function addSubtask(sIdx) {
+      const input = document.getElementById(`input-${sIdx}`);
+      if (!input.value.trim()) return;
+      
+      projectData[sIdx].subtasks.push({
+        title: input.value.trim(),
+        done: false,
+        completedAt: null
+      });
+      input.value = "";
+      renderStages();
+    }
+
+    function toggleSubtask(sIdx, subIdx) {
+      const sub = projectData[sIdx].subtasks[subIdx];
+      sub.done = !sub.done;
+      if (sub.done) {
+        const now = new Date();
+        sub.completedAt = now.toLocaleDateString() + " " + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      } else {
+        sub.completedAt = null;
+      }
+      renderStages();
+    }
+
+    // Ініціалізація при відкритті
+    initProject();
+  </script>
+</body>
+</html>
