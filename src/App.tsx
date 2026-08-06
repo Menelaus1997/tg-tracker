@@ -28,41 +28,61 @@ export interface Project {
   template: string;
   color: string;
   status: 'active' | 'archived' | 'deleted';
+  generalInfoList?: string[];
   customFields: CustomField[];
   stages: Stage[];
+}
+
+export interface SavedTemplate {
+  id: string;
+  name: string;
+  stages: Stage[];
+  customFields: CustomField[];
 }
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('create');
   const [projects, setProjects] = useState<Project[]>([]);
-  const [isAdmin] = useState<boolean>(true); // Права адміна
+  const [templates, setTemplates] = useState<SavedTemplate[]>([]);
+  const [isAdmin] = useState<boolean>(true);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
-  // Модальні вікна підтвердження
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     type: 'archive' | 'delete' | null;
     projectId: string | null;
   }>({ isOpen: false, type: null, projectId: null });
 
-  // Створення проекту
+  // Створення проекту на основі обраного шаблону
   const handleCreateProject = (newProj: { id: string; name: string; template: string; color: string }) => {
+    const selectedTemplateObj = templates.find(t => t.id === newProj.template);
+    
     const created: Project = {
       ...newProj,
       status: 'active',
-      customFields: [{ id: '1', name: '', unit: '' }],
-      stages: []
+      generalInfoList: [],
+      customFields: selectedTemplateObj ? JSON.parse(JSON.stringify(selectedTemplateObj.customFields)) : [],
+      stages: selectedTemplateObj ? JSON.parse(JSON.stringify(selectedTemplateObj.stages)) : []
     };
     setProjects((prev) => [...prev, created]);
     setActiveTab('projects');
   };
 
-  // Відкриття підтвердження
+  // Збереження нового шаблону
+  const handleSaveAsTemplate = (name: string, stages: Stage[], customFields: CustomField[]) => {
+    const newTemplate: SavedTemplate = {
+      id: Date.now().toString(),
+      name,
+      stages: JSON.parse(JSON.stringify(stages)),
+      customFields: JSON.parse(JSON.stringify(customFields))
+    };
+    setTemplates((prev) => [...prev, newTemplate]);
+  };
+
   const openConfirm = (type: 'archive' | 'delete', projectId: string) => {
     setConfirmModal({ isOpen: true, type, projectId });
   };
 
-  // Підтвердження дії (Архів або Видалення)
   const handleConfirmAction = () => {
     const { type, projectId } = confirmModal;
     if (!projectId || !type) return;
@@ -74,18 +94,12 @@ export const App: React.FC = () => {
     }
 
     setProjects((prev) =>
-      prev.map((p) => {
-        if (p.id === projectId) {
-          return { ...p, status: type === 'delete' ? 'deleted' : 'archived' };
-        }
-        return p;
-      })
+      prev.map((p) => (p.id === projectId ? { ...p, status: type === 'delete' ? 'deleted' : 'archived' } : p))
     );
 
     setConfirmModal({ isOpen: false, type: null, projectId: null });
   };
 
-  // Відновлення з корзини/архіву
   const restoreProject = (id: string) => {
     setProjects((prev) =>
       prev.map((p) => (p.id === id ? { ...p, status: 'active' } : p))
@@ -106,26 +120,26 @@ export const App: React.FC = () => {
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     }}>
       {activeTab === 'create' && (
-        <CreateProject onCreateProject={handleCreateProject} />
+        <CreateProject 
+          onCreateProject={handleCreateProject} 
+          availableTemplates={templates}
+        />
       )}
 
-      {/* Вкладка проектів */}
       {activeTab === 'projects' && (
         selectedProject ? (
-          /* Якщо проект обрано — показуємо детальний перегляд із полями та стадіями */
           <ProjectDetail
             project={selectedProject}
             onUpdateProject={(updated) => {
               setProjects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
             }}
+            onSaveAsTemplate={handleSaveAsTemplate}
             onBack={() => setSelectedProjectId(null)}
           />
         ) : (
-          /* Якщо проект не обрано — показуємо загальний список */
           <div style={{ padding: '20px', color: '#1c1c1e', maxWidth: '500px', margin: '0 auto' }}>
             <h2 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '16px' }}>Проекти</h2>
 
-            {/* Список активних проектів */}
             {activeProjects.length === 0 ? (
               <p style={{ color: '#8e8e93' }}>Немає активних проектів.</p>
             ) : (
@@ -161,37 +175,18 @@ export const App: React.FC = () => {
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <button
-                        onClick={() => setSelectedProjectId(prj.id)}
-                        title="Редагувати вміст"
-                        style={iconBtnStyle}
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        onClick={() => openConfirm('archive', prj.id)}
-                        title="Архівувати проект"
-                        style={iconBtnStyle}
-                      >
-                        📦
-                      </button>
-                      <button
-                        onClick={() => openConfirm('delete', prj.id)}
-                        title="Видалити проект"
-                        style={iconBtnStyle}
-                      >
-                        🗑️
-                      </button>
+                      <button onClick={() => setSelectedProjectId(prj.id)} style={iconBtnStyle}>✏️</button>
+                      <button onClick={() => openConfirm('archive', prj.id)} style={iconBtnStyle}>📦</button>
+                      <button onClick={() => openConfirm('delete', prj.id)} style={iconBtnStyle}>🗑️</button>
                     </div>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Блок архівних проектів */}
             {archivedProjects.length > 0 && (
               <div style={{ marginTop: '30px' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#8e8e93', marginBottom: '10px' }}>📦 Архів проектів (зафіксовані)</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#8e8e93', marginBottom: '10px' }}>📦 Архів проектів</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {archivedProjects.map((prj) => (
                     <div key={prj.id} style={{ padding: '12px 16px', backgroundColor: '#f9f9f9', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', opacity: 0.8 }}>
@@ -205,10 +200,9 @@ export const App: React.FC = () => {
               </div>
             )}
 
-            {/* Блок Корзини */}
             {deletedProjects.length > 0 && (
               <div style={{ marginTop: '30px' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#ff3b30', marginBottom: '10px' }}>🗑️ Корзина (Видалені об’єкти)</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#ff3b30', marginBottom: '10px' }}>🗑️ Корзина</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {deletedProjects.map((prj) => (
                     <div key={prj.id} style={{ padding: '12px 16px', backgroundColor: '#fff0f0', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -225,7 +219,6 @@ export const App: React.FC = () => {
         )
       )}
 
-      {/* Модальне вікно підтвердження */}
       {confirmModal.isOpen && (
         <div style={modalOverlayStyle}>
           <div style={modalContentStyle}>
@@ -235,25 +228,11 @@ export const App: React.FC = () => {
             <p style={{ fontSize: '14px', color: '#636366' }}>
               {confirmModal.type === 'archive'
                 ? 'Проект буде перенесено в архів. Всі дані зафіксуються без можливості редагування.'
-                : 'Ви впевнені? Проект потрапить у корзину і його можна буде відновити лише адміністратором.'}
+                : 'Ви впевнені? Проект потрапить у корзину.'}
             </p>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
-              <button
-                onClick={() => setConfirmModal({ isOpen: false, type: null, projectId: null })}
-                style={{ ...modalBtnStyle, backgroundColor: '#e5e5ea', color: '#1c1c1e' }}
-              >
-                Скасувати
-              </button>
-              <button
-                onClick={handleConfirmAction}
-                style={{
-                  ...modalBtnStyle,
-                  backgroundColor: confirmModal.type === 'delete' ? '#ff3b30' : '#007aff',
-                  color: '#ffffff'
-                }}
-              >
-                Так, підтверджую
-              </button>
+              <button onClick={() => setConfirmModal({ isOpen: false, type: null, projectId: null })} style={{ ...modalBtnStyle, backgroundColor: '#e5e5ea', color: '#1c1c1e' }}>Скасувати</button>
+              <button onClick={handleConfirmAction} style={{ ...modalBtnStyle, backgroundColor: confirmModal.type === 'delete' ? '#ff3b30' : '#007aff', color: '#ffffff' }}>Так, підтверджую</button>
             </div>
           </div>
         </div>
@@ -268,52 +247,10 @@ export const App: React.FC = () => {
   );
 };
 
-const iconBtnStyle: React.CSSProperties = {
-  background: 'none',
-  border: 'none',
-  cursor: 'pointer',
-  fontSize: '18px',
-  padding: '4px'
-};
-
-const smallBtnStyle: React.CSSProperties = {
-  padding: '4px 8px',
-  borderRadius: '6px',
-  border: 'none',
-  backgroundColor: '#e5e5ea',
-  fontSize: '12px',
-  cursor: 'pointer'
-};
-
-const modalOverlayStyle: React.CSSProperties = {
-  position: 'fixed',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  backgroundColor: 'rgba(0,0,0,0.4)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  zIndex: 2000
-};
-
-const modalContentStyle: React.CSSProperties = {
-  backgroundColor: '#ffffff',
-  padding: '20px',
-  borderRadius: '14px',
-  maxWidth: '360px',
-  width: '90%',
-  boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
-};
-
-const modalBtnStyle: React.CSSProperties = {
-  padding: '8px 14px',
-  borderRadius: '8px',
-  border: 'none',
-  fontWeight: 600,
-  fontSize: '14px',
-  cursor: 'pointer'
-};
+const iconBtnStyle: React.CSSProperties = { background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', padding: '4px' };
+const smallBtnStyle: React.CSSProperties = { padding: '4px 8px', borderRadius: '6px', border: 'none', backgroundColor: '#e5e5ea', fontSize: '12px', cursor: 'pointer' };
+const modalOverlayStyle: React.CSSProperties = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 };
+const modalContentStyle: React.CSSProperties = { backgroundColor: '#ffffff', padding: '20px', borderRadius: '14px', maxWidth: '360px', width: '90%', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' };
+const modalBtnStyle: React.CSSProperties = { padding: '8px 14px', borderRadius: '8px', border: 'none', fontWeight: 600, fontSize: '14px', cursor: 'pointer' };
 
 export default App;
