@@ -1,7 +1,9 @@
 import React, { useState, useRef } from 'react';
+import { SavedTemplate } from '../App';
 
 interface CreateProjectProps {
   onCreateProject: (project: { id: string; name: string; template: string; color: string }) => void;
+  availableTemplates?: SavedTemplate[];
 }
 
 const DEFAULT_COLORS = [
@@ -10,10 +12,10 @@ const DEFAULT_COLORS = [
   '#d84315', '#8e24aa', '#3f51b5'
 ];
 
-export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject }) => {
+export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject, availableTemplates = [] }) => {
   const [name, setName] = useState('');
   const [projectId, setProjectId] = useState('#V1');
-  const [template, setTemplate] = useState('Загальний');
+  const [template, setTemplate] = useState('general');
   const [colors, setColors] = useState<string[]>(DEFAULT_COLORS);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
 
@@ -49,7 +51,6 @@ export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject })
       </h2>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-        {/* 1. Найменування проекту */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           <label style={{ fontSize: '14px', fontWeight: 500, color: '#636366' }}>Найменування проекта</label>
           <input
@@ -62,7 +63,6 @@ export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject })
           />
         </div>
 
-        {/* 2. ID проекту */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           <label style={{ fontSize: '14px', fontWeight: 500, color: '#636366' }}>ID проекту</label>
           <input
@@ -74,10 +74,8 @@ export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject })
           />
         </div>
 
-        {/* 3. Шаблон */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           <label style={{ fontSize: '14px', fontWeight: 500, color: '#636366' }}>Шаблон</label>
-
           <div style={{ position: 'relative' }}>
             <select
               value={template}
@@ -90,24 +88,21 @@ export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject })
                 cursor: 'pointer'
               }}
             >
-              <option value="Загальний">Загальний шаблон</option>
+              <option value="general">Загальний шаблон (свій варіант)</option>
+              {availableTemplates.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
             </select>
             <div style={{
-              position: 'absolute',
-              right: '14px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              pointerEvents: 'none',
-              width: 0,
-              height: 0,
-              borderLeft: '5px solid transparent',
-              borderRight: '5px solid transparent',
-              borderTop: '6px solid #1c1c1e'
+              position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)',
+              pointerEvents: 'none', width: 0, height: 0,
+              borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '6px solid #1c1c1e'
             }} />
           </div>
         </div>
 
-        {/* 4. Колір (9 кольорів + кнопка +) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <label style={{ fontSize: '14px', fontWeight: 500, color: '#636366' }}>Колір</label>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap' }}>
@@ -119,19 +114,10 @@ export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject })
                   type="button"
                   onClick={() => setSelectedIndex(index)}
                   style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '50%',
-                    backgroundColor: color,
-                    border: 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#ffffff',
-                    fontSize: '14px',
+                    width: '32px', height: '32px', borderRadius: '50%', backgroundColor: color, border: 'none',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: '#ffffff', fontSize: '14px',
                     boxShadow: isSelected ? '0 0 0 2px #ffffff, 0 0 0 4px #007aff' : 'none',
-                    transition: 'all 0.15s ease',
                     flexShrink: 0
                   }}
                 >
@@ -144,18 +130,9 @@ export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject })
               type="button"
               onClick={() => colorInputRef.current?.click()}
               style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                backgroundColor: '#e5e5ea',
-                border: 'none',
-                color: '#636366',
-                fontSize: '18px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0
+                width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#e5e5ea',
+                border: 'none', color: '#636366', fontSize: '18px', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
               }}
             >
               +
@@ -172,16 +149,8 @@ export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject })
         <button
           type="submit"
           style={{
-            marginTop: '16px',
-            padding: '14px',
-            backgroundColor: '#007aff',
-            color: '#ffffff',
-            border: 'none',
-            borderRadius: '12px',
-            fontSize: '16px',
-            fontWeight: 600,
-            cursor: 'pointer',
-            textAlign: 'center'
+            marginTop: '16px', padding: '14px', backgroundColor: '#007aff', color: '#ffffff',
+            border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: 600, cursor: 'pointer'
           }}
         >
           Створити проект
@@ -192,13 +161,6 @@ export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject })
 };
 
 const inputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '12px 14px',
-  backgroundColor: '#f2f2f7',
-  border: '1px solid #e5e5ea',
-  borderRadius: '10px',
-  color: '#1c1c1e',
-  fontSize: '15px',
-  outline: 'none',
-  boxSizing: 'border-box'
+  width: '100%', padding: '12px 14px', backgroundColor: '#f2f2f7',
+  border: '1px solid #e5e5ea', borderRadius: '10px', color: '#1c1c1e', fontSize: '15px', outline: 'none', boxSizing: 'border-box'
 };
