@@ -49,12 +49,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [editingSubStageId, setEditingSubStageId] = useState<string | null>(null);
   const [editingSubStageTitle, setEditingSubStageTitle] = useState('');
 
-  // Стан для розділу "Команда" всередині проекту
+  // Розділ Команда
   const [isTeamSectionHidden, setIsTeamSectionHidden] = useState<boolean>(false);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>(project.teamMembers || []);
   const [memberFullName, setMemberFullName] = useState('');
   const [memberTelegram, setMemberTelegram] = useState('');
   const [memberRole, setMemberRole] = useState<RoleType>('Кресляр');
+  const [copiedSuccess, setCopiedSuccess] = useState(false);
 
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [saveAsTemplateChecked, setSaveAsTemplateChecked] = useState(false);
@@ -243,15 +244,16 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     return `${hrs}г ${mins}хв`;
   };
 
-  // Додавання учасника в Команду
   const handleAddTeamMember = (e: React.FormEvent) => {
     e.preventDefault();
     if (!memberFullName.trim() || isArchived) return;
 
+    const cleanTg = memberTelegram.trim().replace(/^@/, '');
+
     const newM: TeamMember = {
       id: Date.now().toString(),
       fullName: memberFullName.trim(),
-      telegramUsername: memberTelegram.trim().replace(/^@/, ''),
+      telegramUsername: cleanTg,
       role: memberRole
     };
 
@@ -266,13 +268,31 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     setTeamMembers(teamMembers.filter(m => m.id !== id));
   };
 
-  const getTelegramGroupLink = () => {
+  // 1. Формування посилання для поділу в Telegram
+  const getTelegramShareLink = () => {
+    const membersListText = teamMembers
+      .map(m => `• ${m.fullName} (${m.role}): ${m.telegramUsername ? `@${m.telegramUsername}` : 'немає ніка'}`)
+      .join('\n');
+
     const text = encodeURIComponent(
-      `Проект: ${name} (${projectId})\n` +
-      `Команда:\n` +
-      teamMembers.map(m => `- ${m.fullName} (@${m.telegramUsername}) — ${m.role}`).join('\n')
+      `📌 Проект: ${name} (${projectId})\n\n` +
+      `Команда проекту:\n${membersListText}`
     );
     return `https://t.me/share/url?url=${text}`;
+  };
+
+  // 2. Копіювання всіх нікнеймів у буфер обміну підряд (@user1 @user2 @user3)
+  const copyTelegramUsernames = () => {
+    const usernames = teamMembers
+      .filter(m => m.telegramUsername.trim().length > 0)
+      .map(m => `@${m.telegramUsername.trim()}`)
+      .join(' ');
+
+    if (usernames) {
+      navigator.clipboard.writeText(usernames);
+      setCopiedSuccess(true);
+      setTimeout(() => setCopiedSuccess(false), 2000);
+    }
   };
 
   const handleFinalSave = () => {
@@ -632,7 +652,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* РОЗДІЛ 3: Команда (Додано в проект одразу після стадій) */}
+      {/* РОЗДІЛ 3: Команда */}
       <div style={{ marginBottom: '30px' }}>
         <div 
           onClick={() => setIsTeamSectionHidden(!isTeamSectionHidden)}
@@ -718,25 +738,43 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             </div>
 
             {teamMembers.length > 0 && (
-              <a
-                href={getTelegramGroupLink()}
-                target="_blank"
-                rel="noreferrer"
-                style={{
-                  display: 'block',
-                  textAlign: 'center',
-                  padding: '12px',
-                  backgroundColor: '#0088cc',
-                  color: '#ffffff',
-                  borderRadius: '10px',
-                  textDecoration: 'none',
-                  fontWeight: 600,
-                  fontSize: '14px',
-                  marginTop: '4px'
-                }}
-              >
-                ✈️ Створити чат проекту в Telegram
-              </a>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+                <button
+                  type="button"
+                  onClick={copyTelegramUsernames}
+                  style={{
+                    padding: '10px',
+                    backgroundColor: '#e5e5ea',
+                    color: '#1c1c1e',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontWeight: 600,
+                    fontSize: '13px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {copiedSuccess ? '✓ Скопійовано у буфер!' : '📋 Скопіювати список нікнеймів'}
+                </button>
+
+                <a
+                  href={getTelegramShareLink()}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    display: 'block',
+                    textAlign: 'center',
+                    padding: '12px',
+                    backgroundColor: '#0088cc',
+                    color: '#ffffff',
+                    borderRadius: '10px',
+                    textDecoration: 'none',
+                    fontWeight: 600,
+                    fontSize: '14px'
+                  }}
+                >
+                  ✈️ Створити/Поділитись чатом у Telegram
+                </a>
+              </div>
             )}
           </div>
         )}
