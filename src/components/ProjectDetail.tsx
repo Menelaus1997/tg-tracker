@@ -27,19 +27,19 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [selectedColor, setSelectedColor] = useState(project.color);
   const colorInputRef = useRef<HTMLInputElement>(null);
 
-  // Загальні дані (Список посилань/адрес)
   const [generalInfoList, setGeneralInfoList] = useState<string[]>(project.generalInfoList || []);
   const [newGeneralInput, setNewGeneralInput] = useState('');
 
-  // Параметри
   const [customFields, setCustomFields] = useState<CustomField[]>(project.customFields || []);
   const [newFieldName, setNewFieldName] = useState('');
   const [newFieldUnit, setNewFieldUnit] = useState('');
 
-  // Стадії
   const [stages, setStages] = useState<Stage[]>(project.stages || []);
   const [newStageTitle, setNewStageTitle] = useState('');
   const [newSubStageTitles, setNewSubStageTitles] = useState<{ [stageId: string]: string }>({});
+
+  // Стан для спадного меню (згортання стадій)
+  const [collapsedStages, setCollapsedStages] = useState<{ [stageId: string]: boolean }>({});
 
   const [editingStageId, setEditingStageId] = useState<string | null>(null);
   const [editingStageTitle, setEditingStageTitle] = useState('');
@@ -53,7 +53,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
   const isArchived = project.status === 'archived';
 
-  // Зміна кольору через +
+  const toggleStageCollapse = (stageId: string) => {
+    setCollapsedStages((prev) => ({ ...prev, [stageId]: !prev[stageId] }));
+  };
+
   const handleCustomColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newCol = e.target.value;
     if (newCol) {
@@ -75,7 +78,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     });
   };
 
-  // --- Загальні дані ---
   const handleAddGeneralInfo = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newGeneralInput.trim() || isArchived) return;
@@ -88,7 +90,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     setGeneralInfoList(generalInfoList.filter((_, i) => i !== index));
   };
 
-  // --- Параметри ---
   const handleAddCustomField = (e: React.FormEvent) => {
     e.preventDefault();
     if (isArchived || (!newFieldName.trim() && !newFieldUnit.trim())) return;
@@ -106,7 +107,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     setCustomFields(customFields.filter((f) => f.id !== id));
   };
 
-  // --- Переміщення підстадій ⬆️ / ⬇️ ---
   const moveSubStage = (stageId: string, index: number, direction: 'up' | 'down') => {
     if (isArchived) return;
     setStages(stages.map((st) => {
@@ -124,7 +124,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     }));
   };
 
-  // --- Стадії та Підстадії ---
   const handleAddStage = (e: React.FormEvent) => {
     e.preventDefault();
     if (isArchived || !newStageTitle.trim()) return;
@@ -231,7 +230,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* Редагування імені/ID/кольору з підтрикою кнопки + */}
       {isEditingMain && (
         <div style={{ padding: '14px', backgroundColor: '#f2f2f7', borderRadius: '12px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div>
@@ -277,7 +275,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       <div style={{ marginBottom: '28px' }}>
         <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>Параметри об'єкта</h3>
 
-        {/* 1. Загальні дані з зеленою кнопкою "Додати" */}
         <div style={{ marginBottom: '16px' }}>
           <label style={labelStyle}>Загальні дані (Адреса / Посилання)</label>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
@@ -305,7 +302,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           )}
         </div>
 
-        {/* Список параметрів */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
           {customFields.map((field) => (
             <div key={field.id} style={{ display: 'flex', gap: '8px', alignItems: 'center', backgroundColor: '#f9f9f9', padding: '8px 10px', borderRadius: '8px' }}>
@@ -335,7 +331,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* РОЗДІЛ 2: Стадії проекту зі стрілочками ⬆️ / ⬇️ */}
+      {/* РОЗДІЛ 2: Стадії проекту зі спадним меню (Collapse) */}
       <div style={{ marginBottom: '30px' }}>
         <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>Стадії проекту</h3>
 
@@ -351,88 +347,100 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {stages.map((st) => (
-            <div key={st.id} style={{ padding: '14px', borderRadius: '10px', backgroundColor: '#f2f2f7' }}>
-              
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                {editingStageId === st.id ? (
-                  <div style={{ display: 'flex', gap: '6px', flex: 1 }}>
-                    <input type="text" value={editingStageTitle} onChange={(e) => setEditingStageTitle(e.target.value)} style={{ ...inputStyle, padding: '4px 8px' }} />
-                    <button onClick={() => handleSaveEditedStage(st.id)} style={{ ...greenBtnStyle, padding: '4px 8px', fontSize: '12px' }}>✓</button>
-                  </div>
-                ) : (
-                  <div style={{ fontWeight: 600, fontSize: '15px', color: '#1c1c1e' }}>{st.title}</div>
-                )}
+          {stages.map((st) => {
+            const isCollapsed = collapsedStages[st.id];
 
-                {!isArchived && editingStageId !== st.id && (
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    <button onClick={() => { setEditingStageId(st.id); setEditingStageTitle(st.title); }} style={iconStyle}>✏️</button>
-                    <button onClick={() => handleDeleteStage(st.id)} style={iconStyle}>🗑️</button>
-                  </div>
-                )}
-              </div>
+            return (
+              <div key={st.id} style={{ padding: '14px', borderRadius: '10px', backgroundColor: '#f2f2f7' }}>
+                
+                {/* Шапка стадії зі стрілочкою спадного меню */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isCollapsed ? '0px' : '10px' }}>
+                  {editingStageId === st.id ? (
+                    <div style={{ display: 'flex', gap: '6px', flex: 1 }}>
+                      <input type="text" value={editingStageTitle} onChange={(e) => setEditingStageTitle(e.target.value)} style={{ ...inputStyle, padding: '4px 8px' }} />
+                      <button onClick={() => handleSaveEditedStage(st.id)} style={{ ...greenBtnStyle, padding: '4px 8px', fontSize: '12px' }}>✓</button>
+                    </div>
+                  ) : (
+                    <div 
+                      onClick={() => toggleStageCollapse(st.id)}
+                      style={{ fontWeight: 600, fontSize: '15px', color: '#1c1c1e', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}
+                    >
+                      <span>{isCollapsed ? '►' : '▼'}</span>
+                      <span>{st.title}</span>
+                    </div>
+                  )}
 
-              {/* Список підстадій із лівими стрілочками ⬆️ ⬇️ */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginLeft: '4px' }}>
-                {st.subStages.map((sub, index) => (
-                  <div key={sub.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '4px' }}>
-                    
-                    {/* Стрілочки переміщення зліва */}
+                  {!isArchived && editingStageId !== st.id && (
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button onClick={() => { setEditingStageId(st.id); setEditingStageTitle(st.title); }} style={iconStyle}>✏️</button>
+                      <button onClick={() => handleDeleteStage(st.id)} style={iconStyle}>🗑️</button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Вміст стадії (Спадний список) */}
+                {!isCollapsed && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginLeft: '4px', marginTop: '6px' }}>
+                    {st.subStages.map((sub, index) => (
+                      <div key={sub.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '4px' }}>
+                        
+                        {!isArchived && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0px' }}>
+                            <button
+                              disabled={index === 0}
+                              onClick={() => moveSubStage(st.id, index, 'up')}
+                              style={{ ...arrowBtnStyle, opacity: index === 0 ? 0.2 : 1 }}
+                            >
+                              ▲
+                            </button>
+                            <button
+                              disabled={index === st.subStages.length - 1}
+                              onClick={() => moveSubStage(st.id, index, 'down')}
+                              style={{ ...arrowBtnStyle, opacity: index === st.subStages.length - 1 ? 0.2 : 1 }}
+                            >
+                              ▼
+                            </button>
+                          </div>
+                        )}
+
+                        {editingSubStageId === sub.id ? (
+                          <div style={{ display: 'flex', gap: '6px', flex: 1 }}>
+                            <input type="text" value={editingSubStageTitle} onChange={(e) => setEditingSubStageTitle(e.target.value)} style={{ ...inputStyle, padding: '4px 8px', fontSize: '13px' }} />
+                            <button onClick={() => handleSaveEditedSubStage(st.id, sub.id)} style={{ ...greenBtnStyle, padding: '4px 8px', fontSize: '12px' }}>✓</button>
+                          </div>
+                        ) : (
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: isArchived ? 'default' : 'pointer', flex: 1 }}>
+                            <input type="checkbox" checked={sub.completed} disabled={isArchived} onChange={() => handleToggleSubStage(st.id, sub.id)} />
+                            <span style={{ textDecoration: sub.completed ? 'line-through' : 'none', color: sub.completed ? '#8e8e93' : '#1c1c1e' }}>
+                              {sub.title}
+                            </span>
+                          </label>
+                        )}
+
+                        {!isArchived && editingSubStageId !== sub.id && (
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <button onClick={() => { setEditingSubStageId(sub.id); setEditingSubStageTitle(sub.title); }} style={{ ...iconStyle, fontSize: '13px' }}>✏️</button>
+                            <button onClick={() => handleDeleteSubStage(st.id, sub.id)} style={{ ...iconStyle, fontSize: '13px' }}>🗑️</button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+
                     {!isArchived && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0px' }}>
-                        <button
-                          disabled={index === 0}
-                          onClick={() => moveSubStage(st.id, index, 'up')}
-                          style={{ ...arrowBtnStyle, opacity: index === 0 ? 0.2 : 1 }}
-                        >
-                          ▲
-                        </button>
-                        <button
-                          disabled={index === st.subStages.length - 1}
-                          onClick={() => moveSubStage(st.id, index, 'down')}
-                          style={{ ...arrowBtnStyle, opacity: index === st.subStages.length - 1 ? 0.2 : 1 }}
-                        >
-                          ▼
-                        </button>
+                      <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+                        <input
+                          type="text" placeholder="+ Підстадія (напр. Виїзд на об'єкт)"
+                          value={newSubStageTitles[st.id] || ''} onChange={(e) => setNewSubStageTitles({ ...newSubStageTitles, [st.id]: e.target.value })}
+                          style={{ ...inputStyle, fontSize: '13px', padding: '6px 8px' }}
+                        />
+                        <button onClick={() => handleAddSubStage(st.id)} style={greenBtnStyle}>+</button>
                       </div>
                     )}
-
-                    {editingSubStageId === sub.id ? (
-                      <div style={{ display: 'flex', gap: '6px', flex: 1 }}>
-                        <input type="text" value={editingSubStageTitle} onChange={(e) => setEditingSubStageTitle(e.target.value)} style={{ ...inputStyle, padding: '4px 8px', fontSize: '13px' }} />
-                        <button onClick={() => handleSaveEditedSubStage(st.id, sub.id)} style={{ ...greenBtnStyle, padding: '4px 8px', fontSize: '12px' }}>✓</button>
-                      </div>
-                    ) : (
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: isArchived ? 'default' : 'pointer', flex: 1 }}>
-                        <input type="checkbox" checked={sub.completed} disabled={isArchived} onChange={() => handleToggleSubStage(st.id, sub.id)} />
-                        <span style={{ textDecoration: sub.completed ? 'line-through' : 'none', color: sub.completed ? '#8e8e93' : '#1c1c1e' }}>
-                          {sub.title}
-                        </span>
-                      </label>
-                    )}
-
-                    {!isArchived && editingSubStageId !== sub.id && (
-                      <div style={{ display: 'flex', gap: '4px' }}>
-                        <button onClick={() => { setEditingSubStageId(sub.id); setEditingSubStageTitle(sub.title); }} style={{ ...iconStyle, fontSize: '13px' }}>✏️</button>
-                        <button onClick={() => handleDeleteSubStage(st.id, sub.id)} style={{ ...iconStyle, fontSize: '13px' }}>🗑️</button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-                {!isArchived && (
-                  <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
-                    <input
-                      type="text" placeholder="+ Підстадія (напр. Виїзд на об'єкт)"
-                      value={newSubStageTitles[st.id] || ''} onChange={(e) => setNewSubStageTitles({ ...newSubStageTitles, [st.id]: e.target.value })}
-                      style={{ ...inputStyle, fontSize: '13px', padding: '6px 8px' }}
-                    />
-                    <button onClick={() => handleAddSubStage(st.id)} style={greenBtnStyle}>+</button>
                   </div>
                 )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
