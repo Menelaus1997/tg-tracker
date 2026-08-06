@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Трекер Проектів</title>
+  <title>Трекер Проектів та Будівництва</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -16,6 +16,7 @@
       --button-text: var(--tg-theme-button-text-color, #ffffff);
       --danger-color: #e53935;
       --success-color: #4caf50;
+      --accent-bg: rgba(51, 144, 236, 0.08);
     }
 
     body {
@@ -23,11 +24,11 @@
       background-color: var(--bg-color);
       color: var(--text-color);
       margin: 0;
-      padding: 0 0 70px 0;
+      padding: 0 0 75px 0;
       box-sizing: border-box;
     }
 
-    /* Bottom Navigation */
+    /* Bottom Navigation Bar */
     .nav-bar {
       position: fixed;
       bottom: 0;
@@ -46,12 +47,12 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      font-size: 11px;
+      font-size: 10px;
       color: var(--hint-color);
       cursor: pointer;
       border: none;
       background: none;
-      width: 33%;
+      width: 25%;
     }
 
     .nav-item.active {
@@ -74,12 +75,12 @@
       box-shadow: 0 2px 5px rgba(0,0,0,0.03);
     }
 
-    h2, h3 { margin-top: 0; margin-bottom: 8px; }
+    h2, h3, h4 { margin-top: 0; margin-bottom: 8px; }
 
-    input, select, button {
+    input, select, button, textarea {
       width: 100%;
-      padding: 10px;
-      margin-bottom: 10px;
+      padding: 9px 12px;
+      margin-bottom: 8px;
       border-radius: 8px;
       border: 1px solid #ddd;
       box-sizing: border-box;
@@ -94,14 +95,33 @@
       cursor: pointer;
     }
 
+    button.btn-secondary {
+      background-color: transparent;
+      color: var(--button-color);
+      border: 1px solid var(--button-color);
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Status Badge */
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: bold;
+      background: #e0e0e0;
+      color: #333;
+    }
+
     /* Progress Bar */
     .progress-bar-bg {
       background: #e0e0e0;
       border-radius: 6px;
-      height: 8px;
+      height: 6px;
       width: 100%;
       overflow: hidden;
-      margin: 6px 0 12px 0;
+      margin: 6px 0 10px 0;
     }
 
     .progress-bar-fill {
@@ -111,7 +131,7 @@
       transition: width 0.3s ease;
     }
 
-    /* Stage Header & Timer */
+    /* Stage Elements */
     .stage-header {
       display: flex;
       justify-content: space-between;
@@ -129,7 +149,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(51, 144, 236, 0.08);
+      background: var(--accent-bg);
       padding: 8px 12px;
       border-radius: 8px;
       margin-bottom: 10px;
@@ -145,7 +165,7 @@
 
     .btn-timer {
       width: auto;
-      padding: 6px 14px;
+      padding: 5px 12px;
       margin: 0;
       font-size: 12px;
       font-weight: bold;
@@ -182,16 +202,13 @@
       cursor: pointer;
     }
 
-    .subtask-text {
-      font-size: 14px;
-    }
-
+    .subtask-text { font-size: 14px; }
     .subtask-text.completed {
       text-decoration: line-through;
       color: var(--hint-color);
     }
 
-    .subtask-actions button {
+    .actions-inline button {
       width: auto;
       padding: 4px 8px;
       margin: 0 0 0 4px;
@@ -200,18 +217,33 @@
       border: 1px solid #ccc;
     }
 
-    .drive-link {
-      display: inline-block;
-      color: var(--button-color);
-      text-decoration: none;
-      font-weight: 600;
-      word-break: break-all;
+    /* Key-Value Pair Item (Passport) */
+    .passport-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 6px;
     }
+    .passport-row input { margin-bottom: 0; }
+
+    /* BOQ Table */
+    .boq-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 10px;
+      font-size: 13px;
+    }
+    .boq-table th, .boq-table td {
+      border: 1px solid #ddd;
+      padding: 6px 8px;
+      text-align: left;
+    }
+    .boq-table th { background: rgba(0,0,0,0.03); }
 
     .chart-container {
       position: relative;
       margin: auto;
-      height: 250px;
+      height: 230px;
       width: 100%;
     }
 
@@ -225,6 +257,26 @@
       margin: 0;
       color: var(--hint-color);
     }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-content {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 20px;
+      width: 100%;
+      max-width: 500px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
   </style>
 </head>
 <body>
@@ -232,35 +284,72 @@
   <!-- VIEW 1: Projects List -->
   <div id="view-projects" class="view active">
     <h2>Ваші Проекти</h2>
+    
+    <div class="card">
+      <h3>Фільтр за статусом</h3>
+      <select id="status-filter" onchange="renderProjectsList()">
+        <option value="ALL">Всі проекти</option>
+        <option value="В роботі">В роботі</option>
+        <option value="На паузі">На паузі</option>
+        <option value="Очікує кошторис">Очікує кошторис</option>
+        <option value="Завершено">Завершено</option>
+      </select>
+    </div>
+
     <div class="card">
       <h3>Створити Новий Проект</h3>
-      <input type="text" id="new-project-name" placeholder="Назва (напр. ЖК Франка 12)">
+      <input type="text" id="new-project-name" placeholder="Назва об'єкта / проекту">
+      <label style="font-size: 12px; color: var(--hint-color);">Обрати шаблон етапів:</label>
       <select id="new-project-template">
-        <option value="full_5">Повний Дизайн-Проект (5 етапів)</option>
-        <option value="basic_3">Базовий Проект / Обміри (3 етапи)</option>
+        <option value="EMPTY">Порожній проект (без етапів)</option>
       </select>
-      <button class="btn-primary" onclick="createProject()">+ Створити Проект</button>
+      
+      <div style="display:flex; gap: 8px;">
+        <button class="btn-primary" onclick="createProject()">+ Створити</button>
+        <button class="btn-secondary" style="width: auto; white-space: nowrap;" onclick="openTemplateManager()">⚙️ Шаблони</button>
+      </div>
     </div>
 
     <div id="projects-list"></div>
   </div>
 
-  <!-- VIEW 2: Active Project Details -->
+  <!-- VIEW 2: Project Details & Passport -->
   <div id="view-details" class="view">
     <div id="project-details-content">
       <p style="color: var(--hint-color);">Оберіть проект у вкладці "Проекти"</p>
     </div>
   </div>
 
-  <!-- VIEW 3: Dashboard & Analytics -->
+  <!-- VIEW 3: Bill of Quantities (Відомість об'ємів) -->
+  <div id="view-boq" class="view">
+    <div id="boq-content">
+      <p style="color: var(--hint-color);">Оберіть проект у вкладці "Проекти"</p>
+    </div>
+  </div>
+
+  <!-- VIEW 4: Dashboard & Analytics -->
   <div id="view-dashboard" class="view">
-    <h2>Дашборд Робочого Часу</h2>
+    <h2>Дашборд & Аналітика</h2>
+    
     <div class="card">
-      <h3 id="dash-project-name">Аналітика Проекту</h3>
-      <p id="dash-total-hours" style="font-weight: 600; font-size: 16px; color: var(--button-color);">Загальний час: 0 год 0 хв</p>
+      <label style="font-size:12px; color:var(--hint-color);">Режим аналітики:</label>
+      <select id="dash-mode-select" onchange="renderDashboard()">
+        <option value="CURRENT">Поточний обраний проект</option>
+        <option value="GLOBAL">Загальна аналітика (Адмін / Керівник)</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <h3 id="dash-title">Аналітика</h3>
+      <p id="dash-total-hours" style="font-weight: 600; font-size: 15px; color: var(--button-color);">Загальний час: 0 год 0 хв</p>
       <div class="chart-container">
         <canvas id="timeChart"></canvas>
       </div>
+    </div>
+
+    <div class="card" id="team-analytics-card" style="display:none;">
+      <h3>Середній час по ролях / етапах</h3>
+      <div id="team-analytics-list"></div>
     </div>
   </div>
 
@@ -271,8 +360,12 @@
       <span>Проекти</span>
     </button>
     <button class="nav-item" onclick="switchTab('details', this)">
-      <span class="nav-icon">⏱️</span>
-      <span>Проект</span>
+      <span class="nav-icon">📄</span>
+      <span>Паспорт/Етапи</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('boq', this)">
+      <span class="nav-icon">📐</span>
+      <span>Об'єми робіт</span>
     </button>
     <button class="nav-item" onclick="switchTab('dashboard', this)">
       <span class="nav-icon">📊</span>
@@ -280,37 +373,41 @@
     </button>
   </div>
 
+  <!-- MODAL: Manage Custom Templates -->
+  <div class="modal-overlay" id="tpl-modal">
+    <div class="modal-content">
+      <h3>Менеджер Шаблонів</h3>
+      <p style="font-size:12px; color:var(--hint-color);">Створіть свій шаблон під буд-роботи, дизайн чи обміри.</p>
+      
+      <div style="border-bottom: 1px dashed #ccc; padding-bottom: 10px; margin-bottom: 10px;">
+        <h4>Новий шаблон</h4>
+        <input type="text" id="tpl-name-input" placeholder="Назва шаблону (напр. Комплексний ремонт)">
+        <button class="btn-primary" onclick="addCustomTemplate()">+ Додати шаблон</button>
+      </div>
+
+      <h4>Існуючі шаблони:</h4>
+      <div id="templates-list-modal"></div>
+
+      <button class="btn-secondary" style="margin-top:15px;" onclick="closeTemplateManager()">Закрити</button>
+    </div>
+  </div>
+
   <script>
     const tg = window.Telegram?.WebApp;
     if (tg) tg.expand();
 
     // App State
-    let projects = JSON.parse(localStorage.getItem('tg_projects_v4') || '[]');
+    let projects = JSON.parse(localStorage.getItem('tg_projects_v5') || '[]');
+    let customTemplates = JSON.parse(localStorage.getItem('tg_templates_v5') || '[]');
     let currentProjectId = projects.length > 0 ? projects[0].id : null;
-    // Map of active stage timers: key = "projId-stageIdx", value = startTimeTimestamp
-    let activeTimers = JSON.parse(localStorage.getItem('tg_active_timers_v4') || '{}');
+    let activeTimers = JSON.parse(localStorage.getItem('tg_active_timers_v5') || '{}');
     let timerInterval = null;
     let chartInstance = null;
 
-    // Standard Templates
-    const templates = {
-      full_5: [
-        { name: "1. Обміри та ТЗ", collapsed: false, seconds: 0, subtasks: [ { title: "Обмірний план", done: false }, { title: "Фотофіксація", done: false }, { title: "ТЗ / Бриф", done: false } ] },
-        { name: "2. Планувальні рішення", collapsed: false, seconds: 0, subtasks: [ { title: "Варіант 1", done: false }, { title: "Варіант 2", done: false }, { title: "Підсумковий план", done: false } ] },
-        { name: "3. 3D Візуалізація", collapsed: false, seconds: 0, subtasks: [ { title: "Концепція / Мудборд", done: false }, { title: "3D Чернетки", done: false }, { title: "Фінальні рендери", done: false } ] },
-        { name: "4. Робочі Креслення", collapsed: false, seconds: 0, subtasks: [ { title: "Демонтаж", done: false }, { title: "Монтаж", done: false }, { title: "Електрика", done: false }, { title: "Сантехніка", done: false }, { title: "Розгортки стін", done: false } ] },
-        { name: "5. Специфікації та Відомості", collapsed: false, seconds: 0, subtasks: [ { title: "Відомість оздоблення", done: false }, { title: "Специфікація освітлення", done: false }, { title: "Меблеві відомості", done: false } ] }
-      ],
-      basic_3: [
-        { name: "1. Обміри та Концепція", collapsed: false, seconds: 0, subtasks: [ { title: "Обмірний план", done: false }, { title: "Планувальне рішення", done: false } ] },
-        { name: "2. Базові Креслення", collapsed: false, seconds: 0, subtasks: [ { title: "План демонтажу", done: false }, { title: "План монтажу", done: false }, { title: "План електрики", done: false } ] },
-        { name: "3. Підсумкова Здача", collapsed: false, seconds: 0, subtasks: [ { title: "Альбом креслень PDF", done: false }, { title: "Передача вихідних файлів", done: false } ] }
-      ]
-    };
-
     function saveState() {
-      localStorage.setItem('tg_projects_v4', JSON.stringify(projects));
-      localStorage.setItem('tg_active_timers_v4', JSON.stringify(activeTimers));
+      localStorage.setItem('tg_projects_v5', JSON.stringify(projects));
+      localStorage.setItem('tg_templates_v5', JSON.stringify(customTemplates));
+      localStorage.setItem('tg_active_timers_v5', JSON.stringify(activeTimers));
     }
 
     function switchTab(tabName, el) {
@@ -321,6 +418,7 @@
       if (el) el.classList.add('active');
 
       if (tabName === 'details') renderDetails();
+      if (tabName === 'boq') renderBOQ();
       if (tabName === 'dashboard') renderDashboard();
     }
 
@@ -335,18 +433,98 @@
       return (totalSeconds / 3600).toFixed(2);
     }
 
+    /* Template Management */
+    function openTemplateManager() {
+      renderTemplatesListModal();
+      document.getElementById('tpl-modal').style.display = 'flex';
+    }
+
+    function closeTemplateManager() {
+      document.getElementById('tpl-modal').style.display = 'none';
+      populateTemplateSelect();
+    }
+
+    function addCustomTemplate() {
+      const input = document.getElementById('tpl-name-input');
+      if (!input.value.trim()) return alert("Введіть назву шаблону!");
+
+      customTemplates.push({
+        id: Date.now(),
+        name: input.value.trim(),
+        stages: [
+          { name: "Етап 1", subtasks: ["Задача 1"] }
+        ]
+      });
+
+      saveState();
+      input.value = "";
+      renderTemplatesListModal();
+    }
+
+    function renderTemplatesListModal() {
+      const container = document.getElementById('templates-list-modal');
+      if (customTemplates.length === 0) {
+        container.innerHTML = "<p style='font-size:12px; color:var(--hint-color);'>Немає власних шаблонів</p>";
+        return;
+      }
+
+      container.innerHTML = customTemplates.map((tpl, idx) => `
+        <div style="background:rgba(0,0,0,0.02); padding:8px; border-radius:6px; margin-bottom:6px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <strong>${tpl.name}</strong>
+            <button onclick="deleteCustomTemplate(${idx})" style="width:auto; padding:2px 6px; font-size:11px; background:red; color:white; border:none; border-radius:4px;">Видалити</button>
+          </div>
+          <p style="font-size:11px; color:var(--hint-color); margin:4px 0 0 0;">Етапів: ${tpl.stages.length}</p>
+        </div>
+      `).join('');
+    }
+
+    function deleteCustomTemplate(idx) {
+      customTemplates.splice(idx, 1);
+      saveState();
+      renderTemplatesListModal();
+    }
+
+    function populateTemplateSelect() {
+      const select = document.getElementById('new-project-template');
+      select.innerHTML = '<option value="EMPTY">Порожній проект (без етапів)</option>';
+      customTemplates.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.id;
+        opt.innerText = t.name;
+        select.appendChild(opt);
+      });
+    }
+
+    /* Projects Management */
     function createProject() {
       const nameInput = document.getElementById('new-project-name');
-      const templateSelect = document.getElementById('new-project-template');
+      const tplSelect = document.getElementById('new-project-template');
       
       if (!nameInput.value.trim()) return alert("Введіть назву проекту!");
 
-      const selectedTpl = templates[templateSelect.value];
+      let initialStages = [];
+      if (tplSelect.value !== 'EMPTY') {
+        const foundTpl = customTemplates.find(t => t.id == tplSelect.value);
+        if (foundTpl) {
+          initialStages = foundTpl.stages.map(st => ({
+            name: st.name,
+            collapsed: false,
+            seconds: 0,
+            subtasks: st.subtasks.map(sub => ({ title: sub, done: false }))
+          }));
+        }
+      }
+
       const newProj = {
         id: Date.now(),
         name: nameInput.value.trim(),
+        status: "В роботі",
         driveUrl: "",
-        stages: JSON.parse(JSON.stringify(selectedTpl))
+        passport: [], // Dynamic Key-Value Pairs
+        team: [],     // Dynamic Team Members
+        stages: initialStages,
+        boq: []       // Bill of Quantities
       };
 
       projects.push(newProj);
@@ -360,20 +538,26 @@
 
     function renderProjectsList() {
       const container = document.getElementById('projects-list');
+      const filter = document.getElementById('status-filter').value;
       container.innerHTML = "";
 
-      if (projects.length === 0) {
-        container.innerHTML = "<p style='color: var(--hint-color);'>Немає активних проектів</p>";
+      let filtered = projects;
+      if (filter !== 'ALL') {
+        filtered = projects.filter(p => p.status === filter);
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = "<p style='color: var(--hint-color);'>Немає проектів за даним фільтром</p>";
         return;
       }
 
-      projects.forEach(p => {
+      filtered.forEach(p => {
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h3>${p.name}</h3>
-            ${p.id === currentProjectId ? '<span style="color:var(--button-color); font-size:12px; font-weight:bold;">● Активний</span>' : ''}
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <h3 style="margin:0;">${p.name}</h3>
+            <span class="badge">${p.status || 'В роботі'}</span>
           </div>
           <button class="btn-primary" onclick="selectProject(${p.id})">Відкрити Проект</button>
           <button onclick="deleteProject(${p.id})" style="background:none; border:none; color:red; cursor:pointer; margin-top:5px; font-size:12px;">Видалити проект</button>
@@ -389,13 +573,14 @@
     }
 
     function deleteProject(id) {
-      if (!confirm("Видалити проект?")) return;
+      if (!confirm("Видалити цей проект?")) return;
       projects = projects.filter(p => p.id !== id);
       if (currentProjectId === id) currentProjectId = projects.length > 0 ? projects[0].id : null;
       saveState();
       renderProjectsList();
     }
 
+    /* VIEW 2: Details, Passport, Team, Stages */
     function renderDetails() {
       const container = document.getElementById('project-details-content');
       const proj = projects.find(p => p.id === currentProjectId);
@@ -406,12 +591,63 @@
       }
 
       let html = `
-        <h2>${proj.name}</h2>
-        <div class="card">
-          <label style="font-size:12px; color:var(--hint-color);">Гугл Диск / Робочі файли:</label>
-          <input type="url" value="${proj.driveUrl || ''}" placeholder="https://drive.google.com/..." onchange="updateDriveUrl(this.value)">
-          ${proj.driveUrl ? `<a href="${proj.driveUrl}" target="_blank" class="drive-link">🔗 Відкрити Google Drive</a>` : ''}
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <h2 style="margin:0;">${proj.name}</h2>
         </div>
+
+        <div class="card">
+          <label style="font-size:12px; color:var(--hint-color);">Статус проекту:</label>
+          <select onchange="updateProjectStatus(this.value)">
+            <option value="В роботі" ${proj.status === 'В роботі' ? 'selected' : ''}>В роботі</option>
+            <option value="На паузі" ${proj.status === 'На паузі' ? 'selected' : ''}>На паузі</option>
+            <option value="Очікує кошторис" ${proj.status === 'Очікує кошторис' ? 'selected' : ''}>Очікує кошторис</option>
+            <option value="Завершено" ${proj.status === 'Завершено' ? 'selected' : ''}>Завершено</option>
+          </select>
+        </div>
+
+        <!-- 100% Dynamic Passport -->
+        <div class="card">
+          <h3>Паспорт Об'єкта</h3>
+          <p style="font-size:11px; color:var(--hint-color);">Додавайте власні текстові чи числові параметри об'єкта.</p>
+          <div id="passport-fields-list">
+            ${(proj.passport || []).map((field, fIdx) => `
+              <div class="passport-row">
+                <input type="text" value="${field.key}" style="flex:1;" placeholder="Назва" onchange="updatePassportKey(${fIdx}, this.value)">
+                <input type="text" value="${field.value}" style="flex:1.5;" placeholder="Значення" onchange="updatePassportValue(${fIdx}, this.value)">
+                <button onclick="deletePassportField(${fIdx})" style="width:auto; padding:6px; background:none; border:none; color:red; cursor:pointer;">🗑️</button>
+              </div>
+            `).join('')}
+          </div>
+          <button class="btn-secondary" style="margin-top:6px;" onclick="addPassportField()">+ Додати поле у паспорт</button>
+        </div>
+
+        <!-- Team & Group Chat -->
+        <div class="card">
+          <h3>Команда Проекту</h3>
+          <div id="team-list">
+            ${(proj.team || []).map((m, mIdx) => `
+              <div class="subtask-item">
+                <div>
+                  <strong>${m.name}</strong> <span style="font-size:12px; color:var(--hint-color);">(${m.role})</span>
+                  <div style="font-size:11px; color:var(--button-color);">${m.tg || ''}</div>
+                </div>
+                <button onclick="deleteTeamMember(${mIdx})" style="width:auto; background:none; border:none; color:red; cursor:pointer;">🗑️</button>
+              </div>
+            `).join('')}
+          </div>
+          <button class="btn-secondary" onclick="addTeamMember()">+ Додати учасника</button>
+          <button class="btn-primary" style="margin-top:6px;" onclick="openTelegramGroupShare()">💬 Створити / Надіслати чат проекту</button>
+        </div>
+
+        <!-- Google Drive -->
+        <div class="card">
+          <label style="font-size:12px; color:var(--hint-color);">Гугл Диск / Файли:</label>
+          <input type="url" value="${proj.driveUrl || ''}" placeholder="https://drive.google.com/..." onchange="updateDriveUrl(this.value)">
+          ${proj.driveUrl ? `<a href="${proj.driveUrl}" target="_blank" style="color:var(--button-color); font-weight:bold; font-size:13px;">🔗 Відкрити Google Drive</a>` : ''}
+        </div>
+
+        <!-- Stages & Tasks -->
+        <h3>Етапи Робіт</h3>
       `;
 
       proj.stages.forEach((stage, sIdx) => {
@@ -424,7 +660,6 @@
           currentSecs += elapsed;
         }
 
-        // Calculate progress percentage
         const totalSubs = stage.subtasks.length;
         const doneSubs = stage.subtasks.filter(s => s.done).length;
         const progressPercent = totalSubs > 0 ? Math.round((doneSubs / totalSubs) * 100) : 0;
@@ -434,7 +669,7 @@
             <div class="stage-header">
               <div class="stage-title-wrap" onclick="toggleStageCollapse(${sIdx})">
                 <button class="toggle-btn">${stage.collapsed ? '▶' : '🔽'}</button>
-                <h3 style="margin:0;">${stage.name}</h3>
+                <h3 style="margin:0; font-size:15px;">${stage.name}</h3>
               </div>
               <span style="font-weight:bold; font-size:13px; color:var(--button-color);">${progressPercent}%</span>
             </div>
@@ -443,9 +678,8 @@
               <div class="progress-bar-fill" style="width: ${progressPercent}%;"></div>
             </div>
 
-            <!-- Stage Timer -->
             <div class="stage-timer-row">
-              <span class="timer-display" title="Натисніть для ручного редагування" onclick="manualEditStageTime(${sIdx})">
+              <span class="timer-display" onclick="manualEditStageTime(${sIdx})">
                 ⏱️ ${formatTime(currentSecs)} ${isRunning ? '⏳' : ''}
               </span>
               ${isRunning ? 
@@ -454,7 +688,6 @@
               }
             </div>
 
-            <!-- Subtasks Container (Collapsible) -->
             <div style="display: ${stage.collapsed ? 'none' : 'block'};">
               <div id="subtasks-${sIdx}">
                 ${stage.subtasks.map((sub, subIdx) => `
@@ -463,7 +696,7 @@
                       <input type="checkbox" ${sub.done ? 'checked' : ''} onchange="toggleSubtaskDone(${sIdx}, ${subIdx})">
                       <span class="subtask-text ${sub.done ? 'completed' : ''}">${sub.title}</span>
                     </div>
-                    <div class="subtask-actions">
+                    <div class="actions-inline">
                       <button onclick="editSubtaskTitle(${sIdx}, ${subIdx})">✏️</button>
                       <button onclick="deleteSubtask(${sIdx}, ${subIdx})">🗑️</button>
                     </div>
@@ -471,25 +704,100 @@
                 `).join('')}
               </div>
               <div style="display:flex; gap:5px; margin-top:10px;">
-                <input type="text" id="new-sub-input-${sIdx}" placeholder="Назва аркуша/підзадачі" style="margin-bottom:0;">
+                <input type="text" id="new-sub-input-${sIdx}" placeholder="Назва підзадачі / аркуша" style="margin-bottom:0;">
                 <button class="btn-primary" style="width:50px; margin-bottom:0;" onclick="addSubtask(${sIdx})">+</button>
               </div>
             </div>
-
           </div>
         `;
       });
 
+      html += `<button class="btn-secondary" onclick="addNewStage()">+ Додати Новий Етап</button>`;
+
       container.innerHTML = html;
+    }
+
+    /* Passport Helpers */
+    function updateProjectStatus(val) {
+      const proj = projects.find(p => p.id === currentProjectId);
+      if (proj) { proj.status = val; saveState(); }
+    }
+
+    function addPassportField() {
+      const proj = projects.find(p => p.id === currentProjectId);
+      if (proj) {
+        if (!proj.passport) proj.passport = [];
+        proj.passport.push({ key: "", value: "" });
+        saveState();
+        renderDetails();
+      }
+    }
+
+    function updatePassportKey(fIdx, val) {
+      const proj = projects.find(p => p.id === currentProjectId);
+      if (proj && proj.passport[fIdx]) { proj.passport[fIdx].key = val; saveState(); }
+    }
+
+    function updatePassportValue(fIdx, val) {
+      const proj = projects.find(p => p.id === currentProjectId);
+      if (proj && proj.passport[fIdx]) { proj.passport[fIdx].value = val; saveState(); }
+    }
+
+    function deletePassportField(fIdx) {
+      const proj = projects.find(p => p.id === currentProjectId);
+      if (proj && proj.passport) { proj.passport.splice(fIdx, 1); saveState(); renderDetails(); }
+    }
+
+    /* Team Helpers */
+    function addTeamMember() {
+      const proj = projects.find(p => p.id === currentProjectId);
+      if (!proj) return;
+
+      const name = prompt("Ім'я учасника:");
+      if (!name) return;
+      const role = prompt("Роль (напр. Виконроб, Кресляр, Кошторисник):", "Виконавець");
+      const tg = prompt("Telegram Nickname (@username або номер):", "@");
+
+      if (!proj.team) proj.team = [];
+      proj.team.push({ name, role: role || 'Виконавець', tg: tg || '' });
+      saveState();
+      renderDetails();
+    }
+
+    function deleteTeamMember(mIdx) {
+      const proj = projects.find(p => p.id === currentProjectId);
+      if (proj && proj.team) { proj.team.splice(mIdx, 1); saveState(); renderDetails(); }
+    }
+
+    function openTelegramGroupShare() {
+      const proj = projects.find(p => p.id === currentProjectId);
+      if (!proj) return;
+
+      const text = `Проект: ${proj.name}\nУчасники:\n` + 
+        (proj.team || []).map(m => `- ${m.name} (${m.role}): ${m.tg}`).join('\n');
+
+      if (window.Telegram?.WebApp?.shareToStory) {
+        window.Telegram.WebApp.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(text)}`);
+      } else {
+        window.open(`https://t.me/share/url?url=${encodeURIComponent(text)}`, '_blank');
+      }
+    }
+
+    /* Stage & Task Helpers */
+    function addNewStage() {
+      const proj = projects.find(p => p.id === currentProjectId);
+      if (!proj) return;
+      const name = prompt("Назва нового етапу (напр. 3. Електромонтажні роботи):");
+      if (name && name.trim()) {
+        proj.stages.push({ name: name.trim(), collapsed: false, seconds: 0, subtasks: [] });
+        saveState();
+        renderDetails();
+      }
     }
 
     function toggleStageCollapse(sIdx) {
       const proj = projects.find(p => p.id === currentProjectId);
-      if (proj) {
-        proj.stages[sIdx].collapsed = !proj.stages[sIdx].collapsed;
-        saveState();
-        renderDetails();
-      }
+      if (proj) { proj.stages[sIdx].collapsed = !proj.stages[sIdx].collapsed; saveState(); renderDetails(); }
     }
 
     function toggleSubtaskDone(sIdx, subIdx) {
@@ -503,11 +811,7 @@
 
     function updateDriveUrl(val) {
       const proj = projects.find(p => p.id === currentProjectId);
-      if (proj) {
-        proj.driveUrl = val;
-        saveState();
-        renderDetails();
-      }
+      if (proj) { proj.driveUrl = val; saveState(); renderDetails(); }
     }
 
     function toggleStageTimer(sIdx) {
@@ -515,14 +819,11 @@
       if (!proj) return;
 
       const timerKey = `${proj.id}-${sIdx}`;
-
       if (activeTimers[timerKey]) {
-        // Stop timer
         const elapsed = Math.floor((Date.now() - activeTimers[timerKey]) / 1000);
         proj.stages[sIdx].seconds = (proj.stages[sIdx].seconds || 0) + elapsed;
         delete activeTimers[timerKey];
       } else {
-        // Start timer for stage
         activeTimers[timerKey] = Date.now();
       }
 
@@ -548,20 +849,15 @@
     function manualEditStageTime(sIdx) {
       const proj = projects.find(p => p.id === currentProjectId);
       if (!proj) return;
-      
       const timerKey = `${proj.id}-${sIdx}`;
       const stage = proj.stages[sIdx];
       const currentMinutes = Math.round((stage.seconds || 0) / 60);
       
-      const newMinutesStr = prompt(`Введіть новий час для етапу "${stage.name}" у ХВИЛИНАХ:`, currentMinutes);
+      const newMinutesStr = prompt(`Введіть новий час для "${stage.name}" у ХВИЛИНАХ:`, currentMinutes);
       if (newMinutesStr !== null && !isNaN(newMinutesStr)) {
         const mins = parseInt(newMinutesStr);
         stage.seconds = mins > 0 ? mins * 60 : 0;
-        
-        if (activeTimers[timerKey]) {
-          activeTimers[timerKey] = Date.now();
-        }
-
+        if (activeTimers[timerKey]) activeTimers[timerKey] = Date.now();
         saveState();
         renderDetails();
       }
@@ -570,10 +866,9 @@
     function editSubtaskTitle(sIdx, subIdx) {
       const proj = projects.find(p => p.id === currentProjectId);
       if (!proj) return;
-
       const sub = proj.stages[sIdx].subtasks[subIdx];
-      const newTitle = prompt("Введіть нову назву аркуша/підзадачі:", sub.title);
-      if (newTitle !== null && newTitle.trim() !== "") {
+      const newTitle = prompt("Назва підзадачі:", sub.title);
+      if (newTitle && newTitle.trim()) {
         sub.title = newTitle.trim();
         saveState();
         renderDetails();
@@ -582,8 +877,7 @@
 
     function deleteSubtask(sIdx, subIdx) {
       const proj = projects.find(p => p.id === currentProjectId);
-      if (!proj || !confirm("Видалити цей аркуш/підзадачу?")) return;
-
+      if (!proj || !confirm("Видалити задачу?")) return;
       proj.stages[sIdx].subtasks.splice(subIdx, 1);
       saveState();
       renderDetails();
@@ -592,7 +886,6 @@
     function addSubtask(sIdx) {
       const input = document.getElementById(`new-sub-input-${sIdx}`);
       if (!input.value.trim()) return;
-      
       const proj = projects.find(p => p.id === currentProjectId);
       if (proj) {
         proj.stages[sIdx].subtasks.push({ title: input.value.trim(), done: false });
@@ -601,33 +894,169 @@
       }
     }
 
-    function renderDashboard() {
+    /* VIEW 3: Bill of Quantities (Відомість об'ємів) */
+    function renderBOQ() {
+      const container = document.getElementById('boq-content');
       const proj = projects.find(p => p.id === currentProjectId);
-      const nameEl = document.getElementById('dash-project-name');
-      const totalHoursEl = document.getElementById('dash-total-hours');
 
       if (!proj) {
-        nameEl.innerText = "Проект не обрано";
-        totalHoursEl.innerText = "";
+        container.innerHTML = "<p style='color: var(--hint-color);'>Оберіть або створіть проект у вкладці 'Проекти'.</p>";
         return;
       }
 
-      nameEl.innerText = `Аналітика: ${proj.name}`;
-      
-      const labels = [];
-      const hoursData = [];
+      if (!proj.boq) proj.boq = [];
+
+      let grandTotal = 0;
+      proj.boq.forEach(item => {
+        grandTotal += (parseFloat(item.qty) || 0) * (parseFloat(item.price) || 0);
+      });
+
+      let html = `
+        <h2>Відомість об'ємів: ${proj.name}</h2>
+        <div class="card" style="background:var(--accent-bg);">
+          <h3 style="margin:0; color:var(--button-color);">Орієнтовна вартість: ${grandTotal.toLocaleString()} грн</h3>
+        </div>
+
+        <div class="card" style="overflow-x:auto;">
+          <table class="boq-table">
+            <thead>
+              <tr>
+                <th>Найменування робіт</th>
+                <th>Од.</th>
+                <th>Кільк.</th>
+                <th>Ціна</th>
+                <th>Сума</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${proj.boq.map((b, idx) => {
+                const total = (parseFloat(b.qty) || 0) * (parseFloat(b.price) || 0);
+                return `
+                  <tr>
+                    <td>${b.name}</td>
+                    <td>${b.unit}</td>
+                    <td>${b.qty}</td>
+                    <td>${b.price}</td>
+                    <td><strong>${total.toLocaleString()}</strong></td>
+                    <td><button onclick="deleteBOQItem(${idx})" style="background:none; border:none; color:red; cursor:pointer;">🗑️</button></td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+
+          <button class="btn-primary" onclick="addBOQItem()">+ Додати позицію робіт</button>
+        </div>
+      `;
+
+      container.innerHTML = html;
+    }
+
+    function addBOQItem() {
+      const proj = projects.find(p => p.id === currentProjectId);
+      if (!proj) return;
+
+      const name = prompt("Назва роботи (напр. Укладка плитки):");
+      if (!name) return;
+      const unit = prompt("Одиниця виміру (м², п.м, шт, компл):", "м²");
+      const qty = prompt("Кількість / Об'єм:", "1");
+      const price = prompt("Ціна за одиницю (грн):", "0");
+
+      if (!proj.boq) proj.boq = [];
+      proj.boq.push({
+        name,
+        unit: unit || 'м²',
+        qty: parseFloat(qty) || 0,
+        price: parseFloat(price) || 0
+      });
+
+      saveState();
+      renderBOQ();
+    }
+
+    function deleteBOQItem(idx) {
+      const proj = projects.find(p => p.id === currentProjectId);
+      if (proj && proj.boq) {
+        proj.boq.splice(idx, 1);
+        saveState();
+        renderBOQ();
+      }
+    }
+
+    /* VIEW 4: Dashboard & Global Analytics */
+    function renderDashboard() {
+      const mode = document.getElementById('dash-mode-select').value;
+      const titleEl = document.getElementById('dash-title');
+      const totalHoursEl = document.getElementById('dash-total-hours');
+      const teamCard = document.getElementById('team-analytics-card');
+      const teamList = document.getElementById('team-analytics-list');
+
+      let labels = [];
+      let hoursData = [];
       let grandTotalSecs = 0;
 
-      proj.stages.forEach((st, sIdx) => {
-        const timerKey = `${proj.id}-${sIdx}`;
-        let secs = st.seconds || 0;
-        if (activeTimers[timerKey]) {
-          secs += Math.floor((Date.now() - activeTimers[timerKey]) / 1000);
+      if (mode === 'CURRENT') {
+        teamCard.style.display = 'none';
+        const proj = projects.find(p => p.id === currentProjectId);
+        if (!proj) {
+          titleEl.innerText = "Проект не обрано";
+          totalHoursEl.innerText = "";
+          return;
         }
-        labels.push(st.name);
-        hoursData.push(formatHoursDecimal(secs));
-        grandTotalSecs += secs;
-      });
+
+        titleEl.innerText = `Аналітика: ${proj.name}`;
+
+        proj.stages.forEach((st, sIdx) => {
+          const timerKey = `${proj.id}-${sIdx}`;
+          let secs = st.seconds || 0;
+          if (activeTimers[timerKey]) {
+            secs += Math.floor((Date.now() - activeTimers[timerKey]) / 1000);
+          }
+          labels.push(st.name);
+          hoursData.push(formatHoursDecimal(secs));
+          grandTotalSecs += secs;
+        });
+
+      } else {
+        // GLOBAL ADMIN ANALYTICS
+        titleEl.innerText = "Глобальна Аналітика по всіх проектах";
+        teamCard.style.display = 'block';
+
+        const stageTimeMap = {};
+
+        projects.forEach(p => {
+          p.stages.forEach((st, sIdx) => {
+            const timerKey = `${p.id}-${sIdx}`;
+            let secs = st.seconds || 0;
+            if (activeTimers[timerKey]) {
+              secs += Math.floor((Date.now() - activeTimers[timerKey]) / 1000);
+            }
+            
+            labels.push(`${p.name} - ${st.name}`);
+            hoursData.push(formatHoursDecimal(secs));
+            grandTotalSecs += secs;
+
+            if (!stageTimeMap[st.name]) stageTimeMap[st.name] = { totalSecs: 0, count: 0 };
+            stageTimeMap[st.name].totalSecs += secs;
+            stageTimeMap[st.name].count += 1;
+          });
+        });
+
+        // Calculate average stage durations
+        let teamHtml = "";
+        Object.keys(stageTimeMap).forEach(stName => {
+          const avgSecs = stageTimeMap[stName].totalSecs / stageTimeMap[stName].count;
+          const avgHours = formatHoursDecimal(avgSecs);
+          teamHtml += `
+            <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #eee; font-size:13px;">
+              <span>${stName}</span>
+              <strong>Сер. час: ${avgHours} год</strong>
+            </div>
+          `;
+        });
+        teamList.innerHTML = teamHtml || "<p style='font-size:12px;'>Немає даних</p>";
+      }
 
       const totalH = Math.floor(grandTotalSecs / 3600);
       const totalM = Math.floor((grandTotalSecs % 3600) / 60);
@@ -642,7 +1071,7 @@
         data: {
           labels: labels,
           datasets: [{
-            label: 'Витрачено годин на етап',
+            label: 'Годин витрачено',
             data: hoursData,
             backgroundColor: '#3390ec',
             borderRadius: 6
@@ -658,12 +1087,10 @@
       });
     }
 
-    // Init timer loop check
+    // Init Logic
+    populateTemplateSelect();
     checkTimerLoopState();
-
-    // Init List
     renderProjectsList();
   </script>
 </body>
 </html>
-
