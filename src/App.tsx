@@ -44,14 +44,12 @@ export interface SavedTemplate {
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('create');
   
-  // Автоматична коригувальна завантаження зі зняттям блокувань
   const [projects, setProjects] = useState<Project[]>(() => {
     try {
       const saved = localStorage.getItem('app_projects');
       if (!saved) return [];
       const parsed: any[] = JSON.parse(saved);
 
-      // Примусово створюємо унікальний uid для кожного об'єкта
       return parsed.map((p, idx) => ({
         ...p,
         uid: p.uid || `${Date.now()}-${idx}-${Math.random().toString(36).substr(2, 5)}`
@@ -71,7 +69,6 @@ export const App: React.FC = () => {
   });
 
   const [selectedProjectUid, setSelectedProjectUid] = useState<string | null>(null);
-  const [showTemplatesArchive, setShowTemplatesArchive] = useState<boolean>(false);
 
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
@@ -120,7 +117,6 @@ export const App: React.FC = () => {
     setConfirmModal({ isOpen: true, type, projectUid });
   };
 
-  // Виправлена функція видалення (без заблокованих перевірок)
   const handleConfirmAction = () => {
     const { type, projectUid } = confirmModal;
     if (!projectUid || !type) return;
@@ -142,14 +138,6 @@ export const App: React.FC = () => {
     );
   };
 
-  // Функція ручного примусового очищення кешу проектів
-  const handleClearProjectsCache = () => {
-    if (window.confirm('Ви дійсно бажаєте повністю очистити кеш проектів?')) {
-      setProjects([]);
-      localStorage.removeItem('app_projects');
-    }
-  };
-
   const activeProjects = projects.filter((p) => p.status === 'active');
   const archivedProjects = projects.filter((p) => p.status === 'archived');
   const deletedProjects = projects.filter((p) => p.status === 'deleted');
@@ -167,6 +155,7 @@ export const App: React.FC = () => {
         <CreateProject 
           onCreateProject={handleCreateProject} 
           availableTemplates={templates}
+          onDeleteTemplate={handleDeleteTemplate}
         />
       )}
 
@@ -265,76 +254,6 @@ export const App: React.FC = () => {
                 </div>
               </div>
             )}
-
-            {/* Архів шаблонів */}
-            <div style={{ marginTop: '30px', borderTop: '1px solid #e5e5ea', paddingTop: '16px' }}>
-              <button
-                onClick={() => setShowTemplatesArchive(!showTemplatesArchive)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#007aff',
-                  fontSize: '15px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  padding: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}
-              >
-                <span>{showTemplatesArchive ? '▼' : '►'}</span>
-                <span>📁 Архів шаблонів ({templates.length})</span>
-              </button>
-
-              {showTemplatesArchive && (
-                <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {templates.length === 0 ? (
-                    <div style={{ fontSize: '13px', color: '#8e8e93', paddingLeft: '16px' }}>Немає збережених шаблонів</div>
-                  ) : (
-                    templates.map((tmpl) => (
-                      <div
-                        key={tmpl.id}
-                        style={{
-                          padding: '10px 14px',
-                          backgroundColor: '#f2f2f7',
-                          borderRadius: '8px',
-                          display: 'flex',
-                          justify: 'space-between',
-                          alignItems: 'center'
-                        }}
-                      >
-                        <span style={{ fontSize: '14px', fontWeight: 500 }}>{tmpl.name}</span>
-                        <button
-                          onClick={() => handleDeleteTemplate(tmpl.id)}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}
-                          title="Видалити шаблон"
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Кнопка екстреного скидання кешу проектів */}
-            <div style={{ marginTop: '24px', textAlign: 'center' }}>
-              <button
-                onClick={handleClearProjectsCache}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#8e8e93',
-                  fontSize: '12px',
-                  textDecoration: 'underline',
-                  cursor: 'pointer'
-                }}
-              >
-                Очистити всі завислі проекти (Скинути кеш)
-              </button>
-            </div>
 
           </div>
         )
