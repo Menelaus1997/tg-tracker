@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BottomNavigation } from './components/BottomNavigation';
 import { CreateProject } from './components/CreateProject';
+import { ProjectDetail } from './components/ProjectDetail';
 import { TabType } from './types';
 
 export interface CustomField {
@@ -108,109 +109,120 @@ export const App: React.FC = () => {
         <CreateProject onCreateProject={handleCreateProject} />
       )}
 
+      {/* Вкладка проектів */}
       {activeTab === 'projects' && (
-        <div style={{ padding: '20px', color: '#1c1c1e', maxWidth: '500px', margin: '0 auto' }}>
-          <h2 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '16px' }}>Проекти</h2>
+        selectedProject ? (
+          /* Якщо проект обрано — показуємо детальний перегляд із полями та стадіями */
+          <ProjectDetail
+            project={selectedProject}
+            onUpdateProject={(updated) => {
+              setProjects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+            }}
+            onBack={() => setSelectedProjectId(null)}
+          />
+        ) : (
+          /* Якщо проект не обрано — показуємо загальний список */
+          <div style={{ padding: '20px', color: '#1c1c1e', maxWidth: '500px', margin: '0 auto' }}>
+            <h2 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '16px' }}>Проекти</h2>
 
-          {/* Список активних проектів */}
-          {activeProjects.length === 0 ? (
-            <p style={{ color: '#8e8e93' }}>Немає активних проектів.</p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {activeProjects.map((prj) => (
-                <div
-                  key={prj.id}
-                  style={{
-                    padding: '16px',
-                    borderRadius: '12px',
-                    backgroundColor: '#f2f2f7',
-                    display: 'flex',
-                    justify: 'space-between',
-                    alignItems: 'center'
-                  }}
-                >
-                  <div 
-                    onClick={() => setSelectedProjectId(prj.id)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', flex: 1 }}
+            {/* Список активних проектів */}
+            {activeProjects.length === 0 ? (
+              <p style={{ color: '#8e8e93' }}>Немає активних проектів.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {activeProjects.map((prj) => (
+                  <div
+                    key={prj.id}
+                    style={{
+                      padding: '16px',
+                      borderRadius: '12px',
+                      backgroundColor: '#f2f2f7',
+                      display: 'flex',
+                      justify: 'space-between',
+                      alignItems: 'center'
+                    }}
                   >
-                    {/* Збільшена кругла точка замість бокової смужки */}
-                    <span style={{
-                      width: '20px',
-                      height: '20px',
-                      borderRadius: '50%',
-                      backgroundColor: prj.color,
-                      display: 'inline-block',
-                      flexShrink: 0
-                    }} />
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: '16px', color: '#1c1c1e' }}>{prj.name}</div>
-                      <div style={{ fontSize: '13px', color: '#8e8e93', marginTop: '2px' }}>{prj.id}</div>
-                    </div>
-                  </div>
-
-                  {/* Елементи управління */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <button
+                    <div 
                       onClick={() => setSelectedProjectId(prj.id)}
-                      title="Редагувати вміст"
-                      style={iconBtnStyle}
+                      style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', flex: 1 }}
                     >
-                      ✏️
-                    </button>
-                    <button
-                      onClick={() => openConfirm('archive', prj.id)}
-                      title="Архівувати проект"
-                      style={iconBtnStyle}
-                    >
-                      📦
-                    </button>
-                    <button
-                      onClick={() => openConfirm('delete', prj.id)}
-                      title="Видалити проект"
-                      style={iconBtnStyle}
-                    >
-                      🗑️
-                    </button>
+                      <span style={{
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: '50%',
+                        backgroundColor: prj.color,
+                        display: 'inline-block',
+                        flexShrink: 0
+                      }} />
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '16px', color: '#1c1c1e' }}>{prj.name}</div>
+                        <div style={{ fontSize: '13px', color: '#8e8e93', marginTop: '2px' }}>{prj.id}</div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <button
+                        onClick={() => setSelectedProjectId(prj.id)}
+                        title="Редагувати вміст"
+                        style={iconBtnStyle}
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        onClick={() => openConfirm('archive', prj.id)}
+                        title="Архівувати проект"
+                        style={iconBtnStyle}
+                      >
+                        📦
+                      </button>
+                      <button
+                        onClick={() => openConfirm('delete', prj.id)}
+                        title="Видалити проект"
+                        style={iconBtnStyle}
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </div>
+                ))}
+              </div>
+            )}
+
+            {/* Блок архівних проектів */}
+            {archivedProjects.length > 0 && (
+              <div style={{ marginTop: '30px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#8e8e93', marginBottom: '10px' }}>📦 Архів проектів (зафіксовані)</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {archivedProjects.map((prj) => (
+                    <div key={prj.id} style={{ padding: '12px 16px', backgroundColor: '#f9f9f9', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', opacity: 0.8 }}>
+                      <div onClick={() => setSelectedProjectId(prj.id)} style={{ cursor: 'pointer' }}>
+                        <span style={{ fontWeight: 600 }}>{prj.name}</span> <span style={{ fontSize: '12px', color: '#8e8e93' }}>({prj.id})</span>
+                      </div>
+                      <button onClick={() => restoreProject(prj.id)} style={smallBtnStyle}>Розархівувати</button>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-
-          {/* Блок архівних проектів */}
-          {archivedProjects.length > 0 && (
-            <div style={{ marginTop: '30px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#8e8e93', marginBottom: '10px' }}>📦 Архів проектів (зафіксовані)</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {archivedProjects.map((prj) => (
-                  <div key={prj.id} style={{ padding: '12px 16px', backgroundColor: '#f9f9f9', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', opacity: 0.8 }}>
-                    <div>
-                      <span style={{ fontWeight: 600 }}>{prj.name}</span> <span style={{ fontSize: '12px', color: '#8e8e93' }}>({prj.id})</span>
-                    </div>
-                    <button onClick={() => restoreProject(prj.id)} style={smallBtnStyle}>Розархівувати</button>
-                  </div>
-                ))}
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Блок Корзини (для адміна) */}
-          {deletedProjects.length > 0 && (
-            <div style={{ marginTop: '30px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#ff3b30', marginBottom: '10px' }}>🗑️ Корзина (Видалені об’єкти)</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {deletedProjects.map((prj) => (
-                  <div key={prj.id} style={{ padding: '12px 16px', backgroundColor: '#fff0f0', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <span style={{ fontWeight: 600 }}>{prj.name}</span> <span style={{ fontSize: '12px', color: '#8e8e93' }}>({prj.id})</span>
+            {/* Блок Корзини */}
+            {deletedProjects.length > 0 && (
+              <div style={{ marginTop: '30px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#ff3b30', marginBottom: '10px' }}>🗑️ Корзина (Видалені об’єкти)</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {deletedProjects.map((prj) => (
+                    <div key={prj.id} style={{ padding: '12px 16px', backgroundColor: '#fff0f0', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <span style={{ fontWeight: 600 }}>{prj.name}</span> <span style={{ fontSize: '12px', color: '#8e8e93' }}>({prj.id})</span>
+                      </div>
+                      <button onClick={() => restoreProject(prj.id)} style={{ ...smallBtnStyle, backgroundColor: '#34c759', color: '#fff' }}>Відновити</button>
                     </div>
-                    <button onClick={() => restoreProject(prj.id)} style={{ ...smallBtnStyle, backgroundColor: '#34c759', color: '#fff' }}>Відновити</button>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )
       )}
 
       {/* Модальне вікно підтвердження */}
