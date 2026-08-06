@@ -5,6 +5,7 @@ interface CreateProjectProps {
   onCreateProject: (project: { id: string; name: string; template: string; color: string }) => void;
   availableTemplates?: SavedTemplate[];
   onDeleteTemplate?: (templateId: string) => void;
+  onRenameTemplate?: (templateId: string, newName: string) => void;
 }
 
 const DEFAULT_COLORS = [
@@ -16,7 +17,8 @@ const DEFAULT_COLORS = [
 export const CreateProject: React.FC<CreateProjectProps> = ({ 
   onCreateProject, 
   availableTemplates = [],
-  onDeleteTemplate 
+  onDeleteTemplate,
+  onRenameTemplate
 }) => {
   const [name, setName] = useState('');
   const [projectId, setProjectId] = useState('#V1');
@@ -24,6 +26,11 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
   const [colors, setColors] = useState<string[]>(DEFAULT_COLORS);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [showTemplatesArchive, setShowTemplatesArchive] = useState<boolean>(false);
+
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
+  const [editingTemplateName, setEditingTemplateName] = useState<string>('');
+
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const colorInputRef = useRef<HTMLInputElement>(null);
 
@@ -48,6 +55,25 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
       template: template,
       color: colors[selectedIndex]
     });
+  };
+
+  const handleStartRename = (tmpl: SavedTemplate) => {
+    setEditingTemplateId(tmpl.id);
+    setEditingTemplateName(tmpl.name);
+  };
+
+  const handleSaveRename = (id: string) => {
+    if (onRenameTemplate && editingTemplateName.trim()) {
+      onRenameTemplate(id, editingTemplateName.trim());
+    }
+    setEditingTemplateId(null);
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteConfirmId && onDeleteTemplate) {
+      onDeleteTemplate(deleteConfirmId);
+    }
+    setDeleteConfirmId(null);
   };
 
   return (
@@ -163,7 +189,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
         </button>
       </form>
 
-      {/* Сірий підкреслений напис "Архів шаблонів" під кнопкою */}
+      {/* Напис без дужок і підкреслення */}
       <div style={{ marginTop: '16px', textAlign: 'center' }}>
         <button
           type="button"
@@ -173,12 +199,11 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
             border: 'none',
             color: '#8e8e93',
             fontSize: '13px',
-            textDecoration: 'underline',
             cursor: 'pointer',
             padding: '4px'
           }}
         >
-          Архів шаблонів ({availableTemplates.length})
+          Архів шаблонів
         </button>
 
         {showTemplatesArchive && (
@@ -198,16 +223,45 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
                     alignItems: 'center'
                   }}
                 >
-                  <span style={{ fontSize: '14px', fontWeight: 500, color: '#1c1c1e' }}>{tmpl.name}</span>
-                  {onDeleteTemplate && (
-                    <button
-                      type="button"
-                      onClick={() => onDeleteTemplate(tmpl.id)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}
-                      title="Видалити шаблон"
-                    >
-                      🗑️
-                    </button>
+                  {editingTemplateId === tmpl.id ? (
+                    <div style={{ display: 'flex', gap: '6px', flex: 1 }}>
+                      <input
+                        type="text"
+                        value={editingTemplateName}
+                        onChange={(e) => setEditingTemplateName(e.target.value)}
+                        style={{ ...inputStyle, padding: '4px 8px', fontSize: '13px' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleSaveRename(tmpl.id)}
+                        style={{ padding: '4px 8px', backgroundColor: '#34c759', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                      >
+                        ✓
+                      </button>
+                    </div>
+                  ) : (
+                    <span style={{ fontSize: '14px', fontWeight: 500, color: '#1c1c1e' }}>{tmpl.name}</span>
+                  )}
+
+                  {editingTemplateId !== tmpl.id && (
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleStartRename(tmpl)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}
+                        title="Редагувати назву"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteConfirmId(tmpl.id)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}
+                        title="Видалити шаблон"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   )}
                 </div>
               ))
@@ -215,6 +269,20 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
           </div>
         )}
       </div>
+
+      {/* Модалка підтвердження видалення шаблону */}
+      {deleteConfirmId && (
+        <div style={modalOverlayStyle}>
+          <div style={modalContentStyle}>
+            <h3 style={{ marginTop: 0, fontSize: '18px' }}>Видалити шаблон?</h3>
+            <p style={{ fontSize: '14px', color: '#636366' }}>Ви дійсно бажаєте видалити цей шаблон безповоротно?</p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+              <button onClick={() => setDeleteConfirmId(null)} style={{ ...modalBtnStyle, backgroundColor: '#e5e5ea', color: '#1c1c1e' }}>Ні</button>
+              <button onClick={handleConfirmDelete} style={{ ...modalBtnStyle, backgroundColor: '#ff3b30', color: '#ffffff' }}>Так, видалити</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -223,3 +291,6 @@ const inputStyle: React.CSSProperties = {
   width: '100%', padding: '12px 14px', backgroundColor: '#f2f2f7',
   border: '1px solid #e5e5ea', borderRadius: '10px', color: '#1c1c1e', fontSize: '15px', outline: 'none', boxSizing: 'border-box'
 };
+const modalOverlayStyle: React.CSSProperties = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 };
+const modalContentStyle: React.CSSProperties = { backgroundColor: '#ffffff', padding: '20px', borderRadius: '14px', maxWidth: '360px', width: '90%', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' };
+const modalBtnStyle: React.CSSProperties = { padding: '8px 14px', borderRadius: '8px', border: 'none', fontWeight: 600, fontSize: '14px', cursor: 'pointer' };
