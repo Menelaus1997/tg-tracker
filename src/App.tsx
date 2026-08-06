@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BottomNavigation } from './components/BottomNavigation';
 import { CreateProject } from './components/CreateProject';
 import { ProjectDetail } from './components/ProjectDetail';
+import { Analytics } from './components/Analytics';
 import { TabType } from './types';
 
 export interface CustomField {
@@ -20,6 +21,10 @@ export interface Stage {
   id: string;
   title: string;
   subStages: SubStage[];
+  startDate?: string;
+  endDate?: string;
+  loggedSeconds?: number;
+  isTimerRunning?: boolean;
 }
 
 export interface Project {
@@ -49,7 +54,6 @@ export const App: React.FC = () => {
       const saved = localStorage.getItem('app_projects');
       if (!saved) return [];
       const parsed: any[] = JSON.parse(saved);
-
       return parsed.map((p, idx) => ({
         ...p,
         uid: p.uid || `${Date.now()}-${idx}-${Math.random().toString(36).substr(2, 5)}`
@@ -84,26 +88,62 @@ export const App: React.FC = () => {
     localStorage.setItem('app_templates', JSON.stringify(templates));
   }, [templates]);
 
+  // Таймер-інтервал для активних секунд
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setProjects((prevProjects) =>
+        prevProjects.map((prj) => {
+          let hasRunning = false;
+          const updatedStages = prj.stages.map((st) => {
+            if (st.isTimerRunning) {
+              hasRunning = true;
+              return { ...st, loggedSeconds: (st.loggedSeconds || 0) + 1 };
+            }
+            return st;
+          });
+          return hasRunning ? { ...prj, stages: updatedStages } : prj;
+        })
+      );
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const handleCreateProject = (newProj: { id: string; name: string; template: string; color: string }) => {
     const selectedTemplateObj = templates.find(t => t.id === newProj.template);
     
+    // Беремо лише структуру стадій і customFields
+    const templateStages = selectedTemplateObj 
+      ? JSON.parse(JSON.stringify(selectedTemplateObj.stages))
+      : [];
+    const templateCustomFields = selectedTemplateObj
+      ? JSON.parse(JSON.stringify(selectedTemplateObj.customFields))
+      : [];
+
     const created: Project = {
       ...newProj,
       uid: `${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
       status: 'active',
       generalInfoList: [],
-      customFields: selectedTemplateObj ? JSON.parse(JSON.stringify(selectedTemplateObj.customFields)) : [],
-      stages: selectedTemplateObj ? JSON.parse(JSON.stringify(selectedTemplateObj.stages)) : []
+      customFields: templateCustomFields,
+      stages: templateStages
     };
     setProjects((prev) => [...prev, created]);
     setActiveTab('projects');
   };
 
   const handleSaveAsTemplate = (name: string, stages: Stage[], customFields: CustomField[]) => {
+    // Зберігаємо ЛИШЕ стадії та поля, без імен та ID проектів
+    const cleanedStages = stages.map(st => ({
+      id: st.id,
+      title: st.title,
+      subStages: st.subStages.map(sub => ({ id: sub.id, title: sub.title, completed: false }))
+    }));
+
     const newTemplate: SavedTemplate = {
       id: Date.now().toString(),
       name,
-      stages: JSON.parse(JSON.stringify(stages)),
+      stages: cleanedStages,
       customFields: JSON.parse(JSON.stringify(customFields))
     };
     setTemplates((prev) => [...prev, newTemplate]);
@@ -111,6 +151,12 @@ export const App: React.FC = () => {
 
   const handleDeleteTemplate = (templateId: string) => {
     setTemplates((prev) => prev.filter((t) => t.id !== templateId));
+  };
+
+  const handleRenameTemplate = (templateId: string, newName: string) => {
+    setTemplates((prev) =>
+      prev.map((t) => (t.id === templateId ? { ...t, name: newName } : t))
+    );
   };
 
   const openConfirm = (type: 'archive' | 'delete' | 'permanent_delete', projectUid: string) => {
@@ -156,6 +202,7 @@ export const App: React.FC = () => {
           onCreateProject={handleCreateProject} 
           availableTemplates={templates}
           onDeleteTemplate={handleDeleteTemplate}
+          onRenameTemplate={handleRenameTemplate}
         />
       )}
 
@@ -173,7 +220,6 @@ export const App: React.FC = () => {
           <div style={{ padding: '20px', color: '#1c1c1e', maxWidth: '500px', margin: '0 auto' }}>
             <h2 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '16px' }}>Проекти</h2>
 
-            {/* Активні проекти */}
             {activeProjects.length === 0 ? (
               <p style={{ color: '#8e8e93' }}>Немає активних проектів.</p>
             ) : (
@@ -217,7 +263,6 @@ export const App: React.FC = () => {
               </div>
             )}
 
-            {/* Архів проектів */}
             {archivedProjects.length > 0 && (
               <div style={{ marginTop: '30px' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#8e8e93', marginBottom: '10px' }}>📦 Архів проектів</h3>
@@ -234,7 +279,6 @@ export const App: React.FC = () => {
               </div>
             )}
 
-            {/* Корзина */}
             {deletedProjects.length > 0 && (
               <div style={{ marginTop: '30px' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#ff3b30', marginBottom: '10px' }}>🗑️ Корзина</h3>
@@ -254,12 +298,10 @@ export const App: React.FC = () => {
                 </div>
               </div>
             )}
-
           </div>
         )
       )}
 
-      {/* Модальне вікно підтвердження */}
       {confirmModal.isOpen && (
         <div style={modalOverlayStyle}>
           <div style={modalContentStyle}>
@@ -294,7 +336,9 @@ export const App: React.FC = () => {
       )}
 
       {activeTab === 'boq' && <div style={{ padding: '20px', color: '#1c1c1e' }}>Розділ Об’єми</div>}
-      {activeTab === 'analytics' && <div style={{ padding: '20px', color: '#1c1c1e' }}>Розділ Аналітика</div>}
+      
+      {activeTab === 'analytics' && <Analytics projects={projects} />}
+
       {activeTab === 'settings' && <div style={{ padding: '20px', color: '#1c1c1e' }}>Розділ Налаштування</div>}
 
       <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} />
