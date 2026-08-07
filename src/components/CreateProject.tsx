@@ -101,7 +101,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
-            style={inputStyle}
+            style={formInputStyle}
           />
         </div>
 
@@ -112,7 +112,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
             value={projectId}
             onChange={(e) => setProjectId(e.target.value)}
             required
-            style={inputStyle}
+            style={formInputStyle}
           />
         </div>
 
@@ -121,7 +121,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
           <select
             value={selectedTemplateId}
             onChange={(e) => setSelectedTemplateId(e.target.value)}
-            style={inputStyle}
+            style={formInputStyle}
           >
             <option value="">General template (custom)</option>
             {validTemplates.map((t) => (
@@ -132,7 +132,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
           </select>
         </div>
 
-        {/* Геометрично відцентрована палітра кольорів */}
+        {/* Геометрично відцентрована палітра із повноцінною кнопкою + */}
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
           {colors.map((c, idx) => {
             const isSelected = selectedColorIndex === idx;
@@ -170,10 +170,13 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
-              fontSize: '22px',
+              fontSize: '20px',
               fontWeight: 700,
+              lineHeight: '1',
               color: '#007aff',
-              position: 'relative'
+              position: 'relative',
+              padding: 0,
+              margin: 0
             }}
           >
             +
@@ -237,7 +240,8 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
                     padding: '8px 10px',
                     backgroundColor: '#ffffff',
                     borderRadius: '8px',
-                    fontSize: '13px'
+                    fontSize: '13px',
+                    border: '1px solid #e5e5ea'
                   }}
                 >
                   {editingTemplateId === t.id ? (
@@ -246,7 +250,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
                         type="text"
                         value={editingTemplateName}
                         onChange={(e) => setEditingTemplateName(e.target.value)}
-                        style={{ ...inputStyle, padding: '4px 8px', fontSize: '12px' }}
+                        style={{ ...formInputStyle, padding: '4px 8px', fontSize: '12px' }}
                       />
                       <button
                         onClick={() => handleSaveTemplateName(t.id)}
@@ -256,7 +260,6 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
                       </button>
                     </div>
                   ) : (
-                    /* Редагування назви прямим кліком на текст */
                     <span
                       onClick={() => {
                         setEditingTemplateId(t.id);
@@ -268,10 +271,9 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
                     </span>
                   )}
 
-                  {/* Кошик замість хрестика */}
                   <button
                     onClick={() => handleDeleteTemplate(t.id)}
-                    style={{ ...iconBtnStyle, color: '#ff3b30' }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px' }}
                   >
                     🗑️
                   </button>
@@ -285,15 +287,17 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
   );
 };
 
-const inputStyle: React.CSSProperties = {
+// Контрастні поля з чітким сірим фоном
+const formInputStyle: React.CSSProperties = {
   width: '100%',
   padding: '12px',
-  backgroundColor: '#f2f2f7',
-  border: 'none',
+  backgroundColor: '#e5e5ea',
+  border: '1px solid #d1d1d6',
   borderRadius: '10px',
   fontSize: '14px',
   outline: 'none',
-  boxSizing: 'border-box'
+  boxSizing: 'border-box',
+  color: '#1c1c1e'
 };
 
 const labelStyle: React.CSSProperties = {
@@ -301,14 +305,6 @@ const labelStyle: React.CSSProperties = {
   color: '#636366',
   marginBottom: '4px',
   display: 'block'
-};
-
-const iconBtnStyle: React.CSSProperties = {
-  background: 'none',
-  border: 'none',
-  cursor: 'pointer',
-  fontSize: '13px',
-  padding: '2px 4px'
 };
 
 export default CreateProject;
