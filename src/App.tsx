@@ -6,6 +6,7 @@ import { CreateProject } from './components/CreateProject';
 import { VorCalculator } from './components/VorCalculator';
 import { Analytics } from './components/Analytics';
 import { TeamManagement } from './components/TeamManagement';
+import { Finance } from './components/Finance';
 import { Settings } from './components/Settings';
 
 export type RoleType = string;
@@ -34,9 +35,9 @@ export interface RoleConfig {
 export interface TeamMember {
   id: string;
   fullName: string;
-  telegramUserId?: string;
+  telegramId?: string;
   role: RoleType;
-  isActive?: boolean;
+  active?: boolean;
 }
 
 export interface Project {
@@ -128,7 +129,6 @@ export const App: React.FC = () => {
     setActiveTab(2);
   };
 
-  // Очищений алгоритм створення шаблону (копіюються лише стадії та підстадії без прогресу/часу/команди)
   const handleSaveTemplate = (project: Project, templateName: string) => {
     if (!templateName || !templateName.trim()) return;
 
@@ -185,25 +185,22 @@ export const App: React.FC = () => {
             />
           )}
           {activeTab === 3 && <VorCalculator />}
-          {activeTab === 4 && <Analytics projects={projects} />}
+          {activeTab === 4 && <Analytics projects={projects} teamDatabase={teamMembers} />}
+          
+          {/* Вкладка 5: Команда (TeamManagement) з новими пропсами */}
           {activeTab === 5 && (
             <TeamManagement
-              teamMembers={teamMembers}
-              onSaveTeamMember={(m) => {
-                const exists = teamMembers.some((tm) => tm.id === m.id);
-                setTeamMembers(exists ? teamMembers.map((tm) => (tm.id === m.id ? m : tm)) : [...teamMembers, m]);
-              }}
-              onDeleteTeamMember={(id) => setTeamMembers(teamMembers.filter((m) => m.id !== id))}
-              roles={roles}
-              onSaveRole={(r) => {
-                const exists = roles.some((ro) => ro.id === r.id);
-                setRoles(exists ? roles.map((ro) => (ro.id === r.id ? r : ro)) : [...roles, r]);
-              }}
-              onDeleteRole={(id) => setRoles(roles.filter((r) => r.id !== id))}
-              isSuperAdmin={true}
+              members={teamMembers}
+              onUpdateMembers={setTeamMembers}
+              availableRoles={roles.map((r) => r.name)}
             />
           )}
-          {activeTab === 6 && (
+
+          {/* Вкладка 6: Фінанси (Finance) */}
+          {activeTab === 6 && <Finance projects={projects} />}
+
+          {/* Вкладка 7: Налаштування (Settings) */}
+          {activeTab === 7 && (
             <Settings
               botToken={botToken}
               groupId={groupId}
@@ -223,7 +220,8 @@ export const App: React.FC = () => {
           <button onClick={() => setActiveTab(3)} style={navBtnStyle(activeTab === 3)}>📊</button>
           <button onClick={() => setActiveTab(4)} style={navBtnStyle(activeTab === 4)}>📈</button>
           <button onClick={() => setActiveTab(5)} style={navBtnStyle(activeTab === 5)}>👥</button>
-          <button onClick={() => setActiveTab(6)} style={navBtnStyle(activeTab === 6)}>⚙️</button>
+          <button onClick={() => setActiveTab(6)} style={navBtnStyle(activeTab === 6)}>💰</button>
+          <button onClick={() => setActiveTab(7)} style={navBtnStyle(activeTab === 7)}>⚙️</button>
         </div>
       )}
     </div>
@@ -247,7 +245,7 @@ const navBarStyle: React.CSSProperties = {
 const navBtnStyle = (active: boolean): React.CSSProperties => ({
   background: 'none',
   border: 'none',
-  fontSize: '20px',
+  fontSize: '18px',
   opacity: active ? 1 : 0.4,
   cursor: 'pointer',
   padding: '10px'
