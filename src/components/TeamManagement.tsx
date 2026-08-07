@@ -66,7 +66,9 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
     setEditingId(null);
   };
 
-  const handleCreateNewRole = () => {
+  const handleCreateNewRole = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (!newRoleName.trim()) return;
 
     const newRole: RoleConfig = {
@@ -328,7 +330,6 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
         )}
       </div>
 
-      {/* Блок управління ролями та правами */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px' }}>
         <div
           onClick={() => setIsRolesOpen(!isRolesOpen)}
@@ -358,7 +359,6 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
               </button>
             </div>
 
-            {/* Список існуючих ролей (Керівник, Кресляр, Візуалізатор тощо) з можливістю редагування повзунків */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {roles.map((r) => (
                 <div key={r.id} style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '8px', border: '1px solid #e5e5ea', color: '#1c1c1e' }}>
