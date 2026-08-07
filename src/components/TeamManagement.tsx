@@ -66,7 +66,6 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
     setEditingId(null);
   };
 
-  // Чіткий обробник кліку для створення нової ролі з дефолтними правами
   const handleCreateNewRole = () => {
     if (!newRoleName.trim()) return;
 
@@ -329,14 +328,14 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
         )}
       </div>
 
-      {/* Блок управління ролями (працююча кнопка та виправлений клік) */}
+      {/* Блок управління ролями та правами */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px' }}>
         <div
           onClick={() => setIsRolesOpen(!isRolesOpen)}
           style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
           <span style={{ fontSize: '14px', fontWeight: 700, color: '#8e8e93', textAlign: 'center' }}>
-            Roles & Permissions Management
+            Roles & Permissions Management {isRolesOpen ? '▲' : '▼'}
           </span>
         </div>
 
@@ -359,6 +358,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
               </button>
             </div>
 
+            {/* Список існуючих ролей (Керівник, Кресляр, Візуалізатор тощо) з можливістю редагування повзунків */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {roles.map((r) => (
                 <div key={r.id} style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '8px', border: '1px solid #e5e5ea', color: '#1c1c1e' }}>
@@ -373,7 +373,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                         }}
                         style={{ background: 'none', border: 'none', color: '#007aff', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
                       >
-                        {editingRoleId === r.id ? 'Close' : 'Edit'}
+                        {editingRoleId === r.id ? 'Close' : 'Edit Permissions'}
                       </button>
                       <button
                         type="button"
