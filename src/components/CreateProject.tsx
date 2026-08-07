@@ -4,6 +4,7 @@ import { Project } from '../App';
 interface CreateProjectProps {
   onCreateProject: (project: Project) => void;
   templates: any[];
+  onUpdateTemplates?: (templates: any[]) => void;
 }
 
 const COLOR_OPTIONS = [
@@ -11,24 +12,50 @@ const COLOR_OPTIONS = [
   '#ff3b30', '#5c3d2e', '#ff9500', '#af52de', '#3a5199'
 ];
 
-export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject, templates }) => {
+export const CreateProject: React.FC<CreateProjectProps> = ({
+  onCreateProject,
+  templates = [],
+  onUpdateTemplates
+}) => {
   const [name, setName] = useState('');
   const [projectId, setProjectId] = useState('');
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [selectedColor, setSelectedColor] = useState(COLOR_OPTIONS[0]);
 
+  const [isTemplateManagerOpen, setIsTemplateManagerOpen] = useState(false);
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
+  const [editingTemplateName, setEditingTemplateName] = useState('');
+
+  // Фільтруємо лише валідні шаблони з назвою
+  const validTemplates = templates.filter((t) => t && t.id && t.name && t.name !== 'undefined');
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !projectId.trim()) return;
 
-    const matchedTemplate = templates.find(t => t.id === selectedTemplateId);
+    const matchedTemplate = validTemplates.find((t) => t.id === selectedTemplateId);
+
+    // При створенні з шаблону скидаємо всі статуси виконання та час
+    const cleanStages = matchedTemplate?.stages
+      ? matchedTemplate.stages.map((st: any) => ({
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
+          title: st.title,
+          subStages: (st.subStages || []).map((sub: any) => ({
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
+            title: sub.title,
+            completed: false
+          })),
+          loggedSeconds: 0,
+          isTimerRunning: false
+        }))
+      : [];
 
     const newProj: Project = {
       id: projectId.trim(),
       name: name.trim(),
       color: selectedColor,
       status: 'active',
-      stages: matchedTemplate?.stages ? JSON.parse(JSON.stringify(matchedTemplate.stages)) : [],
+      stages: cleanStages,
       teamMembers: []
     };
 
@@ -36,6 +63,25 @@ export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject, t
     setName('');
     setProjectId('');
     setSelectedTemplateId('');
+  };
+
+  const handleDeleteTemplate = (id: string) => {
+    if (!onUpdateTemplates) return;
+    if (confirm('Видалити цей шаблон?')) {
+      const updated = templates.filter((t) => t.id !== id);
+      onUpdateTemplates(updated);
+      if (selectedTemplateId === id) setSelectedTemplateId('');
+    }
+  };
+
+  const handleSaveTemplateName = (id: string) => {
+    if (!onUpdateTemplates || !editingTemplateName.trim()) return;
+    const updated = templates.map((t) =>
+      t.id === id ? { ...t, name: editingTemplateName.trim() } : t
+    );
+    onUpdateTemplates(updated);
+    setEditingTemplateId(null);
+    setEditingTemplateName('');
   };
 
   return (
@@ -75,9 +121,9 @@ export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject, t
             style={inputStyle}
           >
             <option value="">Загальний шаблон (свій варіант)</option>
-            {templates.map((t) => (
+            {validTemplates.map((t) => (
               <option key={t.id} value={t.id}>
-                {t.name || `Шаблон ${t.id}`}
+                {t.name}
               </option>
             ))}
           </select>
@@ -125,6 +171,92 @@ export const CreateProject: React.FC<CreateProjectProps> = ({ onCreateProject, t
           Створити проект
         </button>
       </form>
+
+      {/* Архів шаблонів */}
+      <div style={{ textAlign: 'center', marginTop: '16px' }}>
+        <button
+          type="button"
+          onClick={() => setIsTemplateManagerOpen(!isTemplateManagerOpen)}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#8e8e93',
+            fontSize: '13px',
+            cursor: 'pointer',
+            textDecoration: 'underline'
+          }}
+        >
+          {isTemplateManagerOpen ? 'Сховати архів шаблонів' : 'Архів шаблонів'}
+        </button>
+      </div>
+
+      {isTemplateManagerOpen && (
+        <div style={{ marginTop: '16px', padding: '14px', backgroundColor: '#f2f2f7', borderRadius: '12px' }}>
+          <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#1c1c1e' }}>
+            Архів шаблонів ({validTemplates.length})
+          </h4>
+
+          {validTemplates.length === 0 ? (
+            <div style={{ fontSize: '12px', color: '#8e8e93' }}>Збережених шаблонів немає.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {validTemplates.map((t) => (
+                <div
+                  key={t.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '8px 10px',
+                    backgroundColor: '#ffffff',
+                    borderRadius: '8px',
+                    fontSize: '13px'
+                  }}
+                >
+                  {editingTemplateId === t.id ? (
+                    <div style={{ display: 'flex', gap: '6px', flex: 1, marginRight: '8px' }}>
+                      <input
+                        type="text"
+                        value={editingTemplateName}
+                        onChange={(e) => setEditingTemplateName(e.target.value)}
+                        style={{ ...inputStyle, padding: '4px 8px', fontSize: '12px' }}
+                      />
+                      <button
+                        onClick={() => handleSaveTemplateName(t.id)}
+                        style={{ padding: '4px 8px', backgroundColor: '#34c759', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}
+                      >
+                        ✓
+                      </button>
+                    </div>
+                  ) : (
+                    <span style={{ fontWeight: 500 }}>{t.name}</span>
+                  )}
+
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button
+                      onClick={() => {
+                        setEditingTemplateId(t.id);
+                        setEditingTemplateName(t.name);
+                      }}
+                      style={iconBtnStyle}
+                      title="Перейменувати"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={() => handleDeleteTemplate(t.id)}
+                      style={{ ...iconBtnStyle, color: '#ff3b30' }}
+                      title="Видалити"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
@@ -145,6 +277,14 @@ const labelStyle: React.CSSProperties = {
   color: '#636366',
   marginBottom: '4px',
   display: 'block'
+};
+
+const iconBtnStyle: React.CSSProperties = {
+  background: 'none',
+  border: 'none',
+  cursor: 'pointer',
+  fontSize: '13px',
+  padding: '2px 4px'
 };
 
 export default CreateProject;
