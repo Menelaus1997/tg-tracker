@@ -318,14 +318,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         ← Back
       </button>
 
-      {/* 1. Header Block */}
+      {/* 1. Header Block (Без трикутника/стрілочки) */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
         <div 
           onClick={() => setIsHeaderOpen(!isHeaderOpen)} 
           style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
         >
           <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>{name || 'Untitled'}</h3>
-          <span style={{ fontSize: '12px', color: '#8e8e93' }}>{isHeaderOpen ? '▲' : '▼'}</span>
         </div>
 
         {isHeaderOpen && (
@@ -418,7 +417,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* 2. Data Block (Вирівняно висоту полів до 28px) */}
+      {/* 2. Data Block */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
         <div 
           onClick={() => setIsGeneralDataOpen(!isGeneralDataOpen)}
@@ -477,7 +476,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* 3. Structure Block (Вирівняно структуру та селекти до 28px) */}
+      {/* 3. Structure Block */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '20px' }}>
         <div 
           onClick={() => setIsStructureOpen(!isStructureOpen)}
@@ -564,7 +563,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       </div>
                     </div>
 
-                    {/* Додавання кількох виконавців через селект та кнопку + (висота 28px) */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                         <select
@@ -735,7 +733,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* 4. Team Block (Вирівняно висоту селектів та кнопки + до 28px) */}
+      {/* 4. Team Block */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '20px' }}>
         <div 
           onClick={() => setIsTeamOpen(!isTeamOpen)}
