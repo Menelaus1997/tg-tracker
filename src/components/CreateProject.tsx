@@ -20,7 +20,9 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
   const [name, setName] = useState('');
   const [projectId, setProjectId] = useState('');
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
-  const [selectedColor, setSelectedColor] = useState(DEFAULT_COLORS[0]);
+  
+  const [colors, setColors] = useState<string[]>([...DEFAULT_COLORS]);
+  const [selectedColorIndex, setSelectedColorIndex] = useState<number>(0);
 
   const [isTemplateManagerOpen, setIsTemplateManagerOpen] = useState(false);
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
@@ -28,8 +30,12 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
 
   const validTemplates = templates.filter((t) => t && t.id && t.name && t.name !== 'undefined');
 
-  // Перевірка, чи колір є серед стандартних
-  const isCustomColor = !DEFAULT_COLORS.includes(selectedColor);
+  const handleCustomColorPicker = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newColor = e.target.value;
+    const updated = [...colors];
+    updated[selectedColorIndex] = newColor;
+    setColors(updated);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +60,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
     const newProj: Project = {
       id: projectId.trim(),
       name: name.trim(),
-      color: selectedColor,
+      color: colors[selectedColorIndex],
       status: 'active',
       stages: cleanStages,
       teamMembers: []
@@ -128,16 +134,16 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
           </select>
         </div>
 
-        {/* Палітра кольорів з безаварійною галочкою ✓ */}
+        {/* Палітра кольорів */}
         <div>
           <label style={labelStyle}>Колір маркування</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', flexWrap: 'nowrap', overflowX: 'auto' }}>
-            {DEFAULT_COLORS.map((c) => {
-              const isSelected = selectedColor === c;
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
+            {colors.map((c, idx) => {
+              const isSelected = selectedColorIndex === idx;
               return (
                 <div
-                  key={c}
-                  onClick={() => setSelectedColor(c)}
+                  key={idx}
+                  onClick={() => setSelectedColorIndex(idx)}
                   style={{
                     width: '28px',
                     height: '28px',
@@ -155,30 +161,29 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
               );
             })}
 
-            {/* 9-та кнопка піпетки / кастомного кольору */}
             <label
               style={{
                 width: '28px',
                 height: '28px',
                 borderRadius: '50%',
-                backgroundColor: isCustomColor ? selectedColor : '#e5e5ea',
+                backgroundColor: '#e5e5ea',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0,
-                fontSize: isCustomColor ? '12px' : '16px',
-                fontWeight: 700,
-                color: isCustomColor ? '#ffffff' : '#007aff',
+                fontSize: '16px',
+                fontWeight: 600,
+                color: '#007aff',
                 position: 'relative'
               }}
-              title="Обрати кастомний колір"
+              title="Змінити колір виділеного кола"
             >
-              {isCustomColor ? '✓' : '+'}
+              +
               <input
                 type="color"
-                value={selectedColor}
-                onChange={(e) => setSelectedColor(e.target.value)}
+                value={colors[selectedColorIndex]}
+                onChange={handleCustomColorPicker}
                 style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
               />
             </label>
