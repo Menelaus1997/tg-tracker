@@ -187,11 +187,17 @@ export const App: React.FC = () => {
           {activeTab === 3 && <VorCalculator />}
           {activeTab === 4 && <Analytics projects={projects} teamDatabase={teamMembers} />}
           
-          {/* Вкладка 5: Команда (TeamManagement) з новими пропсами */}
+          {/* Вкладка 5: Команда (TeamManagement) з передачею ролей */}
           {activeTab === 5 && (
             <TeamManagement
               members={teamMembers}
               onUpdateMembers={setTeamMembers}
+              roles={roles}
+              onSaveRole={(r) => {
+                const exists = roles.some((ro) => ro.id === r.id);
+                setRoles(exists ? roles.map((ro) => (ro.id === r.id ? r : ro)) : [...roles, r]);
+              }}
+              onDeleteRole={(id) => setRoles(roles.filter((r) => r.id !== id))}
               availableRoles={roles.map((r) => r.name)}
             />
           )}
@@ -252,4 +258,3 @@ const navBtnStyle = (active: boolean): React.CSSProperties => ({
 });
 
 export default App;
-
