@@ -32,9 +32,6 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
   const [editingRoleNameId, setEditingRoleNameId] = useState<string | null>(null);
   const [tempRoleName, setTempRoleName] = useState('');
   const [newRoleName, setNewRoleName] = useState('');
-  
-  // Тумблер "Болванка" для ролей
-  const [isRolePlaceholder, setIsRolePlaceholder] = useState(false);
 
   const handleAddMember = (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,10 +52,6 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
     setIsTeamMember(false);
   };
 
-  const toggleMemberStatus = (id: string) => {
-    onUpdateMembers(members.map(m => m.id === id ? { ...m, active: m.active === false ? true : false } : m));
-  };
-
   const handleSaveEditMember = (id: string) => {
     onUpdateMembers(members.map(m => m.id === id ? { ...m, ...editForm } : m));
     setEditingId(null);
@@ -70,13 +63,10 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
     const newRole: RoleConfig = {
       id: Date.now().toString(),
       name: newRoleName.trim(),
-      // Зберігаємо також мітку болванки в конфіг ролі, якщо потрібно
-      isPlaceholder: isRolePlaceholder,
       permissions: { canViewCreateProject: true, canViewVor: true, canViewAnalytics: true, canViewTeam: true, canViewSettings: true, canSeeAllProjects: true, canEditProjects: true, canDeleteProjects: true, canManageStages: true, canManageTimer: true, canAssignTeam: true }
     };
     onSaveRole(newRole);
     setNewRoleName('');
-    setIsRolePlaceholder(false);
   };
 
   return (
@@ -113,83 +103,65 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
       {/* Список учасників */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '12px 14px', borderRadius: '12px', marginBottom: '20px' }}>
         <div onClick={() => setIsParticipantsOpen(!isParticipantsOpen)} style={{ cursor: 'pointer', textAlign: 'center', fontSize: '14px', fontWeight: 700, color: '#8e8e93' }}>Participants</div>
-        {isParticipantsOpen && members.map((m) => {
-          const validRole = m.role && m.role !== 'Підрядник' && m.role !== 'Contractor' ? m.role : '';
-          const isEditing = editingId === m.id;
-
-          return (
-            <div key={m.id} style={{ padding: '12px', borderRadius: '10px', backgroundColor: '#ffffff', marginTop: '10px', border: '1px solid #e5e5ea' }}>
-              {isEditing ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <input type="text" value={editForm.fullName || ''} onChange={(e) => setEditForm({...editForm, fullName: e.target.value})} style={inputStyle} />
-                  <input type="text" placeholder="Telegram ID" value={editForm.telegramId || ''} onChange={(e) => setEditForm({...editForm, telegramId: e.target.value})} style={inputStyle} />
-                  <select value={editForm.role || ''} onChange={(e) => setEditForm({...editForm, role: e.target.value})} style={inputStyle}>
-                    <option value="">Select role...</option>
-                    {availableRoles.map(r => <option key={r} value={r}>{r}</option>)}
-                  </select>
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                    <button type="button" onClick={() => handleSaveEditMember(m.id)} style={{ padding: '4px 10px', backgroundColor: '#34c759', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', cursor: 'pointer' }}>Save</button>
-                    <button type="button" onClick={() => setEditingId(null)} style={{ padding: '4px 10px', backgroundColor: '#e5e5ea', color: '#1c1c1e', border: 'none', borderRadius: '6px', fontSize: '12px', cursor: 'pointer' }}>Cancel</button>
-                  </div>
+        {isParticipantsOpen && members.map((m) => (
+          <div key={m.id} style={{ padding: '12px', borderRadius: '10px', backgroundColor: '#ffffff', marginTop: '10px', border: '1px solid #e5e5ea' }}>
+            {editingId === m.id ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <input type="text" value={editForm.fullName || ''} onChange={(e) => setEditForm({...editForm, fullName: e.target.value})} style={inputStyle} />
+                <input type="text" placeholder="Telegram ID" value={editForm.telegramId || ''} onChange={(e) => setEditForm({...editForm, telegramId: e.target.value})} style={inputStyle} />
+                <select value={editForm.role || ''} onChange={(e) => setEditForm({...editForm, role: e.target.value})} style={inputStyle}>
+                  <option value="">Select role...</option>
+                  {availableRoles.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                  <button type="button" onClick={() => handleSaveEditMember(m.id)} style={{ padding: '4px 10px', backgroundColor: '#34c759', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', cursor: 'pointer' }}>Save</button>
+                  <button type="button" onClick={() => setEditingId(null)} style={{ padding: '4px 10px', backgroundColor: '#e5e5ea', color: '#1c1c1e', border: 'none', borderRadius: '6px', fontSize: '12px', cursor: 'pointer' }}>Cancel</button>
                 </div>
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ flex: 1, cursor: 'pointer' }} onClick={() => { setEditingId(m.id); setEditForm(m); }}>
-                    <div style={{ fontWeight: 600 }}>{m.fullName}</div>
-                    {(validRole || m.telegramId) && (
-                      <div style={{ fontSize: '12px', color: '#8e8e93' }}>{validRole ? `${validRole} ` : ''}{m.telegramId ? `• ID: ${m.telegramId}` : ''}</div>
-                    )}
-                  </div>
-                  <button type="button" onClick={() => onUpdateMembers(members.filter(i => i.id !== m.id))} style={{ background: 'none', border: 'none', color: '#ff3b30', cursor: 'pointer', marginRight: '8px' }}>🗑️</button>
-                  <div
-                    onClick={() => toggleMemberStatus(m.id)}
-                    style={{ width: '36px', height: '20px', borderRadius: '10px', backgroundColor: m.active !== false ? '#34c759' : '#e5e5ea', position: 'relative', cursor: 'pointer', flexShrink: 0 }}
-                  >
-                    <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#fff', position: 'absolute', top: '2px', left: m.active !== false ? '18px' : '2px', transition: 'left 0.2s' }} />
-                  </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ flex: 1, cursor: 'pointer' }} onClick={() => { setEditingId(m.id); setEditForm(m); }}>
+                  <div style={{ fontWeight: 600 }}>{m.fullName}</div>
+                  {(m.role || m.telegramId) && (
+                    <div style={{ fontSize: '12px', color: '#8e8e93' }}>{m.role ? `${m.role} ` : ''}{m.telegramId ? `• ID: ${m.telegramId}` : ''}</div>
+                  )}
                 </div>
-              )}
-            </div>
-          );
-        })}
+                <button type="button" onClick={() => onUpdateMembers(members.filter(i => i.id !== m.id))} style={{ background: 'none', border: 'none', color: '#ff3b30', cursor: 'pointer', marginRight: '8px' }}>🗑️</button>
+                <div
+                  onClick={() => toggleMemberStatus(m.id)}
+                  style={{ width: '36px', height: '20px', borderRadius: '10px', backgroundColor: m.active !== false ? '#34c759' : '#e5e5ea', position: 'relative', cursor: 'pointer', flexShrink: 0 }}
+                >
+                  <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#fff', position: 'absolute', top: '2px', left: m.active !== false ? '18px' : '2px', transition: 'left 0.2s' }} />
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
       </div>
 
-      {/* Управління ролями (з тумблером "Болванка") */}
+      {/* Управління ролями (з кнопкою + 28х28 на сірому фоні та редагуванням імені ролі кліком) */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px' }}>
         <div onClick={() => setIsRolesOpen(!isRolesOpen)} style={{ cursor: 'pointer', textAlign: 'center', fontWeight: 700, color: '#8e8e93' }}>Roles & Permissions Management</div>
         {isRolesOpen && (
           <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            
-            {/* Поля створення нової ролі + Тумблер "Болванка" */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', backgroundColor: '#fff', padding: '10px', borderRadius: '8px', border: '1px solid #e5e5ea' }}>
-              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                <input type="text" placeholder="New role name..." value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} style={{ ...inputStyle, padding: '8px 10px', flex: 1 }} />
-                <button 
-                  type="button" 
-                  onClick={handleCreateNewRole} 
-                  style={{ width: '28px', height: '28px', backgroundColor: '#e5e5ea', color: '#1c1c1e', border: 'none', borderRadius: '6px', fontSize: '16px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-                  title="Add Role"
-                >
-                  +
-                </button>
-              </div>
-
-              {/* Тумблер Болванка */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', paddingTop: '4px' }}>
-                <span style={{ fontWeight: 600, color: '#636366' }}>Болванка</span>
-                <div
-                  onClick={() => setIsRolePlaceholder(!isRolePlaceholder)}
-                  style={{ width: '36px', height: '20px', borderRadius: '10px', backgroundColor: isRolePlaceholder ? '#34c759' : '#e5e5ea', position: 'relative', cursor: 'pointer', flexShrink: 0 }}
-                >
-                  <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#fff', position: 'absolute', top: '2px', left: isRolePlaceholder ? '18px' : '2px', transition: 'left 0.2s' }} />
-                </div>
-              </div>
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              <input type="text" placeholder="New role name..." value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} style={{ ...inputStyle, padding: '8px 10px', flex: 1 }} />
+              {/* Кнопка + на сірому фоні 28x28 */}
+              <button 
+                type="button" 
+                onClick={handleCreateNewRole} 
+                style={{ width: '28px', height: '28px', backgroundColor: '#e5e5ea', color: '#1c1c1e', border: 'none', borderRadius: '6px', fontSize: '16px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                title="Add Role"
+              >
+                +
+              </button>
             </div>
 
             {roles.map(r => (
               <div key={r.id} style={{ backgroundColor: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid #e5e5ea' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   
+                  {/* Редагування назви ролі за кліком */}
                   {editingRoleNameId === r.id ? (
                     <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flex: 1, marginRight: '10px' }}>
                       <input 
@@ -220,7 +192,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                       }}
                       title="Click to rename role"
                     >
-                      {r.name} {r.isPlaceholder && <span style={{ fontSize: '10px', color: '#8e8e93', fontWeight: 400 }}>(Болванка)</span>}
+                      {r.name}
                     </span>
                   )}
 
@@ -236,18 +208,6 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
 
                 {editingRoleId === r.id && roleEditForm && (
                   <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #f2f2f7', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12px' }}>
-                    
-                    {/* Тумблер Болванка при редагуванні існуючої ролі */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontWeight: 600, color: '#636366' }}>Болванка</span>
-                      <div
-                        onClick={() => setRoleEditForm({ ...roleEditForm, isPlaceholder: !roleEditForm.isPlaceholder })}
-                        style={{ width: '36px', height: '20px', borderRadius: '10px', backgroundColor: roleEditForm.isPlaceholder ? '#34c759' : '#e5e5ea', position: 'relative', cursor: 'pointer' }}
-                      >
-                        <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#fff', position: 'absolute', top: '2px', left: roleEditForm.isPlaceholder ? '18px' : '2px', transition: 'left 0.2s' }} />
-                      </div>
-                    </div>
-
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span>Can view analytics</span>
                       <div
