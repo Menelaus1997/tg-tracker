@@ -98,7 +98,6 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
           <label style={labelStyle}>Project Name</label>
           <input
             type="text"
-            placeholder="e.g. ЖК Варшавський"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
@@ -110,7 +109,6 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
           <label style={labelStyle}>Project ID</label>
           <input
             type="text"
-            placeholder="#V1"
             value={projectId}
             onChange={(e) => setProjectId(e.target.value)}
             required
@@ -134,7 +132,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
           </select>
         </div>
 
-        {/* Центрована палітра кольорів без надпису "Колір маркування" */}
+        {/* Геометрично відцентрована палітра кольорів */}
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
           {colors.map((c, idx) => {
             const isSelected = selectedColorIndex === idx;
@@ -172,8 +170,8 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
-              fontSize: '16px',
-              fontWeight: 600,
+              fontSize: '22px',
+              fontWeight: 700,
               color: '#007aff',
               position: 'relative'
             }}
@@ -225,10 +223,6 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
 
       {isTemplateManagerOpen && (
         <div style={{ marginTop: '16px', padding: '14px', backgroundColor: '#f2f2f7', borderRadius: '12px' }}>
-          <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#1c1c1e' }}>
-            Template Archive ({validTemplates.length})
-          </h4>
-
           {validTemplates.length === 0 ? (
             <div style={{ fontSize: '12px', color: '#8e8e93' }}>No templates saved.</div>
           ) : (
@@ -262,26 +256,25 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
                       </button>
                     </div>
                   ) : (
-                    <span style={{ fontWeight: 500 }}>{t.name}</span>
-                  )}
-
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    <button
+                    /* Редагування назви прямим кліком на текст */
+                    <span
                       onClick={() => {
                         setEditingTemplateId(t.id);
                         setEditingTemplateName(t.name);
                       }}
-                      style={iconBtnStyle}
+                      style={{ fontWeight: 500, cursor: 'pointer', flex: 1 }}
                     >
-                      ✏️
-                    </button>
-                    <button
-                      onClick={() => handleDeleteTemplate(t.id)}
-                      style={{ ...iconBtnStyle, color: '#ff3b30' }}
-                    >
-                      ✕
-                    </button>
-                  </div>
+                      {t.name}
+                    </span>
+                  )}
+
+                  {/* Кошик замість хрестика */}
+                  <button
+                    onClick={() => handleDeleteTemplate(t.id)}
+                    style={{ ...iconBtnStyle, color: '#ff3b30' }}
+                  >
+                    🗑️
+                  </button>
                 </div>
               ))}
             </div>
