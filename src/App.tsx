@@ -48,6 +48,9 @@ export interface Project {
   teamMembers?: TeamMember[];
   topicLink?: string;
   threadId?: number;
+  passportRows?: any[];
+  totalLoggedSeconds?: number;
+  projectTeam?: any[];
 }
 
 const INITIAL_ROLES: RoleConfig[] = [
@@ -96,7 +99,6 @@ export const App: React.FC = () => {
   const [groupId, setGroupId] = useState<string>(() => localStorage.getItem('app_group_id') || '');
   const [fontFamily, setFontFamily] = useState<string>(() => localStorage.getItem('app_font') || 'system-ui');
 
-  // Логін / Пароль / Кодове слово для входу в налаштування
   const [adminCredentials, setAdminCredentials] = useState(() => {
     const saved = localStorage.getItem('app_admin_credentials');
     return saved ? JSON.parse(saved) : { login: 'admin', passwordHash: 'admin', secretWord: 'дизайн' };
@@ -126,8 +128,9 @@ export const App: React.FC = () => {
     setActiveTab(2);
   };
 
-  const handleSaveTemplate = (project: Project) => {
-    if (!project || !project.name) return;
+  // Очищений алгоритм створення шаблону (копіюються лише стадії та підстадії без прогресу/часу/команди)
+  const handleSaveTemplate = (project: Project, templateName: string) => {
+    if (!templateName || !templateName.trim()) return;
 
     const cleanStages = (project.stages || []).map((st: any) => ({
       title: st.title,
@@ -139,12 +142,12 @@ export const App: React.FC = () => {
 
     const newTemplate = {
       id: Date.now().toString(),
-      name: project.name.trim(),
+      name: templateName.trim(),
       stages: cleanStages
     };
 
     setTemplates((prev) => [...prev, newTemplate]);
-    alert(`Проект "${project.name}" збережено як новий шаблон!`);
+    alert(`Шаблон "${templateName.trim()}" успішно створено!`);
   };
 
   const activeProject = projects.find((p) => p.id === selectedProjectId);
@@ -158,8 +161,9 @@ export const App: React.FC = () => {
         <ProjectDetail
           project={activeProject}
           onUpdateProject={(updated) => setProjects(projects.map((p) => (p.id === updated.id ? updated : p)))}
-          onSaveAsTemplate={() => handleSaveTemplate(activeProject)}
+          onSaveAsTemplate={handleSaveTemplate}
           onBack={() => setSelectedProjectId(null)}
+          teamDatabase={teamMembers}
           availableRoles={roles.map((r) => r.name)}
         />
       ) : (
