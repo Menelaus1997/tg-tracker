@@ -34,7 +34,6 @@ export const ProjectList: React.FC<ProjectListProps> = ({
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e' }}>
       <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>📁 Існуючі проекти</h2>
 
-      {/* Фільтр статусів */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
         <button
           onClick={() => setFilterStatus('active')}
@@ -58,7 +57,6 @@ export const ProjectList: React.FC<ProjectListProps> = ({
         )}
       </div>
 
-      {/* Список картка за карткою */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {filteredProjects.length === 0 ? (
           <div style={{ fontSize: '14px', color: '#8e8e93', textAlign: 'center', marginTop: '20px' }}>
@@ -70,19 +68,32 @@ export const ProjectList: React.FC<ProjectListProps> = ({
               key={p.id}
               onClick={() => onSelectProject(p.id)}
               style={{
-                padding: '14px',
+                padding: '12px 14px',
                 borderRadius: '12px',
                 backgroundColor: '#f2f2f7',
                 cursor: 'pointer',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                borderLeft: `5px solid ${p.color || '#007aff'}`
+                position: 'relative',
+                overflow: 'hidden'
               }}
             >
-              <div>
-                <div style={{ fontWeight: 700, fontSize: '15px' }}>{p.name}</div>
-                <div style={{ fontSize: '12px', color: '#8e8e93' }}>ID: {p.id}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {/* Кольоровий маркер-кружечок замість дужки */}
+                <div
+                  style={{
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '50%',
+                    backgroundColor: p.color || '#007aff',
+                    flexShrink: 0
+                  }}
+                />
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '15px' }}>{p.name}</div>
+                  <div style={{ fontSize: '12px', color: '#8e8e93' }}>ID: {p.id}</div>
+                </div>
               </div>
 
               <div style={{ display: 'flex', gap: '6px' }}>
