@@ -135,9 +135,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
                             <span style={{ fontSize: '12px', fontWeight: 600, color: '#636366' }}>{stageProgress}%</span>
                           </div>
 
-                          {/* Відображення виконавця / підрядника під назвою стадії */}
                           <div style={{ fontSize: '11px', color: '#007aff', marginBottom: '4px', fontWeight: 500 }}>
-                            Виконавець: {st.contractor || 'Не вказано'}
+                            Assigned to: {st.contractor || 'No assignee'}
                           </div>
 
                           {deadlineText && (
