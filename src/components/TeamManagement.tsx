@@ -61,7 +61,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
       ...m,
       ...editForm,
       telegramId: editIsFull ? editForm.telegramId : undefined,
-      role: editIsFull ? (editForm.role || availableRoles[0] || '') : ''
+      role: editIsFull ? (editForm.role || '') : ''
     } : m));
     setEditingId(null);
   };
@@ -187,7 +187,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
         </button>
       </form>
 
-      {/* Список учасників (Participants без числа та без трикутника) */}
+      {/* Список учасників (Participants) */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '12px 14px', borderRadius: '12px', marginBottom: '20px' }}>
         <div
           onClick={() => setIsParticipantsOpen(!isParticipantsOpen)}
@@ -221,9 +221,19 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                       gap: '12px'
                     }}
                   >
-                    <div style={{ flex: 1 }}>
+                    {/* Клік на весь блок тексту для редагування */}
+                    <div 
+                      style={{ flex: 1, cursor: 'pointer' }}
+                      onClick={() => {
+                        if (!isEditing) {
+                          setEditingId(m.id);
+                          setEditForm(m);
+                          setEditIsFull(!!m.telegramId || !!m.role);
+                        }
+                      }}
+                    >
                       {isEditing ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }} onClick={(e) => e.stopPropagation()}>
                           <input
                             type="text"
                             value={editForm.fullName !== undefined ? editForm.fullName : m.fullName}
@@ -270,7 +280,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                         <div>
                           <div style={{ fontWeight: 600, fontSize: '14px', color: '#1c1c1e' }}>{m.fullName}</div>
                           <div style={{ fontSize: '12px', color: '#8e8e93', marginTop: '2px' }}>
-                            {m.role ? `${m.role} ` : ''}{m.telegramId ? `• ID: ${m.telegramId}` : '• Contractor / Stats only'}
+                            {m.role ? `${m.role} ` : ''}{m.telegramId ? `• ID: ${m.telegramId}` : ''}
                           </div>
                         </div>
                       )}
@@ -334,7 +344,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
         )}
       </div>
 
-      {/* Блок управління ролями (без трикутника, напис Edit замість Edit Permissions, тумблери замість галочок) */}
+      {/* Блок управління ролями (сірий текст Edit, кнопка Save) */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px' }}>
         <div
           onClick={() => setIsRolesOpen(!isRolesOpen)}
@@ -376,7 +386,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                           setEditingRoleId(editingRoleId === r.id ? null : r.id);
                           setRoleEditForm(r);
                         }}
-                        style={{ background: 'none', border: 'none', color: '#007aff', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
+                        style={{ background: 'none', border: 'none', color: '#8e8e93', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
                       >
                         {editingRoleId === r.id ? 'Close' : 'Edit'}
                       </button>
@@ -393,7 +403,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                   {editingRoleId === r.id && roleEditForm && (
                     <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #f2f2f7', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12px', color: '#1c1c1e' }}>
                       
-                      {/* Тумблер замість галочки для Analytics */}
+                      {/* Тумблер для Analytics */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span>Can view analytics</span>
                         <div
@@ -427,7 +437,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                         </div>
                       </div>
 
-                      {/* Тумблер замість галочки для Edit Projects */}
+                      {/* Тумблер для Edit Projects */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span>Can edit projects</span>
                         <div
@@ -469,7 +479,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                         }}
                         style={{ padding: '6px 12px', backgroundColor: '#34c759', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, marginTop: '4px', width: 'fit-content' }}
                       >
-                        Save Role
+                        Save
                       </button>
                     </div>
                   )}
