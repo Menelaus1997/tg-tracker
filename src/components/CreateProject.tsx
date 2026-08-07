@@ -28,6 +28,9 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
 
   const validTemplates = templates.filter((t) => t && t.id && t.name && t.name !== 'undefined');
 
+  // Перевірка, чи колір є серед стандартних
+  const isCustomColor = !DEFAULT_COLORS.includes(selectedColor);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !projectId.trim()) return;
@@ -125,51 +128,53 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
           </select>
         </div>
 
-        {/* Палітра кольорів в один рядок (8 основних + 9-й кастомний +) */}
+        {/* Палітра кольорів з безаварійною галочкою ✓ */}
         <div>
           <label style={labelStyle}>Колір маркування</label>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', flexWrap: 'nowrap', overflowX: 'auto' }}>
-            {DEFAULT_COLORS.map((c) => (
-              <div
-                key={c}
-                onClick={() => setSelectedColor(c)}
-                style={{
-                  width: '28px',
-                  height: '28px',
-                  borderRadius: '50%',
-                  backgroundColor: c,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  border: selectedColor === c ? '2px solid #007aff' : 'none'
-                }}
-              >
-                {selectedColor === c && <span style={{ color: '#fff', fontSize: '11px' }}>✓</span>}
-              </div>
-            ))}
+            {DEFAULT_COLORS.map((c) => {
+              const isSelected = selectedColor === c;
+              return (
+                <div
+                  key={c}
+                  onClick={() => setSelectedColor(c)}
+                  style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '50%',
+                    backgroundColor: c,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}
+                >
+                  {isSelected && <span style={{ color: '#fff', fontSize: '12px', fontWeight: 700 }}>✓</span>}
+                </div>
+              );
+            })}
 
-            {/* 9-та кнопка "+" для редагування кастомного кольору */}
+            {/* 9-та кнопка піпетки / кастомного кольору */}
             <label
               style={{
                 width: '28px',
                 height: '28px',
                 borderRadius: '50%',
-                backgroundColor: '#e5e5ea',
+                backgroundColor: isCustomColor ? selectedColor : '#e5e5ea',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0,
-                fontSize: '18px',
-                fontWeight: 600,
-                color: '#007aff',
+                fontSize: isCustomColor ? '12px' : '16px',
+                fontWeight: 700,
+                color: isCustomColor ? '#ffffff' : '#007aff',
                 position: 'relative'
               }}
               title="Обрати кастомний колір"
             >
-              +
+              {isCustomColor ? '✓' : '+'}
               <input
                 type="color"
                 value={selectedColor}
