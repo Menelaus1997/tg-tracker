@@ -96,49 +96,29 @@ export const App: React.FC = () => {
   const [groupId, setGroupId] = useState<string>(() => localStorage.getItem('app_group_id') || '');
   const [fontFamily, setFontFamily] = useState<string>(() => localStorage.getItem('app_font') || 'system-ui');
 
-  const [currentUserId, setCurrentUserId] = useState<string>('');
-  const [superAdminId, setSuperAdminId] = useState<string>(() => localStorage.getItem('app_super_admin_id') || '');
-  const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(true);
-
-  useEffect(() => {
-    if ((window as any).Telegram?.WebApp) {
-      const tg = (window as any).Telegram.WebApp;
-      tg.ready();
-      const user = tg.initDataUnsafe?.user;
-      if (user?.id) {
-        const uid = String(user.id);
-        setCurrentUserId(uid);
-        
-        const savedOwner = localStorage.getItem('app_super_admin_id');
-        if (!savedOwner) {
-          localStorage.setItem('app_super_admin_id', uid);
-          setSuperAdminId(uid);
-          setIsSuperAdmin(true);
-        } else {
-          setIsSuperAdmin(savedOwner === uid);
-        }
-      }
-    }
-  }, [superAdminId]);
+  // Логін / Пароль / Кодове слово для входу в налаштування
+  const [adminCredentials, setAdminCredentials] = useState(() => {
+    const saved = localStorage.getItem('app_admin_credentials');
+    return saved ? JSON.parse(saved) : { login: 'admin', passwordHash: 'admin', secretWord: 'дизайн' };
+  });
 
   useEffect(() => localStorage.setItem('app_projects', JSON.stringify(projects)), [projects]);
   useEffect(() => localStorage.setItem('app_team', JSON.stringify(teamMembers)), [teamMembers]);
   useEffect(() => localStorage.setItem('app_roles', JSON.stringify(roles)), [roles]);
   useEffect(() => localStorage.setItem('app_templates', JSON.stringify(templates)), [templates]);
+  useEffect(() => localStorage.setItem('app_admin_credentials', JSON.stringify(adminCredentials)), [adminCredentials]);
 
-  const handleSaveSettings = (token: string, group: string, font: string, newOwnerId?: string) => {
+  const handleSaveSettings = (token: string, group: string, font: string) => {
     setBotToken(token);
     setGroupId(group);
     setFontFamily(font);
     localStorage.setItem('app_bot_token', token);
     localStorage.setItem('app_group_id', group);
     localStorage.setItem('app_font', font);
+  };
 
-    if (newOwnerId && newOwnerId !== superAdminId) {
-      setSuperAdminId(newOwnerId);
-      localStorage.setItem('app_super_admin_id', newOwnerId);
-      setIsSuperAdmin(currentUserId === newOwnerId);
-    }
+  const handleUpdateCredentials = (login: string, pass: string, secret: string) => {
+    setAdminCredentials({ login, passwordHash: pass, secretWord: secret });
   };
 
   const handleCreateProject = (newProject: Project) => {
@@ -180,7 +160,7 @@ export const App: React.FC = () => {
           onUpdateProject={(updated) => setProjects(projects.map((p) => (p.id === updated.id ? updated : p)))}
           onSaveAsTemplate={() => handleSaveTemplate(activeProject)}
           onBack={() => setSelectedProjectId(null)}
-          availableRoles={roles.map(r => r.name)}
+          availableRoles={roles.map((r) => r.name)}
         />
       ) : (
         <>
@@ -196,7 +176,7 @@ export const App: React.FC = () => {
               projects={projects}
               onSelectProject={(id: string) => setSelectedProjectId(id)}
               onUpdateProjects={setProjects}
-              isSuperAdmin={isSuperAdmin}
+              isSuperAdmin={true}
               onPermanentDelete={(id: string) => setProjects(projects.filter((p) => p.id !== id))}
             />
           )}
@@ -216,17 +196,17 @@ export const App: React.FC = () => {
                 setRoles(exists ? roles.map((ro) => (ro.id === r.id ? r : ro)) : [...roles, r]);
               }}
               onDeleteRole={(id) => setRoles(roles.filter((r) => r.id !== id))}
-              isSuperAdmin={isSuperAdmin}
+              isSuperAdmin={true}
             />
           )}
           {activeTab === 6 && (
             <Settings
               botToken={botToken}
               groupId={groupId}
-              superAdminId={superAdminId}
               fontFamily={fontFamily}
               onSaveSettings={handleSaveSettings}
-              isSuperAdmin={isSuperAdmin}
+              adminCredentials={adminCredentials}
+              onUpdateCredentials={handleUpdateCredentials}
             />
           )}
         </>
