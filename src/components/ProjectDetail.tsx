@@ -55,7 +55,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [memberFullName, setMemberFullName] = useState('');
   const [memberTelegram, setMemberTelegram] = useState('');
   const [memberRole, setMemberRole] = useState<RoleType>('Кресляр');
-  const [copiedSuccess, setCopiedSuccess] = useState(false);
+
+  const [isLoadingLink, setIsLoadingLink] = useState(false);
 
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [saveAsTemplateChecked, setSaveAsTemplateChecked] = useState(false);
@@ -268,30 +269,43 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     setTeamMembers(teamMembers.filter(m => m.id !== id));
   };
 
-  // 1. Формування посилання для поділу в Telegram
-  const getTelegramShareLink = () => {
-    const membersListText = teamMembers
-      .map(m => `• ${m.fullName} (${m.role}): ${m.telegramUsername ? `@${m.telegramUsername}` : 'немає ніка'}`)
-      .join('\n');
+  // Автоматичне отримання посилання через Bot API
+  const handleAutoCreateTeamChat = async () => {
+    if (teamMembers.length === 0) {
+      alert('Спочатку додайте хоча б одного учасника в команду!');
+      return;
+    }
 
-    const text = encodeURIComponent(
-      `📌 Проект: ${name} (${projectId})\n\n` +
-      `Команда проекту:\n${membersListText}`
-    );
-    return `https://t.me/share/url?url=${text}`;
-  };
+    setIsLoadingLink(true);
 
-  // 2. Копіювання всіх нікнеймів у буфер обміну підряд (@user1 @user2 @user3)
-  const copyTelegramUsernames = () => {
-    const usernames = teamMembers
-      .filter(m => m.telegramUsername.trim().length > 0)
-      .map(m => `@${m.telegramUsername.trim()}`)
-      .join(' ');
+    try {
+      const response = await fetch('/api/create-team-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectName: name,
+          projectId: projectId,
+          members: teamMembers
+        })
+      });
 
-    if (usernames) {
-      navigator.clipboard.writeText(usernames);
-      setCopiedSuccess(true);
-      setTimeout(() => setCopiedSuccess(false), 2000);
+      const data = await response.json();
+
+      if (data.success && data.inviteLink) {
+        // Відкриваємо інвайт-посилання у Telegram
+        if ((window as any).Telegram?.WebApp) {
+          (window as any).Telegram.WebApp.openTelegramLink(data.inviteLink);
+        } else {
+          window.open(data.inviteLink, '_blank');
+        }
+      } else {
+        alert(`Помилка Telegram API: ${data.error || 'Не вдалося створити посилання'}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Помилка підключення до сервера бота.');
+    } finally {
+      setIsLoadingLink(false);
     }
   };
 
@@ -737,44 +751,28 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               )}
             </div>
 
+            {/* Кнопка автоматичного створення чату */}
             {teamMembers.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
-                <button
-                  type="button"
-                  onClick={copyTelegramUsernames}
-                  style={{
-                    padding: '10px',
-                    backgroundColor: '#e5e5ea',
-                    color: '#1c1c1e',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontWeight: 600,
-                    fontSize: '13px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {copiedSuccess ? '✓ Скопійовано у буфер!' : '📋 Скопіювати список нікнеймів'}
-                </button>
-
-                <a
-                  href={getTelegramShareLink()}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    display: 'block',
-                    textAlign: 'center',
-                    padding: '12px',
-                    backgroundColor: '#0088cc',
-                    color: '#ffffff',
-                    borderRadius: '10px',
-                    textDecoration: 'none',
-                    fontWeight: 600,
-                    fontSize: '14px'
-                  }}
-                >
-                  ✈️ Створити/Поділитись чатом у Telegram
-                </a>
-              </div>
+              <button
+                type="button"
+                onClick={handleAutoCreateTeamChat}
+                disabled={isLoadingLink}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  backgroundColor: '#0088cc',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  marginTop: '6px',
+                  opacity: isLoadingLink ? 0.7 : 1
+                }}
+              >
+                {isLoadingLink ? '⏳ Створення посилання...' : '⚡ Автоматично створити/отримати чат у Telegram'}
+              </button>
             )}
           </div>
         )}
@@ -796,7 +794,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             <p style={{ fontSize: '14px', color: '#636366' }}>Основні дані проекту оновлено.</p>
 
             <div style={{ marginTop: '14px', marginBottom: '14px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer', fontWeight: 500 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer', fontWeight 500 }}>
                 <input type="checkbox" checked={saveAsTemplateChecked} onChange={(e) => setSaveAsTemplateChecked(e.target.checked)} />
                 Зберегти цю структуру як новий шаблон?
               </label>
