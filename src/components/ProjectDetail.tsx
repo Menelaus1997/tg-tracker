@@ -72,6 +72,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const [templateNameInput, setTemplateNameInput] = useState(project.name);
 
+  // Drag and drop states
+  const [draggedDataIndex, setDraggedDataIndex] = useState<number | null>(null);
+  const [draggedSubStage, setDraggedSubStage] = useState<{ stageId: string; index: number } | null>(null);
+
   const handleAutoSaveBasicInfo = (updatedName?: string, updatedId?: string, updatedColorIndex?: number) => {
     const nextName = updatedName !== undefined ? updatedName : name;
     const nextId = updatedId !== undefined ? updatedId : projectId;
@@ -103,22 +107,26 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     setGeneralRows(updated);
   };
 
-  const handleMoveDataRow = (index: number, direction: 'up' | 'down') => {
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= generalRows.length) return;
-    const updated = [...generalRows];
-    const temp = updated[index];
-    updated[index] = updated[targetIndex];
-    updated[targetIndex] = temp;
-    setGeneralRows(updated);
-  };
-
   const handleUpdateGeneralRow = (id: string, field: 'label' | 'value', text: string) => {
     setGeneralRows(generalRows.map(r => r.id === id ? { ...r, [field]: text } : r));
   };
 
   const handleDeleteGeneralRow = (id: string) => {
     setGeneralRows(generalRows.filter(r => r.id !== id));
+  };
+
+  // Drag and drop for Data rows
+  const handleDataDragStart = (index: number) => {
+    setDraggedDataIndex(index);
+  };
+
+  const handleDataDrop = (targetIndex: number) => {
+    if (draggedDataIndex === null || draggedDataIndex === targetIndex) return;
+    const updated = [...generalRows];
+    const [movedItem] = updated.splice(draggedDataIndex, 1);
+    updated.splice(targetIndex, 0, movedItem);
+    setGeneralRows(updated);
+    setDraggedDataIndex(null);
   };
 
   const handleAddStage = (e: React.FormEvent) => {
@@ -145,9 +153,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     setStages(stages.map(s => s.id === stageId ? { ...s, title: newTitle } : s));
   };
 
-  // =========================================================================
-  // ЗНАЙТИ ТУТ: Функція оновлення виконавця стадії ( Contractor / Assignee )
-  // =========================================================================
   const handleUpdateStageContractor = (stageId: string, contractorName: string) => {
     setStages(stages.map(s => s.id === stageId ? { ...s, contractor: contractorName } : s));
   };
@@ -222,19 +227,24 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     }));
   };
 
-  const handleMoveSubStage = (stageId: string, index: number, direction: 'up' | 'down') => {
+  // Drag and drop for SubStages
+  const handleSubStageDragStart = (stageId: string, index: number) => {
+    setDraggedSubStage({ stageId, index });
+  };
+
+  const handleSubStageDrop = (stageId: string, targetIndex: number) => {
+    if (!draggedSubStage || draggedSubStage.stageId !== stageId || draggedSubStage.index === targetIndex) return;
+
     setStages(stages.map(s => {
       if (s.id === stageId) {
         const list = [...s.subStages];
-        const targetIndex = direction === 'up' ? index - 1 : index + 1;
-        if (targetIndex < 0 || targetIndex >= list.length) return s;
-        const temp = list[index];
-        list[index] = list[targetIndex];
-        list[targetIndex] = temp;
+        const [movedItem] = list.splice(draggedSubStage.index, 1);
+        list.splice(targetIndex, 0, movedItem);
         return { ...s, subStages: list };
       }
       return s;
     }));
+    setDraggedSubStage(null);
   };
 
   const handleDeleteSubStage = (stageId: string, subStageId: string) => {
@@ -289,17 +299,18 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         ← Back
       </button>
 
-      {/* 1. Header Block */}
+      {/* 1. Header Block (ЖК Варшавський клікабельний замість олівця) */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div 
+          onClick={() => setIsHeaderOpen(!isHeaderOpen)} 
+          style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+        >
           <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>{name || 'Untitled'}</h3>
-          <button onClick={() => setIsHeaderOpen(!isHeaderOpen)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px' }}>
-            ✏️
-          </button>
+          <span style={{ fontSize: '12px', color: '#8e8e93' }}>{isHeaderOpen ? '▲' : '▼'}</span>
         </div>
 
         {isHeaderOpen && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }} onClick={(e) => e.stopPropagation()}>
             <div>
               <label style={labelStyle}>Project Name</label>
               <input
@@ -388,7 +399,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* 2. Data Block */}
+      {/* 2. Data Block (з перетягуванням за номер) */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
         <div 
           onClick={() => setIsGeneralDataOpen(!isGeneralDataOpen)}
@@ -401,11 +412,17 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         {isGeneralDataOpen && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
             {generalRows.map((r, index) => (
-              <div key={r.id} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
-                  <button onClick={() => handleMoveDataRow(index, 'up')} style={iconBtnStyle}>↑</button>
-                  <button onClick={() => handleMoveDataRow(index, 'down')} style={iconBtnStyle}>↓</button>
-                </div>
+              <div 
+                key={r.id} 
+                draggable
+                onDragStart={() => handleDataDragStart(index)}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => handleDataDrop(index)}
+                style={{ display: 'flex', gap: '8px', alignItems: 'center', cursor: 'grab' }}
+              >
+                <span style={{ fontSize: '12px', fontWeight: 600, color: '#8e8e93', width: '16px', textAlign: 'center', userSelect: 'none' }}>
+                  {index + 1}.
+                </span>
 
                 {r.type === 'single' ? (
                   <input
@@ -441,7 +458,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* 3. Structure Block */}
+      {/* 3. Structure Block (з перетягуванням за номер підзадач) */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '20px' }}>
         <div 
           onClick={() => setIsStructureOpen(!isStructureOpen)}
@@ -527,10 +544,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       </div>
                     </div>
 
-                    {/* ========================================================================= */}
-                    {/* ЗНАЙТИ ТУТ: Вибір виконавця/підрядника через випадаючий список (<select>)   */}
-                    {/* Він автоматично підтягує учасників команди цього проекту                  */}
-                    {/* ========================================================================= */}
+                    {/* Вибір виконавця стадії (тільки реальні учасники з Team) */}
                     <div style={{ marginBottom: '8px' }}>
                       <select
                         value={st.contractor || ''}
@@ -546,7 +560,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                             </option>
                           );
                         })}
-                        <option value="Outsourced Contractor">Outsourced Contractor</option>
                       </select>
                     </div>
 
@@ -609,7 +622,14 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px' }}>
                           {st.subStages.map((sub, idx) => (
-                            <div key={sub.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px' }}>
+                            <div 
+                              key={sub.id} 
+                              draggable
+                              onDragStart={() => handleSubStageDragStart(st.id, idx)}
+                              onDragOver={(e) => e.preventDefault()}
+                              onDrop={() => handleSubStageDrop(st.id, idx)}
+                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px', cursor: 'grab' }}
+                            >
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
                                 <input
                                   type="checkbox"
@@ -617,12 +637,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                   onChange={() => handleToggleSubStage(st.id, sub.id)}
                                 />
                                 
-                                <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
-                                  <button onClick={() => handleMoveSubStage(st.id, idx, 'up')} style={iconBtnStyle}>↑</button>
-                                  <button onClick={() => handleMoveSubStage(st.id, idx, 'down')} style={iconBtnStyle}>↓</button>
-                                </div>
-
-                                <span>{idx + 1}.</span>
+                                <span style={{ fontWeight: 600, color: '#8e8e93', userSelect: 'none', minWidth: '16px' }}>{idx + 1}.</span>
 
                                 <input
                                   type="text"
