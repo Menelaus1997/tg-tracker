@@ -68,7 +68,6 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
     setEditingId(null);
   };
 
-  // Виправлена функція створення ролі (працює за кліком на Add Role)
   const handleCreateNewRole = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -190,7 +189,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
         </button>
       </form>
 
-      {/* Вкладка Participants зі спадним меню для приховування списку */}
+      {/* Вкладка Participants зі спадним меню */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '12px 14px', borderRadius: '12px', marginBottom: '20px' }}>
         <div
           onClick={() => setIsParticipantsOpen(!isParticipantsOpen)}
