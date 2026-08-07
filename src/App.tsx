@@ -22,6 +22,7 @@ export interface RolePermissions {
   canManageStages: boolean;
   canManageTimer: boolean;
   canAssignTeam: boolean;
+  onlyAssignedStages?: boolean;
 }
 
 export interface RoleConfig {
@@ -118,22 +119,37 @@ export const App: React.FC = () => {
     setActiveTab(2);
   };
 
-  // Повноцінна функція збереження шаблонів
+  // Збереження ТІЛЬКИ стадій і підстадій (без закреслених підстадій, без часу, прогресу та команди)
   const handleSaveTemplate = (project: Project) => {
+    if (!project || !project.name) return;
+
+    const cleanStages = (project.stages || []).map((st: any) => ({
+      title: st.title,
+      subStages: (st.subStages || []).map((sub: any) => ({
+        title: sub.title,
+        completed: false
+      }))
+    }));
+
     const newTemplate = {
       id: Date.now().toString(),
-      name: project.name,
-      stages: project.stages || []
+      name: project.name.trim(),
+      stages: cleanStages
     };
-    setTemplates(prev => [...prev, newTemplate]);
-    alert(`Проект "${project.name}" успішно збережено як новий шаблон!`);
+
+    setTemplates((prev) => {
+      const valid = prev.filter((t) => t && t.name && t.name !== 'undefined');
+      return [...valid, newTemplate];
+    });
+
+    alert(`Проект "${project.name}" збережено як новий чистий шаблон!`);
   };
 
   const handlePermanentDelete = async (projectId: string) => {
-    setProjects(projects.filter(p => p.id !== projectId));
+    setProjects(projects.filter((p) => p.id !== projectId));
   };
 
-  const activeProject = projects.find(p => p.id === selectedProjectId);
+  const activeProject = projects.find((p) => p.id === selectedProjectId);
 
   const ProjectListComponent = (ProjectList as any).ProjectList || ProjectList;
   const CreateProjectComponent = (CreateProject as any).CreateProject || CreateProject;
@@ -143,14 +159,18 @@ export const App: React.FC = () => {
       {selectedProjectId && activeProject ? (
         <ProjectDetail
           project={activeProject}
-          onUpdateProject={(updated) => setProjects(projects.map(p => p.id === updated.id ? updated : p))}
+          onUpdateProject={(updated) => setProjects(projects.map((p) => (p.id === updated.id ? updated : p)))}
           onSaveAsTemplate={() => handleSaveTemplate(activeProject)}
           onBack={() => setSelectedProjectId(null)}
         />
       ) : (
         <>
           {activeTab === 1 && (
-            <CreateProjectComponent onCreateProject={handleCreateProject} templates={templates} />
+            <CreateProjectComponent
+              onCreateProject={handleCreateProject}
+              templates={templates}
+              onUpdateTemplates={setTemplates}
+            />
           )}
           {activeTab === 2 && (
             <ProjectListComponent
@@ -167,16 +187,16 @@ export const App: React.FC = () => {
             <TeamManagement
               teamMembers={teamMembers}
               onSaveTeamMember={(m) => {
-                const exists = teamMembers.some(tm => tm.id === m.id);
-                setTeamMembers(exists ? teamMembers.map(tm => tm.id === m.id ? m : tm) : [...teamMembers, m]);
+                const exists = teamMembers.some((tm) => tm.id === m.id);
+                setTeamMembers(exists ? teamMembers.map((tm) => (tm.id === m.id ? m : tm)) : [...teamMembers, m]);
               }}
-              onDeleteTeamMember={(id) => setTeamMembers(teamMembers.filter(m => m.id !== id))}
+              onDeleteTeamMember={(id) => setTeamMembers(teamMembers.filter((m) => m.id !== id))}
               roles={roles}
               onSaveRole={(r) => {
-                const exists = roles.some(ro => ro.id === r.id);
-                setRoles(exists ? roles.map(ro => ro.id === r.id ? r : ro) : [...roles, r]);
+                const exists = roles.some((ro) => ro.id === r.id);
+                setRoles(exists ? roles.map((ro) => (ro.id === r.id ? r : ro)) : [...roles, r]);
               }}
-              onDeleteRole={(id) => setRoles(roles.filter(r => r.id !== id))}
+              onDeleteRole={(id) => setRoles(roles.filter((r) => r.id !== id))}
               isSuperAdmin={isSuperAdmin}
             />
           )}
