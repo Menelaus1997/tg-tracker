@@ -74,7 +74,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
 
   const handleDeleteTemplate = (id: string) => {
     if (!onUpdateTemplates) return;
-    if (confirm('Видалити цей шаблон?')) {
+    if (confirm('Delete this template?')) {
       const updated = templates.filter((t) => t.id !== id);
       onUpdateTemplates(updated);
       if (selectedTemplateId === id) setSelectedTemplateId('');
@@ -95,10 +95,10 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e' }}>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div>
-          <label style={labelStyle}>Найменування проекта</label>
+          <label style={labelStyle}>Project Name</label>
           <input
             type="text"
-            placeholder="ЖК Варшавський"
+            placeholder="e.g. ЖК Варшавський"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
@@ -107,7 +107,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
         </div>
 
         <div>
-          <label style={labelStyle}>ID проекту</label>
+          <label style={labelStyle}>Project ID</label>
           <input
             type="text"
             placeholder="#V1"
@@ -119,13 +119,13 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
         </div>
 
         <div>
-          <label style={labelStyle}>Шаблон</label>
+          <label style={labelStyle}>Template</label>
           <select
             value={selectedTemplateId}
             onChange={(e) => setSelectedTemplateId(e.target.value)}
             style={inputStyle}
           >
-            <option value="">Загальний шаблон (свій варіант)</option>
+            <option value="">General template (custom)</option>
             {validTemplates.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name}
@@ -134,60 +134,58 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
           </select>
         </div>
 
-        {/* Палітра кольорів */}
-        <div>
-          <label style={labelStyle}>Колір маркування</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
-            {colors.map((c, idx) => {
-              const isSelected = selectedColorIndex === idx;
-              return (
-                <div
-                  key={idx}
-                  onClick={() => setSelectedColorIndex(idx)}
-                  style={{
-                    width: '28px',
-                    height: '28px',
-                    borderRadius: '50%',
-                    backgroundColor: c,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0
-                  }}
-                >
-                  {isSelected && <span style={{ color: '#fff', fontSize: '12px', fontWeight: 700 }}>✓</span>}
-                </div>
-              );
-            })}
+        {/* Центрована палітра кольорів без надпису "Колір маркування" */}
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
+          {colors.map((c, idx) => {
+            const isSelected = selectedColorIndex === idx;
+            return (
+              <div
+                key={idx}
+                onClick={() => setSelectedColorIndex(idx)}
+                style={{
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '50%',
+                  backgroundColor: c,
+                  border: '1px solid #d1d1d6',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}
+              >
+                {isSelected && <span style={{ color: '#fff', fontSize: '12px', fontWeight: 700 }}>✓</span>}
+              </div>
+            );
+          })}
 
-            <label
-              style={{
-                width: '28px',
-                height: '28px',
-                borderRadius: '50%',
-                backgroundColor: '#e5e5ea',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-                fontSize: '16px',
-                fontWeight: 600,
-                color: '#007aff',
-                position: 'relative'
-              }}
-              title="Змінити колір виділеного кола"
-            >
-              +
-              <input
-                type="color"
-                value={colors[selectedColorIndex]}
-                onChange={handleCustomColorPicker}
-                style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
-              />
-            </label>
-          </div>
+          <label
+            style={{
+              width: '28px',
+              height: '28px',
+              borderRadius: '50%',
+              backgroundColor: '#e5e5ea',
+              border: '1px solid #d1d1d6',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              fontSize: '16px',
+              fontWeight: 600,
+              color: '#007aff',
+              position: 'relative'
+            }}
+          >
+            +
+            <input
+              type="color"
+              value={colors[selectedColorIndex]}
+              onChange={handleCustomColorPicker}
+              style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
+            />
+          </label>
         </div>
 
         <button
@@ -204,11 +202,10 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
             marginTop: '10px'
           }}
         >
-          Додати проект
+          Add Project
         </button>
       </form>
 
-      {/* Архів шаблонів */}
       <div style={{ textAlign: 'center', marginTop: '16px' }}>
         <button
           type="button"
@@ -222,18 +219,18 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
             textDecoration: 'underline'
           }}
         >
-          {isTemplateManagerOpen ? 'Сховати архів шаблонів' : 'Архів шаблонів'}
+          {isTemplateManagerOpen ? 'Hide archive' : 'Template Archive'}
         </button>
       </div>
 
       {isTemplateManagerOpen && (
         <div style={{ marginTop: '16px', padding: '14px', backgroundColor: '#f2f2f7', borderRadius: '12px' }}>
           <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#1c1c1e' }}>
-            Архів шаблонів ({validTemplates.length})
+            Template Archive ({validTemplates.length})
           </h4>
 
           {validTemplates.length === 0 ? (
-            <div style={{ fontSize: '12px', color: '#8e8e93' }}>Збережених шаблонів немає.</div>
+            <div style={{ fontSize: '12px', color: '#8e8e93' }}>No templates saved.</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {validTemplates.map((t) => (
@@ -275,14 +272,12 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
                         setEditingTemplateName(t.name);
                       }}
                       style={iconBtnStyle}
-                      title="Перейменувати"
                     >
                       ✏️
                     </button>
                     <button
                       onClick={() => handleDeleteTemplate(t.id)}
                       style={{ ...iconBtnStyle, color: '#ff3b30' }}
-                      title="Видалити"
                     >
                       ✕
                     </button>
