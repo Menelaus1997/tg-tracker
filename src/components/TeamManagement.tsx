@@ -43,7 +43,6 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
   const [newRoleName, setNewRoleName] = useState('');
   const [editingRole, setEditingRole] = useState<RoleConfig | null>(null);
 
-  // Стан для прямого редагування назви ролі
   const [editingRoleTitleId, setEditingRoleTitleId] = useState<string | null>(null);
   const [roleTitleInput, setRoleTitleInput] = useState('');
 
@@ -154,7 +153,6 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
 
   return (
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e' }}>
-      {/* Форма додавання без залишків лишніх заголовків */}
       <form onSubmit={handleSubmitMember} style={{ backgroundColor: '#f2f2f7', padding: '16px', borderRadius: '12px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
         <div>
           <label style={labelStyle}>Ім'я та прізвище</label>
@@ -217,7 +215,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
         )}
       </div>
 
-      {/* Редагування ролей та прав */}
+      {/* Редагування ролей та прав (Олівець перенесено до шестірні) */}
       <div style={{ borderTop: '1px solid #e5e5ea', paddingTop: '16px' }}>
         <div 
           onClick={() => setIsRolesSectionOpen(!isRolesSectionOpen)}
@@ -244,7 +242,6 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
               {roles.map((r) => (
                 <div key={r.id} style={{ padding: '10px', backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #e5e5ea' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    {/* Редагування назви ролі по кліку */}
                     {editingRoleTitleId === r.id ? (
                       <div style={{ display: 'flex', gap: '4px', flex: 1, marginRight: '8px' }}>
                         <input
@@ -262,16 +259,29 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                           setRoleTitleInput(r.name);
                         }}
                         style={{ fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}
-                        title="Клікніть, щоб змінити назву"
                       >
-                        {r.name} ✏️
+                        {r.name}
                       </span>
                     )}
 
-                    {/* Іконка шестірні замість слова Права */}
-                    <button onClick={() => setEditingRole(editingRole?.id === r.id ? null : r)} style={{ ...btnStyle, backgroundColor: '#e5e5ea', fontSize: '14px', padding: '4px 8px' }}>
-                      ⚙️
-                    </button>
+                    {/* Олівець і шестірня розташовані поруч праворуч */}
+                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                      <button 
+                        onClick={() => {
+                          setEditingRoleTitleId(r.id);
+                          setRoleTitleInput(r.name);
+                        }} 
+                        style={{ ...btnStyle, backgroundColor: '#e5e5ea', fontSize: '12px', padding: '4px 8px' }}
+                      >
+                        ✏️
+                      </button>
+                      <button 
+                        onClick={() => setEditingRole(editingRole?.id === r.id ? null : r)} 
+                        style={{ ...btnStyle, backgroundColor: '#e5e5ea', fontSize: '12px', padding: '4px 8px' }}
+                      >
+                        ⚙️
+                      </button>
+                    </div>
                   </div>
 
                   {editingRole?.id === r.id && (
