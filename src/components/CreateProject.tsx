@@ -132,7 +132,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
           </select>
         </div>
 
-        {/* Геометрично відцентрована палітра із повноцінною кнопкою + */}
+        {/* Ідеально відцентрований плюс у палітрі */}
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
           {colors.map((c, idx) => {
             const isSelected = selectedColorIndex === idx;
@@ -170,21 +170,21 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
-              fontSize: '20px',
+              fontSize: '22px',
               fontWeight: 700,
-              lineHeight: '1',
               color: '#007aff',
               position: 'relative',
               padding: 0,
-              margin: 0
+              margin: 0,
+              boxSizing: 'border-box'
             }}
           >
-            +
+            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', lineHeight: 1 }}>+</span>
             <input
               type="color"
               value={colors[selectedColorIndex]}
               onChange={handleCustomColorPicker}
-              style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
+              style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer', top: 0, left: 0 }}
             />
           </label>
         </div>
@@ -287,7 +287,6 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
   );
 };
 
-// Контрастні поля з чітким сірим фоном
 const formInputStyle: React.CSSProperties = {
   width: '100%',
   padding: '12px',
