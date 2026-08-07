@@ -23,6 +23,7 @@ const DEFAULT_PERMISSIONS: RolePermissions = {
   canManageStages: true,
   canManageTimer: true,
   canAssignTeam: false,
+  onlyAssignedStages: true
 };
 
 export const TeamManagement: React.FC<TeamManagementProps> = ({
@@ -60,7 +61,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
     e.preventDefault();
     if (!fullName.trim()) return;
 
-    const existingMember = teamMembers.find(m => m.id === editingMemberId);
+    const existingMember = teamMembers.find((m) => m.id === editingMemberId);
 
     onSaveTeamMember({
       id: editingMemberId || Date.now().toString(),
@@ -108,6 +109,37 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
     }
   };
 
+  // Допоміжний компонент для малювання iOS Toggle Switch
+  const renderToggle = (active: boolean, onClick: () => void) => (
+    <div
+      onClick={onClick}
+      style={{
+        width: '38px',
+        height: '22px',
+        borderRadius: '11px',
+        backgroundColor: active ? '#34c759' : '#e5e5ea',
+        position: 'relative',
+        cursor: 'pointer',
+        transition: 'background-color 0.2s',
+        flexShrink: 0
+      }}
+    >
+      <div
+        style={{
+          width: '18px',
+          height: '18px',
+          borderRadius: '50%',
+          backgroundColor: '#ffffff',
+          position: 'absolute',
+          top: '2px',
+          left: active ? '18px' : '2px',
+          transition: 'left 0.2s',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
+        }}
+      />
+    </div>
+  );
+
   return (
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e' }}>
       <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>Команда (База співробітників)</h2>
@@ -146,7 +178,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
         </div>
       </form>
 
-      {/* Список працівників з iOS перемикачем ON/OFF */}
+      {/* Список працівників */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
         <h4 style={{ margin: '0 0 6px 0', fontSize: '15px' }}>Список фахівців ({teamMembers.length})</h4>
         {teamMembers.length === 0 ? (
@@ -168,34 +200,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <button onClick={() => handleEditClick(m)} style={iconBtnStyle}>✏️</button>
                   <button onClick={() => onDeleteTeamMember(m.id)} style={{ ...iconBtnStyle, color: '#ff3b30' }}>✕</button>
-
-                  {/* iOS Toggle Switch On/Off */}
-                  <div
-                    onClick={() => handleToggleActive(m)}
-                    style={{
-                      width: '42px',
-                      height: '24px',
-                      borderRadius: '12px',
-                      backgroundColor: active ? '#34c759' : '#e5e5ea',
-                      position: 'relative',
-                      cursor: 'pointer',
-                      transition: 'background-color 0.2s'
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: '20px',
-                        height: '20px',
-                        borderRadius: '50%',
-                        backgroundColor: '#ffffff',
-                        position: 'absolute',
-                        top: '2px',
-                        left: active ? '20px' : '2px',
-                        transition: 'left 0.2s',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-                      }}
-                    />
-                  </div>
+                  {renderToggle(active, () => handleToggleActive(m))}
                 </div>
               </div>
             );
@@ -203,6 +208,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
         )}
       </div>
 
+      {/* Редагування ролей та розширених прав доступу */}
       <div style={{ borderTop: '1px solid #e5e5ea', paddingTop: '16px' }}>
         <div 
           onClick={() => setIsRolesSectionOpen(!isRolesSectionOpen)}
@@ -235,20 +241,45 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                     </button>
                   </div>
 
+                  {/* Повний список прав із iOS On/Off тумблерами */}
                   {editingRole?.id === r.id && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #f2f2f7', fontSize: '12px' }}>
-                      <label style={toggleLabelStyle}>
-                        <input type="checkbox" checked={r.permissions.canSeeAllProjects} onChange={() => handleTogglePermission(r, 'canSeeAllProjects')} />
-                        Бачити всі проекти
-                      </label>
-                      <label style={toggleLabelStyle}>
-                        <input type="checkbox" checked={r.permissions.canEditProjects} onChange={() => handleTogglePermission(r, 'canEditProjects')} />
-                        Створювати та редагувати проекти
-                      </label>
-                      <label style={toggleLabelStyle}>
-                        <input type="checkbox" checked={r.permissions.canDeleteProjects} onChange={() => handleTogglePermission(r, 'canDeleteProjects')} />
-                        Переміщувати в Кошик
-                      </label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #f2f2f7', fontSize: '12px' }}>
+                      <div style={permissionRowStyle}>
+                        <span>Бачити тільки свої (призначені) стадії</span>
+                        {renderToggle(r.permissions.onlyAssignedStages !== false, () => handleTogglePermission(r, 'onlyAssignedStages'))}
+                      </div>
+                      <div style={permissionRowStyle}>
+                        <span>Бачити всі проекти</span>
+                        {renderToggle(r.permissions.canSeeAllProjects, () => handleTogglePermission(r, 'canSeeAllProjects'))}
+                      </div>
+                      <div style={permissionRowStyle}>
+                        <span>Створювати та редагувати проекти</span>
+                        {renderToggle(r.permissions.canEditProjects, () => handleTogglePermission(r, 'canEditProjects'))}
+                      </div>
+                      <div style={permissionRowStyle}>
+                        <span>Переміщувати в Кошик</span>
+                        {renderToggle(r.permissions.canDeleteProjects, () => handleTogglePermission(r, 'canDeleteProjects'))}
+                      </div>
+                      <div style={permissionRowStyle}>
+                        <span>Керувати стадіями та задачами</span>
+                        {renderToggle(r.permissions.canManageStages, () => handleTogglePermission(r, 'canManageStages'))}
+                      </div>
+                      <div style={permissionRowStyle}>
+                        <span>Керувати таймером роботи</span>
+                        {renderToggle(r.permissions.canManageTimer, () => handleTogglePermission(r, 'canManageTimer'))}
+                      </div>
+                      <div style={permissionRowStyle}>
+                        <span>Призначати склад команди</span>
+                        {renderToggle(r.permissions.canAssignTeam, () => handleTogglePermission(r, 'canAssignTeam'))}
+                      </div>
+                      <div style={permissionRowStyle}>
+                        <span>Доступ до вкладки ВОР</span>
+                        {renderToggle(r.permissions.canViewVor, () => handleTogglePermission(r, 'canViewVor'))}
+                      </div>
+                      <div style={permissionRowStyle}>
+                        <span>Доступ до вкладки Аналітика</span>
+                        {renderToggle(r.permissions.canViewAnalytics, () => handleTogglePermission(r, 'canViewAnalytics'))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -265,4 +296,4 @@ const inputStyle: React.CSSProperties = { width: '100%', padding: '8px 10px', ba
 const labelStyle: React.CSSProperties = { fontSize: '12px', fontWeight: 500, color: '#636366', marginBottom: '2px', display: 'block' };
 const btnStyle: React.CSSProperties = { padding: '8px 12px', borderRadius: '8px', border: 'none', fontWeight: 600, fontSize: '13px', cursor: 'pointer' };
 const iconBtnStyle: React.CSSProperties = { background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', padding: '2px' };
-const toggleLabelStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', color: '#1c1c1e' };
+const permissionRowStyle: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#1c1c1e' };
