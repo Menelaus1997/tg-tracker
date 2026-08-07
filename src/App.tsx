@@ -112,7 +112,7 @@ const DEFAULT_ROLES: RoleConfig[] = [
 ];
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<number>(2); // За замовчуванням "Існуючі проекти"
+  const [activeTab, setActiveTab] = useState<number>(2);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
   const [projects, setProjects] = useState<Project[]>(() => {
@@ -133,7 +133,6 @@ export const App: React.FC = () => {
   const [botToken, setBotToken] = useState<string>(() => localStorage.getItem('app_bot_token') || '');
   const [groupId, setGroupId] = useState<string>(() => localStorage.getItem('app_group_id') || '');
 
-  // Зчитування поточного користувача з Telegram SDK
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(true);
 
@@ -146,7 +145,6 @@ export const App: React.FC = () => {
         const uid = String(user.id);
         setCurrentUserId(uid);
         
-        // Перший відвідувач або збережений Власник є Супер-Адміном
         const savedOwner = localStorage.getItem('app_super_admin_id');
         if (!savedOwner) {
           localStorage.setItem('app_super_admin_id', uid);
@@ -181,7 +179,6 @@ export const App: React.FC = () => {
   const handlePermanentDelete = async (projectId: string) => {
     const proj = projects.find(p => p.id === projectId);
     if (proj?.threadId) {
-      // Видалення гілки з Telegram при очищенні кошика
       await fetch('/api/manage-topic', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -198,7 +195,6 @@ export const App: React.FC = () => {
 
   const activeProject = projects.find(p => p.id === selectedProjectId);
 
-  // Визначення прав поточного користувача
   const currentUserMember = teamMembers.find(m => m.telegramUserId === currentUserId);
   const currentUserRoleConfig = roles.find(r => r.name === currentUserMember?.role);
   const permissions = currentUserRoleConfig?.permissions;
@@ -211,7 +207,6 @@ export const App: React.FC = () => {
 
   return (
     <div style={{ paddingBottom: '70px', minHeight: '100vh', backgroundColor: '#ffffff' }}>
-      {/* Контент активної вкладки */}
       {selectedProjectId && activeProject ? (
         <ProjectDetail
           project={activeProject}
@@ -262,7 +257,6 @@ export const App: React.FC = () => {
         </>
       )}
 
-      {/* Нижнє меню навігації (6 вкладок) */}
       {!selectedProjectId && (
         <div style={navBarStyle}>
           {canSeeTab1 && <button onClick={() => setActiveTab(1)} style={navBtnStyle(activeTab === 1)}>➕</button>}
@@ -299,3 +293,5 @@ const navBtnStyle = (active: boolean): React.CSSProperties => ({
   cursor: 'pointer',
   padding: '10px'
 });
+
+export default App;
