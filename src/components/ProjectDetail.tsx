@@ -418,7 +418,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* 2. Data Block */}
+      {/* 2. Data Block (Вирівняно висоту полів до 28px) */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
         <div 
           onClick={() => setIsGeneralDataOpen(!isGeneralDataOpen)}
@@ -448,7 +448,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     type="text"
                     value={r.value}
                     onChange={(e) => handleUpdateGeneralRow(r.id, 'value', e.target.value)}
-                    style={{ ...cardInputStyle, flex: 1 }}
+                    style={{ ...cardInputStyle, flex: 1, height: '28px', padding: '2px 8px', boxSizing: 'border-box' }}
                   />
                 ) : (
                   <>
@@ -456,13 +456,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       type="text"
                       value={r.label || ''}
                       onChange={(e) => handleUpdateGeneralRow(r.id, 'label', e.target.value)}
-                      style={{ ...cardInputStyle, flex: 1 }}
+                      style={{ ...cardInputStyle, flex: 1, height: '28px', padding: '2px 8px', boxSizing: 'border-box' }}
                     />
                     <input
                       type="text"
                       value={r.value}
                       onChange={(e) => handleUpdateGeneralRow(r.id, 'value', e.target.value)}
-                      style={{ ...cardInputStyle, width: '60px', flexShrink: 0, textAlign: 'center' }}
+                      style={{ ...cardInputStyle, width: '60px', flexShrink: 0, textAlign: 'center', height: '28px', padding: '2px 4px', boxSizing: 'border-box' }}
                     />
                   </>
                 )}
@@ -477,7 +477,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* 3. Structure Block */}
+      {/* 3. Structure Block (Вирівняно структуру та селекти до 28px) */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '20px' }}>
         <div 
           onClick={() => setIsStructureOpen(!isStructureOpen)}
@@ -489,13 +489,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
         {isStructureOpen && (
           <>
-            <form onSubmit={handleAddStage} style={{ display: 'flex', gap: '6px', marginBottom: '14px' }}>
+            <form onSubmit={handleAddStage} style={{ display: 'flex', gap: '6px', marginBottom: '14px', alignItems: 'center' }}>
               <input
                 type="text"
                 placeholder="come up with your own structure"
                 value={newStageTitle}
                 onChange={(e) => setNewStageTitle(e.target.value)}
-                style={{ ...cardInputStyle, flex: 1 }}
+                style={{ ...cardInputStyle, flex: 1, height: '28px', padding: '2px 8px', boxSizing: 'border-box' }}
               />
               <button type="submit" style={compactPlusBtnStyle}>
                 +
@@ -564,13 +564,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       </div>
                     </div>
 
-                    {/* Додавання кількох виконавців через селект та кнопку + */}
+                    {/* Додавання кількох виконавців через селект та кнопку + (висота 28px) */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                         <select
                           id={`select-contractor-${st.id}`}
                           defaultValue=""
-                          style={{ ...cardInputStyle, fontSize: '12px', padding: '6px 8px', flex: 1 }}
+                          style={{ ...cardInputStyle, fontSize: '12px', height: '28px', padding: '2px 8px', boxSizing: 'border-box', flex: 1 }}
                         >
                           <option value="">Select contractor / assignee...</option>
                           {projectTeam.map(pt => {
@@ -592,7 +592,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                               selectEl.value = '';
                             }
                           }}
-                          style={compactPlusBtnStyle}
+                          style={{ ...compactPlusBtnStyle, width: '28px', height: '28px', boxSizing: 'border-box' }}
                           title="Add contractor"
                         >
                           +
@@ -620,9 +620,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     {editingTimeStageId === st.id && (
                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '8px', padding: '6px', backgroundColor: '#f2f2f7', borderRadius: '6px', fontSize: '12px' }}>
                         <span>Hours:</span>
-                        <input type="number" value={manualHours} onChange={(e) => setManualHours(e.target.value)} style={{ ...cardInputStyle, width: '50px', padding: '2px 4px' }} />
+                        <input type="number" value={manualHours} onChange={(e) => setManualHours(e.target.value)} style={{ ...cardInputStyle, width: '50px', padding: '2px 4px', height: '28px', boxSizing: 'border-box' }} />
                         <span>Min:</span>
-                        <input type="number" value={manualMinutes} onChange={(e) => setManualMinutes(e.target.value)} style={{ ...cardInputStyle, width: '50px', padding: '2px 4px' }} />
+                        <input type="number" value={manualMinutes} onChange={(e) => setManualMinutes(e.target.value)} style={{ ...cardInputStyle, width: '50px', padding: '2px 4px', height: '28px', boxSizing: 'border-box' }} />
                         <button onClick={() => handleSaveManualTime(st.id)} style={{ ...btnStyle, backgroundColor: '#34c759', color: '#fff', padding: '2px 6px', fontSize: '11px' }}>✓</button>
                       </div>
                     )}
@@ -664,13 +664,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                             type="date"
                             value={st.startDate || ''}
                             onChange={(e) => handleUpdateStageDates(st.id, 'startDate', e.target.value)}
-                            style={{ ...cardInputStyle, flex: 1, padding: '4px', fontSize: '11px' }}
+                            style={{ ...cardInputStyle, flex: 1, padding: '4px', fontSize: '11px', height: '28px', boxSizing: 'border-box' }}
                           />
                           <input
                             type="date"
                             value={st.endDate || ''}
                             onChange={(e) => handleUpdateStageDates(st.id, 'endDate', e.target.value)}
-                            style={{ ...cardInputStyle, flex: 1, padding: '4px', fontSize: '11px' }}
+                            style={{ ...cardInputStyle, flex: 1, padding: '4px', fontSize: '11px', height: '28px', boxSizing: 'border-box' }}
                           />
                         </div>
 
@@ -713,15 +713,15 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           ))}
                         </div>
 
-                        <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+                        <div style={{ display: 'flex', gap: '6px', marginTop: '4px', alignItems: 'center' }}>
                           <input
                             type="text"
                             placeholder="Add task/subtask"
                             value={newSubStageTitle[st.id] || ''}
                             onChange={(e) => setNewSubStageTitle({ ...newSubStageTitle, [st.id]: e.target.value })}
-                            style={{ ...cardInputStyle, padding: '6px 8px', fontSize: '12px', flex: 1 }}
+                            style={{ ...cardInputStyle, padding: '2px 8px', fontSize: '12px', height: '28px', boxSizing: 'border-box', flex: 1 }}
                           />
-                          <button onClick={() => handleAddSubStage(st.id)} style={compactPlusBtnStyle}>
+                          <button onClick={() => handleAddSubStage(st.id)} style={{ ...compactPlusBtnStyle, width: '28px', height: '28px', boxSizing: 'border-box' }}>
                             +
                           </button>
                         </div>
@@ -735,7 +735,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* 4. Team Block (ВИРАВНЯНО ПО ВИСОТІ СЕЛЕКТИ ТА КНОПКУ + НА 28px) */}
+      {/* 4. Team Block (Вирівняно висоту селектів та кнопки + до 28px) */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '20px' }}>
         <div 
           onClick={() => setIsTeamOpen(!isTeamOpen)}
@@ -811,7 +811,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             placeholder="Template Name"
             value={templateNameInput}
             onChange={(e) => setTemplateNameInput(e.target.value)}
-            style={cardInputStyle}
+            style={{ ...cardInputStyle, height: '28px', padding: '2px 8px', boxSizing: 'border-box' }}
           />
         )}
 
@@ -878,8 +878,8 @@ const compactPlusBtnStyle: React.CSSProperties = {
   backgroundColor: '#e5e5ea',
   border: '1px solid #d1d1d6',
   borderRadius: '6px',
-  width: '26px',
-  height: '26px',
+  width: '28px',
+  height: '28px',
   fontSize: '16px',
   fontWeight: 700,
   lineHeight: '1',
@@ -889,7 +889,8 @@ const compactPlusBtnStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  flexShrink: 0
+  flexShrink: 0,
+  boxSizing: 'border-box'
 };
 
 export default ProjectDetail;
