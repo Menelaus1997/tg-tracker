@@ -7,9 +7,9 @@ interface CreateProjectProps {
   onUpdateTemplates?: (templates: any[]) => void;
 }
 
-const COLOR_OPTIONS = [
+const DEFAULT_COLORS = [
   '#34c759', '#00c7be', '#5856d6', '#007aff',
-  '#ff3b30', '#5c3d2e', '#ff9500', '#af52de', '#3a5199'
+  '#ff3b30', '#5c3d2e', '#ff9500', '#af52de'
 ];
 
 export const CreateProject: React.FC<CreateProjectProps> = ({
@@ -20,13 +20,12 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
   const [name, setName] = useState('');
   const [projectId, setProjectId] = useState('');
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
-  const [selectedColor, setSelectedColor] = useState(COLOR_OPTIONS[0]);
+  const [selectedColor, setSelectedColor] = useState(DEFAULT_COLORS[0]);
 
   const [isTemplateManagerOpen, setIsTemplateManagerOpen] = useState(false);
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
   const [editingTemplateName, setEditingTemplateName] = useState('');
 
-  // Фільтруємо лише валідні шаблони з назвою
   const validTemplates = templates.filter((t) => t && t.id && t.name && t.name !== 'undefined');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -35,7 +34,6 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
 
     const matchedTemplate = validTemplates.find((t) => t.id === selectedTemplateId);
 
-    // При створенні з шаблону скидаємо всі статуси виконання та час
     const cleanStages = matchedTemplate?.stages
       ? matchedTemplate.stages.map((st: any) => ({
           id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
@@ -86,8 +84,6 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
 
   return (
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e' }}>
-      <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '20px' }}>Створення проекту</h2>
-
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div>
           <label style={labelStyle}>Найменування проекта</label>
@@ -129,10 +125,11 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
           </select>
         </div>
 
+        {/* Палітра кольорів в один рядок (8 основних + 9-й кастомний +) */}
         <div>
           <label style={labelStyle}>Колір маркування</label>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
-            {COLOR_OPTIONS.map((c) => (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', flexWrap: 'nowrap', overflowX: 'auto' }}>
+            {DEFAULT_COLORS.map((c) => (
               <div
                 key={c}
                 onClick={() => setSelectedColor(c)}
@@ -145,12 +142,41 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  flexShrink: 0,
                   border: selectedColor === c ? '2px solid #007aff' : 'none'
                 }}
               >
-                {selectedColor === c && <span style={{ color: '#fff', fontSize: '12px' }}>✓</span>}
+                {selectedColor === c && <span style={{ color: '#fff', fontSize: '11px' }}>✓</span>}
               </div>
             ))}
+
+            {/* 9-та кнопка "+" для редагування кастомного кольору */}
+            <label
+              style={{
+                width: '28px',
+                height: '28px',
+                borderRadius: '50%',
+                backgroundColor: '#e5e5ea',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                fontSize: '18px',
+                fontWeight: 600,
+                color: '#007aff',
+                position: 'relative'
+              }}
+              title="Обрати кастомний колір"
+            >
+              +
+              <input
+                type="color"
+                value={selectedColor}
+                onChange={(e) => setSelectedColor(e.target.value)}
+                style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
+              />
+            </label>
           </div>
         </div>
 
@@ -168,7 +194,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
             marginTop: '10px'
           }}
         >
-          Створити проект
+          Додати проект
         </button>
       </form>
 
