@@ -279,28 +279,16 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                       ) : (
                         <div>
                           <div style={{ fontWeight: 600, fontSize: '14px', color: '#1c1c1e' }}>{m.fullName}</div>
-                          <div style={{ fontSize: '12px', color: '#8e8e93', marginTop: '2px' }}>
-                            {m.role ? `${m.role} ` : ''}{m.telegramId ? `• ID: ${m.telegramId}` : ''}
-                          </div>
+                          {(m.role || m.telegramId) && (
+                            <div style={{ fontSize: '12px', color: '#8e8e93', marginTop: '2px' }}>
+                              {m.role ? `${m.role} ` : ''}{m.telegramId ? `• ID: ${m.telegramId}` : ''}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
 
-                    {!isEditing && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingId(m.id);
-                          setEditForm(m);
-                          setEditIsFull(!!m.telegramId || !!m.role);
-                        }}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', padding: '4px' }}
-                        title="Edit"
-                      >
-                        ✏️
-                      </button>
-                    )}
-
+                    {/* Кнопка видалення (кошик) */}
                     <button
                       type="button"
                       onClick={() => onUpdateMembers(members.filter(item => item.id !== m.id))}
@@ -310,6 +298,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                       🗑️
                     </button>
 
+                    {/* Тумблер активності */}
                     <div
                       onClick={() => toggleMemberStatus(m.id)}
                       style={{
@@ -344,7 +333,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
         )}
       </div>
 
-      {/* Блок управління ролями (сірий текст Edit, кнопка Save) */}
+      {/* Блок управління ролями */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px' }}>
         <div
           onClick={() => setIsRolesOpen(!isRolesOpen)}
