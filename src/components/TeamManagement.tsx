@@ -20,9 +20,9 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
 }) => {
   const [name, setName] = useState('');
   const [telegramId, setTelegramId] = useState('');
-  const [role, setRole] = useState(availableRoles[0] || 'Керівник');
+  const [role, setRole] = useState(availableRoles[0] || 'Manager');
   
-  // Тумблер для створення (True = повноцінний учасник з роллю та ID, False = підрядник лише з ім'ям)
+  // Тумблер для створення (True = повноцінний учасник, False = підрядник)
   const [isFullMember, setIsFullMember] = useState(true);
 
   // Інлайн-редагування фахівця
@@ -30,10 +30,11 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
   const [editForm, setEditForm] = useState<Partial<TeamMember>>({});
   const [editIsFull, setEditIsFull] = useState(true);
 
-  // Управління ролями та правами
+  // Блок ролей та прав доступу
   const [isRolesOpen, setIsRolesOpen] = useState(false);
   const [editingRoleId, setEditingRoleId] = useState<string | null>(null);
   const [roleEditForm, setRoleEditForm] = useState<RoleConfig | null>(null);
+  const [newRoleName, setNewRoleName] = useState('');
 
   const handleAddMember = (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +44,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
       id: Date.now().toString(),
       fullName: name.trim(),
       telegramId: isFullMember ? telegramId.trim() : undefined,
-      role: isFullMember ? role : 'Підрядник',
+      role: isFullMember ? role : 'Contractor',
       active: true
     };
 
@@ -61,21 +62,43 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
       ...m,
       ...editForm,
       telegramId: editIsFull ? editForm.telegramId : undefined,
-      role: editIsFull ? editForm.role : 'Підрядник'
+      role: editIsFull ? editForm.role : 'Contractor'
     } : m));
     setEditingId(null);
+  };
+
+  const handleCreateNewRole = () => {
+    if (!newRoleName.trim()) return;
+    const newRole: RoleConfig = {
+      id: Date.now().toString(),
+      name: newRoleName.trim(),
+      permissions: {
+        canViewCreateProject: true,
+        canViewVor: true,
+        canViewAnalytics: true,
+        canViewTeam: true,
+        canViewSettings: true,
+        canSeeAllProjects: true,
+        canEditProjects: true,
+        canDeleteProjects: true,
+        canManageStages: true,
+        canManageTimer: true,
+        canAssignTeam: true
+      }
+    };
+    onSaveRole(newRole);
+    setNewRoleName('');
   };
 
   return (
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e' }}>
       
-      {/* Форма створення фахівця з тумблером праворуч від Full Name */}
+      {/* Форма створення фахівця */}
       <form onSubmit={handleAddMember} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px', backgroundColor: '#f2f2f7', padding: '16px', borderRadius: '12px' }}>
         
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
             <label style={labelStyle}>Full Name</label>
-            {/* Тумблер створення (учасник з роллю / підрядник) */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#636366' }}>
               <span>{isFullMember ? 'Team Member' : 'Contractor'}</span>
               <div
@@ -115,7 +138,6 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
           />
         </div>
 
-        {/* Поля з'являються лише якщо тумблер увімкнено */}
         {isFullMember && (
           <>
             <div>
@@ -162,8 +184,8 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
         </button>
       </form>
 
-      {/* Список фахівців (без трикутника зліва) */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '30px' }}>
+      {/* Список фахівців */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
         {members.length === 0 ? (
           <div style={{ textAlign: 'center', color: '#8e8e93', fontSize: '13px', marginTop: '10px' }}>
             No team members added yet.
@@ -239,14 +261,13 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                   )}
                 </div>
 
-                {/* Кнопка олівця */}
                 {!isEditing && (
                   <button
                     type="button"
                     onClick={() => {
                       setEditingId(m.id);
                       setEditForm(m);
-                      setEditIsFull(!!m.telegramId || m.role !== 'Підрядник');
+                      setEditIsFull(!!m.telegramId || m.role !== 'Contractor');
                     }}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', padding: '4px' }}
                     title="Edit"
@@ -255,7 +276,6 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                   </button>
                 )}
 
-                {/* Кошик видалення */}
                 <button
                   type="button"
                   onClick={() => onUpdateMembers(members.filter(item => item.id !== m.id))}
@@ -265,7 +285,6 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                   🗑️
                 </button>
 
-                {/* Тумблер активності фахівця */}
                 <div
                   onClick={() => toggleMemberStatus(m.id)}
                   style={{
@@ -298,7 +317,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
         )}
       </div>
 
-      {/* Блок налаштування ролей та прав доступу (Permissions Matrix) */}
+      {/* Блок управління ролями та правами доступу (Roles & Permissions Management) */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px' }}>
         <div
           onClick={() => setIsRolesOpen(!isRolesOpen)}
@@ -306,64 +325,98 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ fontSize: '12px', color: '#8e8e93' }}>{isRolesOpen ? '▼' : '▲'}</span>
-            <span style={{ fontSize: '14px', fontWeight: 700 }}>Редагування ролей та прав доступу</span>
+            <span style={{ fontSize: '14px', fontWeight: 700, color: '#1c1c1e' }}>Roles & Permissions Management</span>
           </div>
         </div>
 
         {isRolesOpen && (
-          <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {roles.map((r) => (
-              <div key={r.id} style={{ backgroundColor: '#ffffff', padding: '10px', borderRadius: '8px', border: '1px solid #e5e5ea', fontSize: '13px' }}>
-                <div style={{ fontWeight: 600, marginBottom: '4px', display: 'flex', justifyContent: 'space-between' }}>
-                  <span>{r.name}</span>
-                  <button
-                    onClick={() => {
-                      setEditingRoleId(r.id);
-                      setRoleEditForm(r);
-                    }}
-                    style={{ background: 'none', border: 'none', color: '#007aff', cursor: 'pointer', fontSize: '12px' }}
-                  >
-                    Edit Permissions
-                  </button>
-                </div>
+          <div style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            
+            {/* Форма створення нової ролі */}
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <input
+                type="text"
+                placeholder="New role name..."
+                value={newRoleName}
+                onChange={(e) => setNewRoleName(e.target.value)}
+                style={{ ...inputStyle, padding: '8px 10px', fontSize: '12px', flex: 1 }}
+              />
+              <button
+                type="button"
+                onClick={handleCreateNewRole}
+                style={{ padding: '8px 12px', backgroundColor: '#007aff', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Add Role
+              </button>
+            </div>
 
-                {editingRoleId === r.id && roleEditForm && (
-                  <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #f2f2f7', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <input
-                        type="checkbox"
-                        checked={roleEditForm.permissions.canViewAnalytics}
-                        onChange={(e) => setRoleEditForm({
-                          ...roleEditForm,
-                          permissions: { ...roleEditForm.permissions, canViewAnalytics: e.target.checked }
-                        })}
-                      />
-                      Can view analytics
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <input
-                        type="checkbox"
-                        checked={roleEditForm.permissions.canEditProjects}
-                        onChange={(e) => setRoleEditForm({
-                          ...roleEditForm,
-                          permissions: { ...roleEditForm.permissions, canEditProjects: e.target.checked }
-                        })}
-                      />
-                      Can edit projects
-                    </label>
-                    <button
-                      onClick={() => {
-                        onSaveRole(roleEditForm);
-                        setEditingRoleId(null);
-                      }}
-                      style={{ padding: '6px', backgroundColor: '#007aff', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, marginTop: '4px' }}
-                    >
-                      Save Role
-                    </button>
+            {/* Список існуючих ролей з можливістю редагування/видалення */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {roles.map((r) => (
+                <div key={r.id} style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '8px', border: '1px solid #e5e5ea', color: '#1c1c1e' }}>
+                  <div style={{ fontWeight: 600, fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>{r.name}</span>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingRoleId(editingRoleId === r.id ? null : r.id);
+                          setRoleEditForm(r);
+                        }}
+                        style={{ background: 'none', border: 'none', color: '#007aff', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
+                      >
+                        {editingRoleId === r.id ? 'Close' : 'Edit'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDeleteRole(r.id)}
+                        style={{ background: 'none', border: 'none', color: '#ff3b30', cursor: 'pointer', fontSize: '12px' }}
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </div>
-                )}
-              </div>
-            ))}
+
+                  {editingRoleId === r.id && roleEditForm && (
+                    <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #f2f2f7', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#1c1c1e', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={roleEditForm.permissions.canViewAnalytics}
+                          onChange={(e) => setRoleEditForm({
+                            ...roleEditForm,
+                            permissions: { ...roleEditForm.permissions, canViewAnalytics: e.target.checked }
+                          })}
+                        />
+                        Can view analytics
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#1c1c1e', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={roleEditForm.permissions.canEditProjects}
+                          onChange={(e) => setRoleEditForm({
+                            ...roleEditForm,
+                            permissions: { ...roleEditForm.permissions, canEditProjects: e.target.checked }
+                          })}
+                        />
+                        Can edit projects
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onSaveRole(roleEditForm);
+                          setEditingRoleId(null);
+                        }}
+                        style={{ padding: '6px 12px', backgroundColor: '#34c759', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, marginTop: '6px', width: 'fit-content' }}
+                      >
+                        Save Role
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
           </div>
         )}
       </div>
