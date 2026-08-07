@@ -20,9 +20,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
   return (
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>📊 Аналітика та прогрес</h2>
+        <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>📊 Analytics & Progress</h2>
         
-        {/* Тумблер Години / Дні (без текстової назви) */}
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <div
             onClick={() => setShowWorkload(!showWorkload)}
@@ -69,8 +68,23 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
             const projectProgress = totalSubStages > 0 ? Math.round((completedSubStages / totalSubStages) * 100) : 0;
             const projectColor = proj.color || '#007aff';
 
-            // Підрахунок загального часу та днів по всьому проєкту
-            const totalProjectSeconds = stages.reduce((acc, st) => acc + (st.loggedSeconds || 0), 0);
+            // Обчислення загального часу по всьому проєкту (враховуючи і секундний таймер, і календарні дні по 8 годин)
+            let totalProjectSeconds = 0;
+            stages.forEach(st => {
+              let stageCalendarDays = 0;
+              if (st.startDate && st.endDate) {
+                const [sY, sM, sD] = st.startDate.split('-').map(Number);
+                const [eY, eM, eD] = st.endDate.split('-').map(Number);
+                const startD = new Date(sY, sM - 1, sD);
+                const endD = new Date(eY, eM - 1, eD);
+                const diffTime = Math.abs(endD.getTime() - startD.getTime());
+                stageCalendarDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+              }
+              const calendarSec = stageCalendarDays * 8 * 3600;
+              const loggedSec = st.loggedSeconds || 0;
+              totalProjectSeconds += Math.max(loggedSec, calendarSec);
+            });
+
             const totalProjectHoursNum = totalProjectSeconds / 3600;
             const totalProjectDays = totalProjectHoursNum > 0 && totalProjectHoursNum <= 8 ? 1 : Math.ceil(totalProjectHoursNum / 8);
 
@@ -84,13 +98,12 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
                     <span style={{ fontSize: '12px', color: '#8e8e93' }}>{isProjCollapsed ? '▼' : '▲'}</span>
                     <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>{proj.name} ({proj.id})</h3>
                   </div>
-                  {/* Жирний відсоток проєкту, вирівняний вліво до рівня відсотків стадій */}
-                  <span style={{ fontSize: '13px', fontWeight: 700, color: projectColor, marginRight: '22px' }}>
+                  {/* Жирний відсоток проєкту, зсунутий на 0.5px вправо для точного вирівнювання */}
+                  <span style={{ fontSize: '13px', fontWeight: 700, color: projectColor, marginRight: '21.5px' }}>
                     {projectProgress}%
                   </span>
                 </div>
 
-                {/* Загальний час та дні по проєкту (з'являється при увімкненому тумблері) */}
                 {showWorkload && (
                   <div style={{ fontSize: '11px', color: '#636366', marginBottom: '8px', marginLeft: '20px', fontWeight: 500 }}>
                     Total time: {totalProjectHoursNum.toFixed(1)}h ({totalProjectDays} days)
@@ -134,20 +147,23 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
                       const stageContractors: string[] = (st as any).contractors || (st.contractor ? [st.contractor] : []);
                       const contractorsText = stageContractors.length > 0 ? stageContractors.join(', ') : 'No assignee';
 
-                      const loggedSec = st.loggedSeconds || 0;
-                      let stageDays = 0;
+                      // Розрахунок календарних днів з дати початку та кінця
+                      let stageCalendarDays = 0;
                       if (st.startDate && st.endDate) {
                         const [sY, sM, sD] = st.startDate.split('-').map(Number);
                         const [eY, eM, eD] = st.endDate.split('-').map(Number);
                         const startD = new Date(sY, sM - 1, sD);
                         const endD = new Date(eY, eM - 1, eD);
                         const diffTime = Math.abs(endD.getTime() - startD.getTime());
-                        stageDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                        stageCalendarDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
                       }
-                      
-                      const totalHoursNum = loggedSec / 3600;
-                      const calculatedDays = totalHoursNum > 0 && totalHoursNum <= 8 ? 1 : Math.ceil(totalHoursNum / 8);
-                      const finalDays = stageDays > 0 ? stageDays : calculatedDays;
+
+                      const calendarSec = stageCalendarDays * 8 * 3600;
+                      const loggedSec = st.loggedSeconds || 0;
+                      const effectiveSec = Math.max(loggedSec, calendarSec);
+
+                      const totalHoursNum = effectiveSec / 3600;
+                      const finalDays = stageCalendarDays > 0 ? stageCalendarDays : (totalHoursNum > 0 && totalHoursNum <= 8 ? 1 : Math.ceil(totalHoursNum / 8));
 
                       return (
                         <div key={st.id} style={{ backgroundColor: '#ffffff', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e5e5ea' }}>
