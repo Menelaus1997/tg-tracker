@@ -30,7 +30,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   teamDatabase = [],
   availableRoles = []
 }) => {
-  // 1. Header / Назва проекту
   const [isHeaderOpen, setIsHeaderOpen] = useState(false);
   const [name, setName] = useState(project.name);
   const [projectId, setProjectId] = useState(project.id);
@@ -47,26 +46,22 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     return idx !== -1 ? idx : 0;
   });
 
-  // 2. Data Block (Порожні поля за замовчуванням)
   const [isGeneralDataOpen, setIsGeneralDataOpen] = useState(true);
   const [generalRows, setGeneralRows] = useState<GeneralDataRow[]>(() => project.passportRows || [
     { id: '1', type: 'single', value: '' },
     { id: '2', type: 'double', label: '', value: '' }
   ]);
 
-  // 3. Structure Block
   const [isStructureOpen, setIsStructureOpen] = useState(true);
   const [stages, setStages] = useState<Stage[]>(project.stages || []);
   const [collapsedStages, setCollapsedStages] = useState<{ [key: string]: boolean }>({});
   const [newStageTitle, setNewStageTitle] = useState('');
   const [newSubStageTitle, setNewSubStageTitle] = useState<{ [key: string]: string }>({});
 
-  // Ручне редагування часу
   const [editingTimeStageId, setEditingTimeStageId] = useState<string | null>(null);
   const [manualHours, setManualHours] = useState('0');
   const [manualMinutes, setManualMinutes] = useState('0');
 
-  // 4. Team Block
   const [isTeamOpen, setIsTeamOpen] = useState(true);
   const [projectTeam, setProjectTeam] = useState<{ id: string; memberId: string; role: string }[]>(
     project.projectTeam || []
@@ -74,11 +69,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [selectedMemberId, setSelectedMemberId] = useState(teamDatabase[0]?.id || '');
   const [selectedProjectRole, setSelectedProjectRole] = useState(availableRoles[0] || 'Draftsman');
 
-  // 5. Template
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const [templateNameInput, setTemplateNameInput] = useState(project.name);
 
-  // Автозбереження
   const handleAutoSaveBasicInfo = (updatedName?: string, updatedId?: string, updatedColorIndex?: number) => {
     const nextName = updatedName !== undefined ? updatedName : name;
     const nextId = updatedId !== undefined ? updatedId : projectId;
@@ -95,7 +88,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     });
   };
 
-  // Піпетка (+)
   const handleCustomColorPicker = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newColor = e.target.value;
     const updated = [...colors];
@@ -104,7 +96,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     handleAutoSaveBasicInfo(undefined, undefined, selectedColorIndex);
   };
 
-  // Data handlers
   const handleAddRowAfter = (index: number) => {
     const newRow: GeneralDataRow = { id: Date.now().toString(), type: 'double', label: '', value: '' };
     const updated = [...generalRows];
@@ -130,7 +121,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     setGeneralRows(generalRows.filter(r => r.id !== id));
   };
 
-  // Stages
   const handleAddStage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newStageTitle.trim()) return;
@@ -181,7 +171,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     setStages(stages.map(s => s.id === stageId ? { ...s, [field]: val } : s));
   };
 
-  // SubStages
   const handleAddSubStage = (stageId: string) => {
     const title = newSubStageTitle[stageId];
     if (!title || !title.trim()) return;
@@ -249,7 +238,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     }));
   };
 
-  // Team
   const handleAddProjectMember = () => {
     if (!selectedMemberId) return;
     const newEntry = { id: Date.now().toString(), memberId: selectedMemberId, role: selectedProjectRole };
@@ -330,7 +318,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               />
             </div>
 
-            {/* Відцентрована палітра з однакової кнопкою + */}
+            {/* Ідеально відцентрований плюс у колі палітри */}
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
               {colors.map((c, idx) => {
                 const isSelected = selectedColorIndex === idx;
@@ -371,21 +359,21 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0,
-                  fontSize: '20px',
+                  fontSize: '22px',
                   fontWeight: 700,
-                  lineHeight: '1',
                   color: '#007aff',
                   position: 'relative',
                   padding: 0,
-                  margin: 0
+                  margin: 0,
+                  boxSizing: 'border-box'
                 }}
               >
-                +
+                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', lineHeight: 1 }}>+</span>
                 <input
                   type="color"
                   value={colors[selectedColorIndex]}
                   onChange={handleCustomColorPicker}
-                  style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
+                  style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer', top: 0, left: 0 }}
                 />
               </label>
             </div>
@@ -437,8 +425,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 )}
 
                 <div style={{ display: 'flex', gap: '4px', alignItems: 'center', width: '70px', justifyContent: 'center' }}>
-                  <button onClick={() => handleAddRowAfter(index)} style={actionIconBtnStyle}>+</button>
-                  <button onClick={() => handleDeleteGeneralRow(r.id)} style={{ ...actionIconBtnStyle, color: '#ff3b30' }}>🗑️</button>
+                  <button onClick={() => handleAddRowAfter(index)} style={compactPlusBtnStyle}>+</button>
+                  <button onClick={() => handleDeleteGeneralRow(r.id)} style={{ ...compactPlusBtnStyle, color: '#ff3b30' }}>🗑️</button>
                 </div>
               </div>
             ))}
@@ -466,7 +454,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 onChange={(e) => setNewStageTitle(e.target.value)}
                 style={{ ...cardInputStyle, flex: 1 }}
               />
-              <button type="submit" style={universalPlusBtnStyle}>
+              <button type="submit" style={compactPlusBtnStyle}>
                 +
               </button>
             </form>
@@ -632,9 +620,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                             placeholder="Add task/subtask"
                             value={newSubStageTitle[st.id] || ''}
                             onChange={(e) => setNewSubStageTitle({ ...newSubStageTitle, [st.id]: e.target.value })}
-                            style={{ ...cardInputStyle, padding: '6px 8px', fontSize: '12px' }}
+                            style={{ ...cardInputStyle, padding: '6px 8px', fontSize: '12px', flex: 1 }}
                           />
-                          <button onClick={() => handleAddSubStage(st.id)} style={universalPlusBtnStyle}>
+                          <button onClick={() => handleAddSubStage(st.id)} style={compactPlusBtnStyle}>
                             +
                           </button>
                         </div>
@@ -682,7 +670,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 ))}
               </select>
 
-              <button onClick={handleAddProjectMember} style={universalPlusBtnStyle}>
+              <button onClick={handleAddProjectMember} style={compactPlusBtnStyle}>
                 +
               </button>
             </div>
@@ -693,7 +681,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 return (
                   <div key={pt.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', backgroundColor: '#ffffff', borderRadius: '8px', fontSize: '13px', border: '1px solid #e5e5ea' }}>
                     <span><strong>{member?.fullName || 'Member'}</strong> ({pt.role})</span>
-                    {/* Іконка кошика замість хрестика ✕ */}
                     <div style={{ width: '38px', display: 'flex', justifyContent: 'center', transform: 'translateX(1px)' }}>
                       <button onClick={() => handleRemoveProjectMember(pt.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}>🗑️</button>
                     </div>
@@ -737,7 +724,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   );
 };
 
-// Чіткий контрастний сірий фон для інпутів у картках
 const cardInputStyle: React.CSSProperties = {
   width: '100%',
   padding: '8px 10px',
@@ -786,28 +772,14 @@ const iconBtnStyle: React.CSSProperties = {
   padding: '2px 4px'
 };
 
-const actionIconBtnStyle: React.CSSProperties = {
+// Компактні акуратні кнопки + для всіх блоків (стандарт Data)
+const compactPlusBtnStyle: React.CSSProperties = {
   backgroundColor: '#e5e5ea',
   border: '1px solid #d1d1d6',
   borderRadius: '6px',
   width: '26px',
   height: '26px',
   fontSize: '16px',
-  fontWeight: 700,
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center'
-};
-
-// Єдиний стиль кномок + для всіх блоків
-const universalPlusBtnStyle: React.CSSProperties = {
-  backgroundColor: '#e5e5ea',
-  border: '1px solid #d1d1d6',
-  borderRadius: '8px',
-  width: '38px',
-  height: '34px',
-  fontSize: '20px',
   fontWeight: 700,
   lineHeight: '1',
   color: '#1c1c1e',
