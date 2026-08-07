@@ -207,6 +207,8 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
             ) : (
               members.map((m) => {
                 const isEditing = editingId === m.id;
+                // Фільтруємо, щоб службові слова на кшталт "Підрядник" чи "Contractor" не виводилися
+                const validRole = m.role && m.role !== 'Підрядник' && m.role !== 'Contractor' ? m.role : '';
 
                 return (
                   <div
@@ -228,7 +230,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                         if (!isEditing) {
                           setEditingId(m.id);
                           setEditForm(m);
-                          setEditIsFull(!!m.telegramId || !!m.role);
+                          setEditIsFull(!!m.telegramId || !!validRole);
                         }
                       }}
                     >
@@ -250,7 +252,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                                 style={{ ...inputStyle, padding: '6px 8px', fontSize: '12px' }}
                               />
                               <select
-                                value={editForm.role !== undefined ? editForm.role : (m.role || '')}
+                                value={editForm.role !== undefined ? editForm.role : validRole}
                                 onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
                                 style={{ ...inputStyle, padding: '6px 8px', fontSize: '12px' }}
                               >
@@ -279,9 +281,9 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                       ) : (
                         <div>
                           <div style={{ fontWeight: 600, fontSize: '14px', color: '#1c1c1e' }}>{m.fullName}</div>
-                          {(m.role || m.telegramId) && (
+                          {(validRole || m.telegramId) && (
                             <div style={{ fontSize: '12px', color: '#8e8e93', marginTop: '2px' }}>
-                              {m.role ? `${m.role} ` : ''}{m.telegramId ? `• ID: ${m.telegramId}` : ''}
+                              {validRole ? `${validRole} ` : ''}{m.telegramId ? `• ID: ${m.telegramId}` : ''}
                             </div>
                           )}
                         </div>
