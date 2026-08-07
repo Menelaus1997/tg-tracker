@@ -19,7 +19,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
 
   return (
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e' }}>
-      {/* Верхня панель з тумблером праворуч (назву прибрано) */}
+      {/* Верхня панель з тумблером праворуч */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <div
@@ -96,7 +96,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
                     <span style={{ fontSize: '12px', color: '#8e8e93' }}>{isProjCollapsed ? '▼' : '▲'}</span>
                     <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>{proj.name} ({proj.id})</h3>
                   </div>
-                  {/* Жирний відсоток проєкту, зсунутий ще на 0.5px вправо (marginRight: 21px) */}
                   <span style={{ fontSize: '13px', fontWeight: 700, color: projectColor, marginRight: '21px' }}>
                     {projectProgress}%
                   </span>
