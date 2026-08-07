@@ -101,19 +101,17 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
                       const stageProgress = subCount > 0 ? Math.round((compCount / subCount) * 100) : (st.loggedSeconds ? 100 : 0);
 
                       const endDate = st.endDate;
-                      let deadlineColor = 'transparent';
-                      let deadlineText = '';
+                      let dateColor = '#8e8e93';
                       if (endDate) {
                         if (stageProgress === 100) {
-                          deadlineColor = '#34c759';
-                          deadlineText = `Дедлайн: ${endDate} (Вчасно)`;
+                          dateColor = '#34c759'; // Зелений, якщо встиг / виконано
                         } else if (endDate < currentDate) {
-                          deadlineColor = '#ff3b30';
-                          deadlineText = `Дедлайн: ${endDate} (Прострочено)`;
-                        } else {
-                          deadlineText = `Дедлайн: ${endDate}`;
+                          dateColor = '#ff3b30'; // Червоний, якщо прострочено і не виконано
                         }
                       }
+
+                      // Збираємо виконавців з масиву contractors або резервного contractor
+                      const stageContractors: string[] = (st as any).contractors || (st.contractor ? [st.contractor] : []);
 
                       const totalHours = ((st.loggedSeconds || 0) / 3600).toFixed(1);
                       const totalDays = ((parseFloat(totalHours) / 8)).toFixed(1);
@@ -136,12 +134,12 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
                           </div>
 
                           <div style={{ fontSize: '11px', color: '#007aff', marginBottom: '4px', fontWeight: 500 }}>
-                            Assigned to: {st.contractor || 'No assignee'}
+                            Виконавці: {stageContractors.length > 0 ? stageContractors.join(', ') : 'No assignee'}
                           </div>
 
-                          {deadlineText && (
-                            <div style={{ fontSize: '11px', color: deadlineColor !== 'transparent' ? deadlineColor : '#8e8e93', marginBottom: '6px', fontWeight: 600 }}>
-                              {deadlineText}
+                          {endDate && (
+                            <div style={{ fontSize: '11px', color: dateColor, marginBottom: '6px', fontWeight: 600 }}>
+                              {endDate}
                             </div>
                           )}
 
