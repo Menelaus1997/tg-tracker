@@ -43,6 +43,10 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
   const [newRoleName, setNewRoleName] = useState('');
   const [editingRole, setEditingRole] = useState<RoleConfig | null>(null);
 
+  // Стан для прямого редагування назви ролі
+  const [editingRoleTitleId, setEditingRoleTitleId] = useState<string | null>(null);
+  const [roleTitleInput, setRoleTitleInput] = useState('');
+
   const handleResetForm = () => {
     setEditingMemberId(null);
     setFullName('');
@@ -95,6 +99,15 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
     setNewRoleName('');
   };
 
+  const handleSaveRoleTitle = (role: RoleConfig) => {
+    if (!roleTitleInput.trim()) return;
+    onSaveRole({
+      ...role,
+      name: roleTitleInput.trim()
+    });
+    setEditingRoleTitleId(null);
+  };
+
   const handleTogglePermission = (role: RoleConfig, key: keyof RolePermissions) => {
     const updated: RoleConfig = {
       ...role,
@@ -109,7 +122,6 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
     }
   };
 
-  // Допоміжний компонент для малювання iOS Toggle Switch
   const renderToggle = (active: boolean, onClick: () => void) => (
     <div
       onClick={onClick}
@@ -142,11 +154,8 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
 
   return (
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e' }}>
-      <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>Команда (База співробітників)</h2>
-
+      {/* Форма додавання без залишків лишніх заголовків */}
       <form onSubmit={handleSubmitMember} style={{ backgroundColor: '#f2f2f7', padding: '16px', borderRadius: '12px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <h4 style={{ margin: 0, fontSize: '15px' }}>{editingMemberId ? '✏️ Редагувати співробітника' : '➕ Додати співробітника'}</h4>
-        
         <div>
           <label style={labelStyle}>Ім'я та прізвище</label>
           <input type="text" placeholder="напр. Іван Іванов" value={fullName} onChange={(e) => setFullName(e.target.value)} required style={inputStyle} />
@@ -208,7 +217,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
         )}
       </div>
 
-      {/* Редагування ролей та розширених прав доступу */}
+      {/* Редагування ролей та прав */}
       <div style={{ borderTop: '1px solid #e5e5ea', paddingTop: '16px' }}>
         <div 
           onClick={() => setIsRolesSectionOpen(!isRolesSectionOpen)}
@@ -234,18 +243,41 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {roles.map((r) => (
                 <div key={r.id} style={{ padding: '10px', backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #e5e5ea' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <span style={{ fontWeight: 600, fontSize: '14px' }}>{r.name}</span>
-                    <button onClick={() => setEditingRole(editingRole?.id === r.id ? null : r)} style={{ ...btnStyle, backgroundColor: '#e5e5ea', fontSize: '12px', padding: '4px 8px' }}>
-                      {editingRole?.id === r.id ? 'Сховати' : '⚙️ Права'}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    {/* Редагування назви ролі по кліку */}
+                    {editingRoleTitleId === r.id ? (
+                      <div style={{ display: 'flex', gap: '4px', flex: 1, marginRight: '8px' }}>
+                        <input
+                          type="text"
+                          value={roleTitleInput}
+                          onChange={(e) => setRoleTitleInput(e.target.value)}
+                          style={{ ...inputStyle, padding: '4px 8px', fontSize: '13px' }}
+                        />
+                        <button onClick={() => handleSaveRoleTitle(r)} style={{ ...btnStyle, backgroundColor: '#34c759', color: '#fff', padding: '4px 8px' }}>✓</button>
+                      </div>
+                    ) : (
+                      <span 
+                        onClick={() => {
+                          setEditingRoleTitleId(r.id);
+                          setRoleTitleInput(r.name);
+                        }}
+                        style={{ fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}
+                        title="Клікніть, щоб змінити назву"
+                      >
+                        {r.name} ✏️
+                      </span>
+                    )}
+
+                    {/* Іконка шестірні замість слова Права */}
+                    <button onClick={() => setEditingRole(editingRole?.id === r.id ? null : r)} style={{ ...btnStyle, backgroundColor: '#e5e5ea', fontSize: '14px', padding: '4px 8px' }}>
+                      ⚙️
                     </button>
                   </div>
 
-                  {/* Повний список прав із iOS On/Off тумблерами */}
                   {editingRole?.id === r.id && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #f2f2f7', fontSize: '12px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px', paddingTop: '8px', borderTop: '1px solid #f2f2f7', fontSize: '12px' }}>
                       <div style={permissionRowStyle}>
-                        <span>Бачити тільки свої (призначені) стадії</span>
+                        <span>Бачити тільки свої стадії</span>
                         {renderToggle(r.permissions.onlyAssignedStages !== false, () => handleTogglePermission(r, 'onlyAssignedStages'))}
                       </div>
                       <div style={permissionRowStyle}>
@@ -267,18 +299,6 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                       <div style={permissionRowStyle}>
                         <span>Керувати таймером роботи</span>
                         {renderToggle(r.permissions.canManageTimer, () => handleTogglePermission(r, 'canManageTimer'))}
-                      </div>
-                      <div style={permissionRowStyle}>
-                        <span>Призначати склад команди</span>
-                        {renderToggle(r.permissions.canAssignTeam, () => handleTogglePermission(r, 'canAssignTeam'))}
-                      </div>
-                      <div style={permissionRowStyle}>
-                        <span>Доступ до вкладки ВОР</span>
-                        {renderToggle(r.permissions.canViewVor, () => handleTogglePermission(r, 'canViewVor'))}
-                      </div>
-                      <div style={permissionRowStyle}>
-                        <span>Доступ до вкладки Аналітика</span>
-                        {renderToggle(r.permissions.canViewAnalytics, () => handleTogglePermission(r, 'canViewAnalytics'))}
                       </div>
                     </div>
                   )}
