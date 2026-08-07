@@ -133,7 +133,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       loggedSeconds: 0,
       isTimerRunning: false,
       startDate: '',
-      endDate: ''
+      endDate: '',
+      contractor: ''
     };
 
     setStages([...stages, newStage]);
@@ -142,6 +143,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
   const handleUpdateStageTitle = (stageId: string, newTitle: string) => {
     setStages(stages.map(s => s.id === stageId ? { ...s, title: newTitle } : s));
+  };
+
+  const handleUpdateStageContractor = (stageId: string, contractorName: string) => {
+    setStages(stages.map(s => s.id === stageId ? { ...s, contractor: contractorName } : s));
   };
 
   const handleDeleteStage = (id: string) => {
@@ -275,6 +280,12 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     return `${h}h ${m}min`;
   };
 
+  // Формуємо список доступних виконавців (команда проекту + можливість підрядника)
+  const availableTeamMembers = projectTeam.map(pt => {
+    const member = teamDatabase.find(m => m.id === pt.memberId);
+    return member ? member.fullName : 'Member';
+  });
+
   return (
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e' }}>
       <button onClick={onBack} style={{ background: 'none', border: 'none', fontSize: '14px', color: '#007aff', cursor: 'pointer', marginBottom: '16px', fontWeight: 600 }}>
@@ -318,7 +329,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               />
             </div>
 
-            {/* Ідеально відцентрований плюс у колі палітри */}
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
               {colors.map((c, idx) => {
                 const isSelected = selectedColorIndex === idx;
@@ -518,6 +528,17 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           </button>
                         </div>
                       </div>
+                    </div>
+
+                    {/* Вибір виконавця / підрядника для стадії */}
+                    <div style={{ marginBottom: '8px' }}>
+                      <input
+                        type="text"
+                        placeholder="Виконавець / Підрядник (напр. Підрядник 1)"
+                        value={st.contractor || ''}
+                        onChange={(e) => handleUpdateStageContractor(st.id, e.target.value)}
+                        style={{ ...cardInputStyle, fontSize: '11px', padding: '4px 8px' }}
+                      />
                     </div>
 
                     {editingTimeStageId === st.id && (
@@ -772,7 +793,6 @@ const iconBtnStyle: React.CSSProperties = {
   padding: '2px 4px'
 };
 
-// Компактні акуратні кнопки + для всіх блоків (стандарт Data)
 const compactPlusBtnStyle: React.CSSProperties = {
   backgroundColor: '#e5e5ea',
   border: '1px solid #d1d1d6',
