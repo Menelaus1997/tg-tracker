@@ -3,22 +3,23 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { projectName, projectId, members } = req.body;
+  const { projectName, projectId, members, customBotToken, customGroupId } = req.body;
 
-  const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-  const GROUP_ID = process.env.TELEGRAM_GROUP_ID; // ID вашої спільної групи-форуму
+  // Використовуємо токен/ID з налаштувань Mini App або зі змінних Vercel
+  const BOT_TOKEN = customBotToken || process.env.TELEGRAM_BOT_TOKEN;
+  const GROUP_ID = customGroupId || process.env.TELEGRAM_GROUP_ID;
 
   if (!BOT_TOKEN || !GROUP_ID) {
-    return res.status(500).json({ 
+    return res.status(400).json({ 
       success: false, 
-      error: 'Не налаштовані змінні TELEGRAM_BOT_TOKEN або TELEGRAM_GROUP_ID у Vercel.' 
+      error: 'Не налаштовано Bot Token або Group Chat ID у налаштуваннях додатка.' 
     });
   }
 
   try {
     const topicName = `${projectName} (${projectId})`;
 
-    // 1. Бот створює нову тему (гілку) у спільному чаті
+    // 1. Створення нової гілки (Topic) у спільному чаті
     const tgResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/createForumTopic`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -36,26 +37,55 @@ export default async function handler(req, res) {
 
     const threadId = tgData.result.message_thread_id;
 
-    // 2. Бот публікує у створену гілку склад команди з ролями та нікнеймами
+    // 2. Формування тексту з командою та ролями
     const textList = (members || [])
-      .map((m) => `• ${m.fullName} (${m.role}): ${m.telegramUsername ? `@${m.telegramUsername}` : 'без ТГ'}`)
+      .map((m) => {
+        const userTag = m.telegramUserId 
+          ? `[${m.fullName}](tg://user?id=${m.telegramUserId})` 
+          : m.fullName;
+        return `• *${m.role}:* ${userTag}`;
+      })
       .join('\n');
 
     const fullMessage = `📌 *Проект створено:* ${projectName} (${projectId})\n\n` +
-      `👥 *Команда проекту:*\n${textList}`;
+      `👥 *Команда проекту:*\n${textList || 'Учасників ще не призначено'}`;
 
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    // 3. Відправка стартового повідомлення у створену гілку
+    const msgResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: GROUP_ID,
         message_thread_id: threadId,
         text: fullMessage,
-        parse_mode: 'Markdown'
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: '📱 Відкрити картку проекту',
+                url: `https://t.me/c/${String(GROUP_ID).replace('-100', '')}/${threadId}`
+              }
+            ]
+          ]
+        }
       })
     });
 
-    // 3. Формуємо пряме посилання на створену гілку
+    const msgData = await msgResponse.json();
+
+    // 4. Закріплення стартового повідомлення
+    if (msgData.ok && msgData.result?.message_id) {
+      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/pinChatMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: GROUP_ID,
+          message_id: msgData.result.message_id
+        })
+      });
+    }
+
     const cleanGroupId = String(GROUP_ID).replace('-100', '');
     const topicLink = `https://t.me/c/${cleanGroupId}/${threadId}`;
 
