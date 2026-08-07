@@ -4,7 +4,8 @@ interface SettingsProps {
   botToken: string;
   groupId: string;
   superAdminId: string;
-  onSaveSettings: (token: string, group: string) => void;
+  fontFamily: string;
+  onSaveSettings: (token: string, group: string, font: string) => void;
   isSuperAdmin: boolean;
 }
 
@@ -12,53 +13,70 @@ export const Settings: React.FC<SettingsProps> = ({
   botToken,
   groupId,
   superAdminId,
+  fontFamily,
   onSaveSettings,
   isSuperAdmin
 }) => {
   const [tokenInput, setTokenInput] = useState(botToken);
   const [groupInput, setGroupInput] = useState(groupId);
+  const [fontSelect, setFontSelect] = useState(fontFamily || 'system-ui');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSaveSettings(tokenInput.trim(), groupInput.trim());
-    alert('Налаштування Telegram Bot API збережено!');
+    onSaveSettings(tokenInput.trim(), groupInput.trim(), fontSelect);
+    alert('Налаштування збережено!');
   };
 
   if (!isSuperAdmin) {
     return (
       <div style={{ padding: '20px', textAlign: 'center', color: '#ff3b30' }}>
         <h3>⛔ Доступ обмежено</h3>
-        <p style={{ fontSize: '14px', color: '#636366' }}>Ця вкладка доступна лише Супер-Адміністратору проєкту.</p>
       </div>
     );
   }
 
   return (
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e' }}>
-      <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>⚙️ Налаштування Telegram Bot API</h2>
+      <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>⚙️ Налаштування</h2>
 
       <div style={{ padding: '12px', backgroundColor: '#e5f3ff', borderRadius: '10px', marginBottom: '20px', fontSize: '13px', color: '#005580' }}>
-        🔑 <strong>Ідентифікатор Власника (Super-Admin):</strong> <code>{superAdminId || 'Зчитується при вході'}</code>
+        🔑 <strong>ID Власника:</strong> <code>{superAdminId || 'Зчитується при вході'}</code>
       </div>
 
       <form onSubmit={handleSubmit} style={{ backgroundColor: '#f2f2f7', padding: '16px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div>
+          <label style={{ fontSize: '12px', fontWeight: 600, color: '#636366', marginBottom: '4px', display: 'block' }}>
+            Стиль шрифту тексту
+          </label>
+          <select
+            value={fontSelect}
+            onChange={(e) => setFontSelect(e.target.value)}
+            style={inputStyle}
+          >
+            <option value="system-ui, -apple-system, sans-serif">Системний (iOS / Telegram)</option>
+            <option value="'Roboto', sans-serif">Roboto</option>
+            <option value="'Montserrat', sans-serif">Montserrat</option>
+            <option value="'Inter', sans-serif">Inter</option>
+            <option value="Georgia, serif">Класичний (Serif)</option>
+          </select>
+        </div>
+
         <div>
           <label style={{ fontSize: '12px', fontWeight: 600, color: '#636366', marginBottom: '4px', display: 'block' }}>
             Telegram Bot Token
           </label>
           <input
             type="password"
-            placeholder="1234567890:ABCdefGHIjklMNOpqrsTUVwxyZ"
+            placeholder="1234567890:ABC..."
             value={tokenInput}
             onChange={(e) => setTokenInput(e.target.value)}
             style={inputStyle}
           />
-          <span style={{ fontSize: '11px', color: '#8e8e93' }}>Отриманий від @BotFather</span>
         </div>
 
         <div>
           <label style={{ fontSize: '12px', fontWeight: 600, color: '#636366', marginBottom: '4px', display: 'block' }}>
-            Group Chat ID (Спільна група-форум)
+            Group Chat ID
           </label>
           <input
             type="text"
@@ -67,7 +85,6 @@ export const Settings: React.FC<SettingsProps> = ({
             onChange={(e) => setGroupInput(e.target.value)}
             style={inputStyle}
           />
-          <span style={{ fontSize: '11px', color: '#8e8e93' }}>ID групи починається з -100</span>
         </div>
 
         <button
@@ -80,11 +97,10 @@ export const Settings: React.FC<SettingsProps> = ({
             borderRadius: '10px',
             fontWeight: 600,
             fontSize: '14px',
-            cursor: 'pointer',
-            marginTop: '6px'
+            cursor: 'pointer'
           }}
         >
-          Зберегти ключі
+          Зберегти всі зміни
         </button>
       </form>
     </div>
