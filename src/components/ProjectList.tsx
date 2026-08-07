@@ -17,10 +17,16 @@ export const ProjectList: React.FC<ProjectListProps> = ({
   onPermanentDelete
 }) => {
   const [filterStatus, setFilterStatus] = useState<'active' | 'archived' | 'trash'>('active');
+  const [searchQuery, setSearchQuery] = useState('');
 
+  // Пошук за назвою або ID
   const filteredProjects = projects.filter((p) => {
-    if (filterStatus === 'active') return p.status === 'active' || !p.status;
-    return p.status === filterStatus;
+    const statusMatch = filterStatus === 'active' ? (p.status === 'active' || !p.status) : p.status === filterStatus;
+    const query = searchQuery.toLowerCase().trim();
+    const nameMatch = p.name.toLowerCase().includes(query);
+    const idMatch = p.id.toLowerCase().includes(query);
+
+    return statusMatch && (nameMatch || idMatch);
   });
 
   const handleSetStatus = (e: React.MouseEvent, projectId: string, status: 'active' | 'archived' | 'trash') => {
@@ -32,8 +38,28 @@ export const ProjectList: React.FC<ProjectListProps> = ({
 
   return (
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e' }}>
-      <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>📁 Існуючі проекти</h2>
+      
+      {/* Рядок пошуку (Фільтр за назвою або ID) */}
+      <div style={{ marginBottom: '12px' }}>
+        <input
+          type="text"
+          placeholder="🔍 Пошук за назвою або ID..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={{
+            width: '100%',
+            padding: '10px 12px',
+            backgroundColor: '#f2f2f7',
+            border: 'none',
+            borderRadius: '10px',
+            fontSize: '14px',
+            outline: 'none',
+            boxSizing: 'border-box'
+          }}
+        />
+      </div>
 
+      {/* Таби статусів */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
         <button
           onClick={() => setFilterStatus('active')}
@@ -57,10 +83,11 @@ export const ProjectList: React.FC<ProjectListProps> = ({
         )}
       </div>
 
+      {/* Список проектів */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {filteredProjects.length === 0 ? (
           <div style={{ fontSize: '14px', color: '#8e8e93', textAlign: 'center', marginTop: '20px' }}>
-            Проектів у цьому розділі немає.
+            Нічого не знайдено.
           </div>
         ) : (
           filteredProjects.map((p) => (
@@ -74,13 +101,10 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                 cursor: 'pointer',
                 display: 'flex',
                 justifyContent: 'space-between',
-                alignItems: 'center',
-                position: 'relative',
-                overflow: 'hidden'
+                alignItems: 'center'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                {/* Кольоровий маркер-кружечок замість дужки */}
                 <div
                   style={{
                     width: '12px',
