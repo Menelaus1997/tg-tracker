@@ -154,7 +154,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     setStages(stages.map(s => s.id === stageId ? { ...s, title: newTitle } : s));
   };
 
-  // Функції для керування багатьма виконавцями на стадії
   const handleAddStageContractor = (stageId: string, contractorName: string) => {
     if (!contractorName) return;
     setStages(stages.map(s => {
@@ -603,7 +602,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       {stageContractors.length > 0 && (
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '2px' }}>
                           {stageContractors.map((cName, cIdx) => (
-                            <div key={cIdx, cName} style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#e5e5ea', padding: '4px 8px', borderRadius: '6px', fontSize: '12px' }}>
+                            <div key={cIdx} style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#e5e5ea', padding: '4px 8px', borderRadius: '6px', fontSize: '12px' }}>
                               <span>{cName}</span>
                               <button
                                 type="button"
@@ -736,7 +735,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* 4. Team Block */}
+      {/* 4. Team Block (ВИРАВНЯНО ПО ВИСОТІ СЕЛЕКТИ ТА КНОПКУ + НА 28px) */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '20px' }}>
         <div 
           onClick={() => setIsTeamOpen(!isTeamOpen)}
@@ -748,11 +747,11 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
         {isTeamOpen && (
           <>
-            <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', alignItems: 'center' }}>
               <select
                 value={selectedMemberId}
                 onChange={(e) => setSelectedMemberId(e.target.value)}
-                style={{ ...cardInputStyle, flex: 1, fontSize: '12px' }}
+                style={{ ...cardInputStyle, flex: 1, fontSize: '12px', height: '28px', padding: '2px 8px', boxSizing: 'border-box' }}
               >
                 {teamDatabase.length === 0 && <option value="">No members in DB</option>}
                 {teamDatabase.map((m) => (
@@ -763,14 +762,17 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               <select
                 value={selectedProjectRole}
                 onChange={(e) => setSelectedProjectRole(e.target.value)}
-                style={{ ...cardInputStyle, flex: 1, fontSize: '12px' }}
+                style={{ ...cardInputStyle, flex: 1, fontSize: '12px', height: '28px', padding: '2px 8px', boxSizing: 'border-box' }}
               >
                 {availableRoles.map((r) => (
                   <option key={r} value={r}>{r}</option>
                 ))}
               </select>
 
-              <button onClick={handleAddProjectMember} style={compactPlusBtnStyle}>
+              <button 
+                onClick={handleAddProjectMember} 
+                style={{ ...compactPlusBtnStyle, width: '28px', height: '28px', boxSizing: 'border-box' }}
+              >
                 +
               </button>
             </div>
