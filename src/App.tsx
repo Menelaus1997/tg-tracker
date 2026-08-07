@@ -50,6 +50,24 @@ export interface Project {
   threadId?: number;
 }
 
+const INITIAL_ROLES: RoleConfig[] = [
+  {
+    id: '1',
+    name: 'Керівник',
+    permissions: { canViewCreateProject: true, canViewVor: true, canViewAnalytics: true, canViewTeam: true, canViewSettings: true, canSeeAllProjects: true, canEditProjects: true, canDeleteProjects: true, canManageStages: true, canManageTimer: true, canAssignTeam: true }
+  },
+  {
+    id: '2',
+    name: 'Кресляр',
+    permissions: { canViewCreateProject: false, canViewVor: true, canViewAnalytics: false, canViewTeam: false, canViewSettings: false, canSeeAllProjects: false, canEditProjects: false, canDeleteProjects: false, canManageStages: true, canManageTimer: true, canAssignTeam: false, onlyAssignedStages: true }
+  },
+  {
+    id: '3',
+    name: 'Візуалізатор',
+    permissions: { canViewCreateProject: false, canViewVor: true, canViewAnalytics: false, canViewTeam: false, canViewSettings: false, canSeeAllProjects: false, canEditProjects: false, canDeleteProjects: false, canManageStages: true, canManageTimer: true, canAssignTeam: false, onlyAssignedStages: true }
+  }
+];
+
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<number>(2);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
@@ -66,7 +84,7 @@ export const App: React.FC = () => {
 
   const [roles, setRoles] = useState<RoleConfig[]>(() => {
     const saved = localStorage.getItem('app_roles');
-    return saved ? JSON.parse(saved) : [];
+    return saved ? JSON.parse(saved) : INITIAL_ROLES;
   });
 
   const [templates, setTemplates] = useState<any[]>(() => {
@@ -79,6 +97,7 @@ export const App: React.FC = () => {
   const [fontFamily, setFontFamily] = useState<string>(() => localStorage.getItem('app_font') || 'system-ui');
 
   const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [superAdminId, setSuperAdminId] = useState<string>(() => localStorage.getItem('app_super_admin_id') || '');
   const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(true);
 
   useEffect(() => {
@@ -89,29 +108,37 @@ export const App: React.FC = () => {
       if (user?.id) {
         const uid = String(user.id);
         setCurrentUserId(uid);
+        
         const savedOwner = localStorage.getItem('app_super_admin_id');
         if (!savedOwner) {
           localStorage.setItem('app_super_admin_id', uid);
+          setSuperAdminId(uid);
           setIsSuperAdmin(true);
         } else {
           setIsSuperAdmin(savedOwner === uid);
         }
       }
     }
-  }, []);
+  }, [superAdminId]);
 
   useEffect(() => localStorage.setItem('app_projects', JSON.stringify(projects)), [projects]);
   useEffect(() => localStorage.setItem('app_team', JSON.stringify(teamMembers)), [teamMembers]);
   useEffect(() => localStorage.setItem('app_roles', JSON.stringify(roles)), [roles]);
   useEffect(() => localStorage.setItem('app_templates', JSON.stringify(templates)), [templates]);
 
-  const handleSaveSettings = (token: string, group: string, font: string) => {
+  const handleSaveSettings = (token: string, group: string, font: string, newOwnerId?: string) => {
     setBotToken(token);
     setGroupId(group);
     setFontFamily(font);
     localStorage.setItem('app_bot_token', token);
     localStorage.setItem('app_group_id', group);
     localStorage.setItem('app_font', font);
+
+    if (newOwnerId && newOwnerId !== superAdminId) {
+      setSuperAdminId(newOwnerId);
+      localStorage.setItem('app_super_admin_id', newOwnerId);
+      setIsSuperAdmin(currentUserId === newOwnerId);
+    }
   };
 
   const handleCreateProject = (newProject: Project) => {
@@ -119,7 +146,6 @@ export const App: React.FC = () => {
     setActiveTab(2);
   };
 
-  // Збереження ТІЛЬКИ стадій і підстадій (без закреслених підстадій, без часу, прогресу та команди)
   const handleSaveTemplate = (project: Project) => {
     if (!project || !project.name) return;
 
@@ -137,16 +163,8 @@ export const App: React.FC = () => {
       stages: cleanStages
     };
 
-    setTemplates((prev) => {
-      const valid = prev.filter((t) => t && t.name && t.name !== 'undefined');
-      return [...valid, newTemplate];
-    });
-
-    alert(`Проект "${project.name}" збережено як новий чистий шаблон!`);
-  };
-
-  const handlePermanentDelete = async (projectId: string) => {
-    setProjects(projects.filter((p) => p.id !== projectId));
+    setTemplates((prev) => [...prev, newTemplate]);
+    alert(`Проект "${project.name}" збережено як новий шаблон!`);
   };
 
   const activeProject = projects.find((p) => p.id === selectedProjectId);
@@ -162,6 +180,7 @@ export const App: React.FC = () => {
           onUpdateProject={(updated) => setProjects(projects.map((p) => (p.id === updated.id ? updated : p)))}
           onSaveAsTemplate={() => handleSaveTemplate(activeProject)}
           onBack={() => setSelectedProjectId(null)}
+          availableRoles={roles.map(r => r.name)}
         />
       ) : (
         <>
@@ -178,7 +197,7 @@ export const App: React.FC = () => {
               onSelectProject={(id: string) => setSelectedProjectId(id)}
               onUpdateProjects={setProjects}
               isSuperAdmin={isSuperAdmin}
-              onPermanentDelete={handlePermanentDelete}
+              onPermanentDelete={(id: string) => setProjects(projects.filter((p) => p.id !== id))}
             />
           )}
           {activeTab === 3 && <VorCalculator />}
@@ -204,7 +223,7 @@ export const App: React.FC = () => {
             <Settings
               botToken={botToken}
               groupId={groupId}
-              superAdminId={currentUserId}
+              superAdminId={superAdminId}
               fontFamily={fontFamily}
               onSaveSettings={handleSaveSettings}
               isSuperAdmin={isSuperAdmin}
