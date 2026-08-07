@@ -5,7 +5,7 @@ interface SettingsProps {
   groupId: string;
   superAdminId: string;
   fontFamily: string;
-  onSaveSettings: (token: string, group: string, font: string) => void;
+  onSaveSettings: (token: string, group: string, font: string, newOwnerId?: string) => void;
   isSuperAdmin: boolean;
 }
 
@@ -20,10 +20,11 @@ export const Settings: React.FC<SettingsProps> = ({
   const [tokenInput, setTokenInput] = useState(botToken);
   const [groupInput, setGroupInput] = useState(groupId);
   const [fontSelect, setFontSelect] = useState(fontFamily || 'system-ui');
+  const [ownerInput, setOwnerInput] = useState(superAdminId);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSaveSettings(tokenInput.trim(), groupInput.trim(), fontSelect);
+    onSaveSettings(tokenInput.trim(), groupInput.trim(), fontSelect, ownerInput.trim());
     alert('Налаштування збережено!');
   };
 
@@ -39,14 +40,24 @@ export const Settings: React.FC<SettingsProps> = ({
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e' }}>
       <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>⚙️ Налаштування</h2>
 
-      <div style={{ padding: '12px', backgroundColor: '#e5f3ff', borderRadius: '10px', marginBottom: '20px', fontSize: '13px', color: '#005580' }}>
-        🔑 <strong>ID Власника:</strong> <code>{superAdminId || 'Зчитується при вході'}</code>
-      </div>
-
       <form onSubmit={handleSubmit} style={{ backgroundColor: '#f2f2f7', padding: '16px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
         <div>
           <label style={{ fontSize: '12px', fontWeight: 600, color: '#636366', marginBottom: '4px', display: 'block' }}>
-            Стиль шрифту тексту
+            🔑 ID Власника (Super-Admin Telegram ID)
+          </label>
+          <input
+            type="text"
+            value={ownerInput}
+            onChange={(e) => setOwnerInput(e.target.value)}
+            placeholder="Введіть новий Telegram ID"
+            style={inputStyle}
+          />
+          <span style={{ fontSize: '11px', color: '#8e8e93' }}>Зміна цього ID передає права головного адміністратора іншому акаунту.</span>
+        </div>
+
+        <div>
+          <label style={{ fontSize: '12px', fontWeight: 600, color: '#636366', marginBottom: '4px', display: 'block' }}>
+            Стиль шрифту
           </label>
           <select
             value={fontSelect}
@@ -57,7 +68,6 @@ export const Settings: React.FC<SettingsProps> = ({
             <option value="'Roboto', sans-serif">Roboto</option>
             <option value="'Montserrat', sans-serif">Montserrat</option>
             <option value="'Inter', sans-serif">Inter</option>
-            <option value="Georgia, serif">Класичний (Serif)</option>
           </select>
         </div>
 
@@ -100,7 +110,7 @@ export const Settings: React.FC<SettingsProps> = ({
             cursor: 'pointer'
           }}
         >
-          Зберегти всі зміни
+          Зберегти налаштування
         </button>
       </form>
     </div>
