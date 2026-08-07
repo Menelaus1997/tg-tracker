@@ -65,8 +65,11 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
     setEditingId(null);
   };
 
-  const handleCreateNewRole = () => {
+  // Виправлена функція додавання нової ролі з клікабельною кнопкою
+  const handleCreateNewRole = (e: React.FormEvent) => {
+    e.preventDefault();
     if (!newRoleName.trim()) return;
+
     const newRole: RoleConfig = {
       id: Date.now().toString(),
       name: newRoleName.trim(),
@@ -84,6 +87,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
         canAssignTeam: true
       }
     };
+
     onSaveRole(newRole);
     setNewRoleName('');
   };
@@ -315,13 +319,13 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
         )}
       </div>
 
-      {/* Блок управління ролями: без трикутника, текст по центру, клікабельний рядок */}
+      {/* Блок управління ролями: текст сірий, по центру, клікабельний рядок */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px' }}>
         <div
           onClick={() => setIsRolesOpen(!isRolesOpen)}
           style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
-          <span style={{ fontSize: '14px', fontWeight: 700, color: '#1c1c1e', textAlign: 'center' }}>
+          <span style={{ fontSize: '14px', fontWeight: 700, color: '#8e8e93', textAlign: 'center' }}>
             Roles & Permissions Management
           </span>
         </div>
@@ -329,6 +333,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
         {isRolesOpen && (
           <div style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             
+            {/* Форма додавання ролі з робочою кнопкою */}
             <div style={{ display: 'flex', gap: '6px' }}>
               <input
                 type="text"
