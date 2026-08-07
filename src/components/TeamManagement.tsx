@@ -29,6 +29,8 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
   const [isRolesOpen, setIsRolesOpen] = useState(false);
   const [editingRoleId, setEditingRoleId] = useState<string | null>(null);
   const [roleEditForm, setRoleEditForm] = useState<RoleConfig | null>(null);
+  const [editingRoleNameId, setEditingRoleNameId] = useState<string | null>(null);
+  const [tempRoleName, setTempRoleName] = useState('');
   const [newRoleName, setNewRoleName] = useState('');
 
   const handleAddMember = (e: React.FormEvent) => {
@@ -137,20 +139,63 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
         ))}
       </div>
 
-      {/* Управління ролями (з робочою кнопкою Edit та іконкою кошика 🗑️) */}
+      {/* Управління ролями (з кнопкою + 28х28 на сірому фоні та редагуванням імені ролі кліком) */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px' }}>
         <div onClick={() => setIsRolesOpen(!isRolesOpen)} style={{ cursor: 'pointer', textAlign: 'center', fontWeight: 700, color: '#8e8e93' }}>Roles & Permissions Management</div>
         {isRolesOpen && (
           <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={{ display: 'flex', gap: '6px' }}>
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
               <input type="text" placeholder="New role name..." value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} style={{ ...inputStyle, padding: '8px 10px', flex: 1 }} />
-              <button type="button" onClick={handleCreateNewRole} style={{ padding: '8px 12px', backgroundColor: '#007aff', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>Add Role</button>
+              {/* Кнопка + на сірому фоні 28x28 */}
+              <button 
+                type="button" 
+                onClick={handleCreateNewRole} 
+                style={{ width: '28px', height: '28px', backgroundColor: '#e5e5ea', color: '#1c1c1e', border: 'none', borderRadius: '6px', fontSize: '16px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                title="Add Role"
+              >
+                +
+              </button>
             </div>
 
             {roles.map(r => (
               <div key={r.id} style={{ backgroundColor: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid #e5e5ea' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontWeight: 600, fontSize: '13px' }}>{r.name}</span>
+                  
+                  {/* Редагування назви ролі за кліком */}
+                  {editingRoleNameId === r.id ? (
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flex: 1, marginRight: '10px' }}>
+                      <input 
+                        type="text" 
+                        value={tempRoleName} 
+                        onChange={(e) => setTempRoleName(e.target.value)} 
+                        style={{ ...inputStyle, padding: '4px 8px', fontSize: '13px' }} 
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          if (tempRoleName.trim()) {
+                            onSaveRole({ ...r, name: tempRoleName.trim() });
+                          }
+                          setEditingRoleNameId(null);
+                        }} 
+                        style={{ padding: '4px 8px', backgroundColor: '#34c759', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}
+                      >
+                        OK
+                      </button>
+                    </div>
+                  ) : (
+                    <span 
+                      style={{ fontWeight: 600, fontSize: '13px', cursor: 'pointer', flex: 1 }} 
+                      onClick={() => {
+                        setEditingRoleNameId(r.id);
+                        setTempRoleName(r.name);
+                      }}
+                      title="Click to rename role"
+                    >
+                      {r.name}
+                    </span>
+                  )}
+
                   <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                     <button type="button" onClick={() => { setEditingRoleId(editingRoleId === r.id ? null : r.id); setRoleEditForm(r); }} style={{ background: 'none', border: 'none', color: '#8e8e93', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
                       {editingRoleId === r.id ? 'Close' : 'Edit'}
