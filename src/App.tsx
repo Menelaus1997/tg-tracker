@@ -38,79 +38,16 @@ export interface TeamMember {
   isActive?: boolean;
 }
 
-export interface CustomField {
-  id: string;
-  name: string;
-  unit: string;
-}
-
-export interface SubStage {
-  id: string;
-  title: string;
-  completed: boolean;
-}
-
-export interface Stage {
-  id: string;
-  title: string;
-  subStages: SubStage[];
-  loggedSeconds?: number;
-  isTimerRunning?: boolean;
-  timerStartedAt?: number;
-  baseLoggedSeconds?: number;
-  startDate?: string;
-  endDate?: string;
-}
-
 export interface Project {
   id: string;
   name: string;
   color: string;
   status: 'active' | 'archived' | 'trash';
-  generalInfoList?: string[];
-  customFields?: CustomField[];
-  stages?: Stage[];
+  stages?: any[];
   teamMembers?: TeamMember[];
   topicLink?: string;
   threadId?: number;
 }
-
-const DEFAULT_ROLES: RoleConfig[] = [
-  {
-    id: '1',
-    name: 'Керівник',
-    permissions: {
-      canViewCreateProject: true,
-      canViewVor: true,
-      canViewAnalytics: true,
-      canViewTeam: true,
-      canViewSettings: false,
-      canSeeAllProjects: true,
-      canEditProjects: true,
-      canDeleteProjects: true,
-      canManageStages: true,
-      canManageTimer: true,
-      canAssignTeam: true
-    }
-  },
-  {
-    id: '2',
-    name: 'Кресляр',
-    permissions: {
-      canViewCreateProject: false,
-      canViewVor: true,
-      canViewAnalytics: false,
-      canViewTeam: false,
-      canViewSettings: false,
-      canSeeAllProjects: false,
-      canEditProjects: false,
-      canDeleteProjects: false,
-      canManageStages: true,
-      canManageTimer: true,
-      canAssignTeam: false
-    }
-  }
-];
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<number>(2);
@@ -128,11 +65,17 @@ export const App: React.FC = () => {
 
   const [roles, setRoles] = useState<RoleConfig[]>(() => {
     const saved = localStorage.getItem('app_roles');
-    return saved ? JSON.parse(saved) : DEFAULT_ROLES;
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [templates, setTemplates] = useState<any[]>(() => {
+    const saved = localStorage.getItem('app_templates');
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [botToken, setBotToken] = useState<string>(() => localStorage.getItem('app_bot_token') || '');
   const [groupId, setGroupId] = useState<string>(() => localStorage.getItem('app_group_id') || '');
+  const [fontFamily, setFontFamily] = useState<string>(() => localStorage.getItem('app_font') || 'system-ui');
 
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(true);
@@ -145,7 +88,6 @@ export const App: React.FC = () => {
       if (user?.id) {
         const uid = String(user.id);
         setCurrentUserId(uid);
-        
         const savedOwner = localStorage.getItem('app_super_admin_id');
         if (!savedOwner) {
           localStorage.setItem('app_super_admin_id', uid);
@@ -160,12 +102,15 @@ export const App: React.FC = () => {
   useEffect(() => localStorage.setItem('app_projects', JSON.stringify(projects)), [projects]);
   useEffect(() => localStorage.setItem('app_team', JSON.stringify(teamMembers)), [teamMembers]);
   useEffect(() => localStorage.setItem('app_roles', JSON.stringify(roles)), [roles]);
+  useEffect(() => localStorage.setItem('app_templates', JSON.stringify(templates)), [templates]);
 
-  const handleSaveSettings = (token: string, group: string) => {
+  const handleSaveSettings = (token: string, group: string, font: string) => {
     setBotToken(token);
     setGroupId(group);
+    setFontFamily(font);
     localStorage.setItem('app_bot_token', token);
     localStorage.setItem('app_group_id', group);
+    localStorage.setItem('app_font', font);
   };
 
   const handleCreateProject = (newProject: Project) => {
@@ -173,55 +118,32 @@ export const App: React.FC = () => {
     setActiveTab(2);
   };
 
-  const handleUpdateProject = (updated: Project) => {
-    setProjects(projects.map(p => p.id === updated.id ? updated : p));
+  const handleSaveTemplate = (template: any) => {
+    setTemplates([...templates, template]);
   };
 
   const handlePermanentDelete = async (projectId: string) => {
-    const proj = projects.find(p => p.id === projectId);
-    if (proj?.threadId) {
-      await fetch('/api/manage-topic', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'delete',
-          threadId: proj.threadId,
-          customBotToken: botToken,
-          customGroupId: groupId
-        })
-      });
-    }
     setProjects(projects.filter(p => p.id !== projectId));
   };
 
   const activeProject = projects.find(p => p.id === selectedProjectId);
 
-  const currentUserMember = teamMembers.find(m => m.telegramUserId === currentUserId);
-  const currentUserRoleConfig = roles.find(r => r.name === currentUserMember?.role);
-  const permissions = currentUserRoleConfig?.permissions;
-
-  const canSeeTab1 = isSuperAdmin || permissions?.canViewCreateProject;
-  const canSeeTab3 = isSuperAdmin || permissions?.canViewVor;
-  const canSeeTab4 = isSuperAdmin || permissions?.canViewAnalytics;
-  const canSeeTab5 = isSuperAdmin || permissions?.canViewTeam;
-  const canSeeTab6 = isSuperAdmin;
-
   const ProjectListComponent = (ProjectList as any).ProjectList || ProjectList;
   const CreateProjectComponent = (CreateProject as any).CreateProject || CreateProject;
 
   return (
-    <div style={{ paddingBottom: '70px', minHeight: '100vh', backgroundColor: '#ffffff' }}>
+    <div style={{ paddingBottom: '70px', minHeight: '100vh', backgroundColor: '#ffffff', fontFamily }}>
       {selectedProjectId && activeProject ? (
         <ProjectDetail
           project={activeProject}
-          onUpdateProject={handleUpdateProject}
-          onSaveAsTemplate={() => true}
+          onUpdateProject={(updated) => setProjects(projects.map(p => p.id === updated.id ? updated : p))}
+          onSaveAsTemplate={handleSaveTemplate}
           onBack={() => setSelectedProjectId(null)}
         />
       ) : (
         <>
-          {activeTab === 1 && canSeeTab1 && (
-            <CreateProjectComponent onCreateProject={handleCreateProject} />
+          {activeTab === 1 && (
+            <CreateProjectComponent onCreateProject={handleCreateProject} templates={templates} />
           )}
           {activeTab === 2 && (
             <ProjectListComponent
@@ -232,9 +154,9 @@ export const App: React.FC = () => {
               onPermanentDelete={handlePermanentDelete}
             />
           )}
-          {activeTab === 3 && canSeeTab3 && <VorCalculator projects={projects} />}
-          {activeTab === 4 && canSeeTab4 && <Analytics projects={projects} />}
-          {activeTab === 5 && canSeeTab5 && (
+          {activeTab === 3 && <VorCalculator />}
+          {activeTab === 4 && <Analytics projects={projects} />}
+          {activeTab === 5 && (
             <TeamManagement
               teamMembers={teamMembers}
               onSaveTeamMember={(m) => {
@@ -251,11 +173,12 @@ export const App: React.FC = () => {
               isSuperAdmin={isSuperAdmin}
             />
           )}
-          {activeTab === 6 && canSeeTab6 && (
+          {activeTab === 6 && (
             <Settings
               botToken={botToken}
               groupId={groupId}
               superAdminId={currentUserId}
+              fontFamily={fontFamily}
               onSaveSettings={handleSaveSettings}
               isSuperAdmin={isSuperAdmin}
             />
@@ -265,12 +188,12 @@ export const App: React.FC = () => {
 
       {!selectedProjectId && (
         <div style={navBarStyle}>
-          {canSeeTab1 && <button onClick={() => setActiveTab(1)} style={navBtnStyle(activeTab === 1)}>➕</button>}
+          <button onClick={() => setActiveTab(1)} style={navBtnStyle(activeTab === 1)}>➕</button>
           <button onClick={() => setActiveTab(2)} style={navBtnStyle(activeTab === 2)}>📁</button>
-          {canSeeTab3 && <button onClick={() => setActiveTab(3)} style={navBtnStyle(activeTab === 3)}>📊</button>}
-          {canSeeTab4 && <button onClick={() => setActiveTab(4)} style={navBtnStyle(activeTab === 4)}>📈</button>}
-          {canSeeTab5 && <button onClick={() => setActiveTab(5)} style={navBtnStyle(activeTab === 5)}>👥</button>}
-          {canSeeTab6 && <button onClick={() => setActiveTab(6)} style={navBtnStyle(activeTab === 6)}>⚙️</button>}
+          <button onClick={() => setActiveTab(3)} style={navBtnStyle(activeTab === 3)}>📊</button>
+          <button onClick={() => setActiveTab(4)} style={navBtnStyle(activeTab === 4)}>📈</button>
+          <button onClick={() => setActiveTab(5)} style={navBtnStyle(activeTab === 5)}>👥</button>
+          <button onClick={() => setActiveTab(6)} style={navBtnStyle(activeTab === 6)}>⚙️</button>
         </div>
       )}
     </div>
