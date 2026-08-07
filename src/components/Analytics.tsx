@@ -1,12 +1,22 @@
 import React, { useState } from 'react';
 import { Project, TeamMember } from '../App';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
 interface AnalyticsProps {
   projects: Project[];
   teamDatabase: TeamMember[];
 }
 
+type FilterPeriod = 'week' | 'month' | 'year';
+type MetricType = 'count' | 'time';
+
+const CHART_COLORS = ['#007aff', '#34c759', '#ff9500', '#af52de', '#ff2d55', '#5856d6'];
+
 export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
+  const [period, setPeriod] = useState<FilterPeriod>('month');
+  const [metric, setMetric] = useState<MetricType>('count');
+  const [searchTerm, setSearchTerm] = useState('');
+  
   const [collapsedProjects, setCollapsedProjects] = useState<{ [key: string]: boolean }>({});
   const [showWorkload, setShowWorkload] = useState(false);
 
@@ -17,11 +27,120 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  // 1. Фільтрація проєктів та підзадач за текстовим запитом (напр. "ХАЙТАК")
+  const filteredProjects = projects.map(proj => {
+    const stages = proj.stages || [];
+    
+    // Якщо є пошуковий запит, фільтруємо стадії або підзадачі, які містять цей текст
+    if (!searchTerm.trim()) return proj;
+
+    const query = searchTerm.toLowerCase();
+    const matchesProjectName = proj.name.toLowerCase().includes(query) || proj.id.toLowerCase().includes(query);
+    
+    if (matchesProjectName) return proj;
+
+    // Фільтруємо стадії, де є збіг у назві або підзадачах
+    const filteredStages = stages.filter(st => 
+      st.title.toLowerCase().includes(query) ||
+      (st.subStages || []).some((sub: any) => sub.title.toLowerCase().includes(query))
+    );
+
+    return {
+      ...proj,
+      stages: filteredStages
+    };
+  }).filter(proj => {
+    if (!searchTerm.trim()) return true;
+    const query = searchTerm.toLowerCase();
+    const matchesProj = proj.name.toLowerCase().includes(query) || proj.id.toLowerCase().includes(query);
+    const hasStages = (proj.stages || []).length > 0;
+    return matchesProj || hasStages;
+  });
+
+  // 2. Формуємо дані для кругової діаграми на основі відфільтрованих даних
+  const chartData = filteredProjects.map((proj, index) => {
+    const stages = proj.stages || [];
+    let totalSec = 0;
+
+    stages.forEach(st => {
+      let stageCalendarDays = 0;
+      if (st.startDate && st.endDate) {
+        const [sY, sM, sD] = st.startDate.split('-').map(Number);
+        const [eY, eM, eD] = st.endDate.split('-').map(Number);
+        const startD = new Date(sY, sM - 1, sD);
+        const endD = new Date(eY, eM - 1, eD);
+        const diffTime = Math.abs(endD.getTime() - startD.getTime());
+        stageCalendarDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      }
+      const calendarSec = stageCalendarDays * 8 * 3600;
+      const loggedSec = st.loggedSeconds || 0;
+      totalSec += Math.max(loggedSec, calendarSec);
+    });
+
+    const hours = Number((totalSec / 3600).toFixed(1));
+    const stagesCount = stages.length;
+
+    return {
+      name: proj.name,
+      value: metric === 'time' ? hours : (stagesCount > 0 ? stagesCount : 1),
+      color: proj.color || CHART_COLORS[index % CHART_COLORS.length]
+    };
+  });
+
+  const totalCenterValue = chartData.reduce((acc, curr) => acc + curr.value, 0);
+
   return (
-    <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e' }}>
-      {/* Верхня панель з тумблером праворуч */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
+    <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e', paddingBottom: '80px' }}>
+      
+      {/* ПАНЕЛЬ ФІЛЬТРІВ ТА ПЕРІОДУ */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px', backgroundColor: '#f9f9fb', padding: '12px', borderRadius: '12px', border: '1px solid #e5e5ea' }}>
+        
+        {/* Вибір періоду */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '6px' }}>
+          {(['week', 'month', 'year'] as const).map(p => (
+            <button
+              key={p}
+              onClick={() => setPeriod(p)}
+              style={{
+                flex: 1,
+                padding: '6px 0',
+                borderRadius: '6px',
+                border: 'none',
+                background: period === p ? '#007aff' : '#e5e5ea',
+                color: period === p ? '#fff' : '#3a3a3c',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '12px'
+              }}
+            >
+              {p === 'week' ? 'Тиждень' : p === 'month' ? 'Місяць' : 'Рік'}
+            </button>
+          ))}
+        </div>
+
+        {/* Метрика та Текстовий пошук (багатозадачний фільтр) */}
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <select
+            value={metric}
+            onChange={(e) => setMetric(e.target.value as MetricType)}
+            style={{ padding: '8px', borderRadius: '8px', border: '1px solid #c7c7cc', fontSize: '12px', flex: 1, background: '#fff' }}
+          >
+            <option value="count">📊 Кількість (шт)</option>
+            <option value="time">⏱️ Час (години)</option>
+          </select>
+
+          <input
+            type="text"
+            placeholder="Пошук (напр., ХАЙТАК)..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ padding: '8px', borderRadius: '8px', border: '1px solid #c7c7cc', fontSize: '12px', flex: 1, background: '#fff' }}
+          />
+        </div>
+
+        {/* Тумблер детального навантаження */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '4px', borderTop: '1px solid #e5e5ea' }}>
+          <span style={{ fontSize: '12px', color: '#3a3a3c', fontWeight: 500 }}>Детальний час (години/дні)</span>
           <div
             onClick={() => setShowWorkload(!showWorkload)}
             style={{
@@ -50,19 +169,48 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
         </div>
       </div>
 
+      {/* КРУГОВА ДІАГРАМА З ЦЕНТРАЛЬНИМ ЧИСЛОМ */}
+      {filteredProjects.length > 0 && (
+        <div style={{ position: 'relative', height: '200px', marginBottom: '20px' }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie data={chartData} innerRadius={55} outerRadius={80} paddingAngle={4} dataKey="value">
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -55px)',
+            textAlign: 'center',
+            fontSize: '20px',
+            fontWeight: 700,
+            color: '#1c1c1e'
+          }}>
+            {metric === 'time' ? `${totalCenterValue.toFixed(1)}h` : totalCenterValue}
+            <div style={{ fontSize: '11px', color: '#8e8e93', fontWeight: 400 }}>Загалом</div>
+          </div>
+        </div>
+      )}
+
+      {/* СПИСОК ПРОЄКТІВ (Вкладка 2 дані з розгорнутими стадіями) */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {projects.length === 0 ? (
+        {filteredProjects.length === 0 ? (
           <div style={{ textAlign: 'center', color: '#8e8e93', fontSize: '13px', marginTop: '20px' }}>
-            No projects available for analytics.
+            Нічого не знайдено за вашим запитом.
           </div>
         ) : (
-          projects.map((proj) => {
+          filteredProjects.map((proj) => {
             const isProjCollapsed = collapsedProjects[proj.id];
             const stages = proj.stages || [];
             
             const totalSubStages = stages.reduce((acc, st) => acc + (st.subStages?.length || 0), 0);
             const completedSubStages = stages.reduce((acc, st) => {
-              return acc + (st.subStages?.filter(sub => sub.completed)?.length || 0);
+              return acc + (st.subStages?.filter((sub: any) => sub.completed)?.length || 0);
             }, 0);
             const projectProgress = totalSubStages > 0 ? Math.round((completedSubStages / totalSubStages) * 100) : 0;
             const projectColor = proj.color || '#007aff';
@@ -96,7 +244,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
                     <span style={{ fontSize: '12px', color: '#8e8e93' }}>{isProjCollapsed ? '▼' : '▲'}</span>
                     <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>{proj.name} ({proj.id})</h3>
                   </div>
-                  <span style={{ fontSize: '13px', fontWeight: 700, color: projectColor, marginRight: '21px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 700, color: projectColor, marginRight: '10px' }}>
                     {projectProgress}%
                   </span>
                 </div>
@@ -115,7 +263,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
                     {stages.map((st, index) => {
                       const subCount = st.subStages?.length || 0;
-                      const compCount = st.subStages?.filter(sub => sub.completed)?.length || 0;
+                      const compCount = st.subStages?.filter((sub: any) => sub.completed)?.length || 0;
                       const stageProgress = subCount > 0 ? Math.round((compCount / subCount) * 100) : (st.loggedSeconds ? 100 : 0);
 
                       const endDateStr = st.endDate;
@@ -162,7 +310,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
                       const finalDays = stageCalendarDays > 0 ? stageCalendarDays : (totalHoursNum > 0 && totalHoursNum <= 8 ? 1 : Math.ceil(totalHoursNum / 8));
 
                       return (
-                        <div key={st.id} style={{ backgroundColor: '#ffffff', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e5e5ea' }}>
+                        <div key={st.id || index} style={{ backgroundColor: '#ffffff', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e5e5ea' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                             <span style={{ fontSize: '13px', fontWeight: 600 }}>{index + 1}. {st.title}</span>
                             <span style={{ fontSize: '12px', fontWeight: 600, color: statusColor }}>{stageProgress}%</span>
