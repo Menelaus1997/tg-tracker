@@ -5,86 +5,82 @@ interface ProjectListProps {
   projects: Project[];
   onSelectProject: (id: string) => void;
   onUpdateProjects: (projects: Project[]) => void;
-  isSuperAdmin: boolean;
-  onPermanentDelete: (id: string) => void;
+  isSuperAdmin?: boolean;
+  onPermanentDelete?: (id: string) => void;
 }
 
 export const ProjectList: React.FC<ProjectListProps> = ({
   projects,
   onSelectProject,
   onUpdateProjects,
-  isSuperAdmin,
+  isSuperAdmin = true,
   onPermanentDelete
 }) => {
-  const [filterStatus, setFilterStatus] = useState<'active' | 'archived' | 'trash'>('active');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [filter, setFilter] = useState<'active' | 'archived' | 'trash'>('active');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const filteredProjects = projects.filter((p) => {
-    const statusMatch = filterStatus === 'active' ? (p.status === 'active' || !p.status) : p.status === filterStatus;
-    const query = searchQuery.toLowerCase().trim();
-    const nameMatch = p.name.toLowerCase().includes(query);
-    const idMatch = p.id.toLowerCase().includes(query);
-
-    return statusMatch && (nameMatch || idMatch);
+    const matchesFilter = (p.status || 'active') === filter;
+    const matchesSearch =
+      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.id.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesFilter && matchesSearch;
   });
 
-  const handleSetStatus = (e: React.MouseEvent, projectId: string, status: 'active' | 'archived' | 'trash') => {
-    e.stopPropagation();
+  const handleStatusChange = (id: string, newStatus: 'active' | 'archived' | 'trash') => {
     onUpdateProjects(
-      projects.map((p) => (p.id === projectId ? { ...p, status } : p))
+      projects.map((p) => (p.id === id ? { ...p, status: newStatus } : p))
     );
   };
 
   return (
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e' }}>
-      
-      {/* Строка пошуку без символу лупи */}
-      <div style={{ marginBottom: '12px' }}>
-        <input
-          type="text"
-          placeholder="Пошук"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          style={{
-            width: '100%',
-            padding: '10px 12px',
-            backgroundColor: '#f2f2f7',
-            border: 'none',
-            borderRadius: '10px',
-            fontSize: '14px',
-            outline: 'none',
-            boxSizing: 'border-box'
-          }}
-        />
-      </div>
+      {/* Search Bar */}
+      <input
+        type="text"
+        placeholder="Search"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        style={{
+          width: '100%',
+          padding: '12px',
+          backgroundColor: '#f2f2f7',
+          border: 'none',
+          borderRadius: '10px',
+          fontSize: '14px',
+          outline: 'none',
+          marginBottom: '12px',
+          boxSizing: 'border-box'
+        }}
+      />
 
+      {/* Filter Tabs */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
         <button
-          onClick={() => setFilterStatus('active')}
-          style={filterBtnStyle(filterStatus === 'active')}
+          onClick={() => setFilter('active')}
+          style={tabBtnStyle(filter === 'active')}
         >
-          Активні ({projects.filter((p) => p.status === 'active' || !p.status).length})
+          Active ({projects.filter((p) => (p.status || 'active') === 'active').length})
         </button>
         <button
-          onClick={() => setFilterStatus('archived')}
-          style={filterBtnStyle(filterStatus === 'archived')}
+          onClick={() => setFilter('archived')}
+          style={tabBtnStyle(filter === 'archived')}
         >
-          Архів ({projects.filter((p) => p.status === 'archived').length})
+          Archive ({projects.filter((p) => p.status === 'archived').length})
         </button>
-        {isSuperAdmin && (
-          <button
-            onClick={() => setFilterStatus('trash')}
-            style={filterBtnStyle(filterStatus === 'trash')}
-          >
-            Кошик ({projects.filter((p) => p.status === 'trash').length})
-          </button>
-        )}
+        <button
+          onClick={() => setFilter('trash')}
+          style={tabBtnStyle(filter === 'trash')}
+        >
+          Trash ({projects.filter((p) => p.status === 'trash').length})
+        </button>
       </div>
 
+      {/* Projects List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {filteredProjects.length === 0 ? (
-          <div style={{ fontSize: '14px', color: '#8e8e93', textAlign: 'center', marginTop: '20px' }}>
-            Нічого не знайдено.
+          <div style={{ textAlign: 'center', color: '#8e8e93', fontSize: '13px', marginTop: '20px' }}>
+            No projects found.
           </div>
         ) : (
           filteredProjects.map((p) => (
@@ -92,23 +88,23 @@ export const ProjectList: React.FC<ProjectListProps> = ({
               key={p.id}
               onClick={() => onSelectProject(p.id)}
               style={{
-                padding: '12px 14px',
-                borderRadius: '12px',
-                backgroundColor: '#f2f2f7',
-                cursor: 'pointer',
                 display: 'flex',
+                alignItems: 'center',
                 justifyContent: 'space-between',
-                alignItems: 'center'
+                padding: '14px 16px',
+                backgroundColor: '#f2f2f7',
+                borderRadius: '12px',
+                cursor: 'pointer'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div
                   style={{
-                    width: '12px',
-                    height: '12px',
+                    width: '14px',
+                    height: '14px',
                     borderRadius: '50%',
                     backgroundColor: p.color || '#007aff',
-                    flexShrink: 0
+                    border: '1px solid #d1d1d6'
                   }}
                 />
                 <div>
@@ -117,46 +113,52 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '6px' }}>
-                {filterStatus === 'active' && (
+              <div style={{ display: 'flex', gap: '8px' }} onClick={(e) => e.stopPropagation()}>
+                {filter === 'active' && (
                   <button
-                    onClick={(e) => handleSetStatus(e, p.id, 'archived')}
+                    onClick={() => handleStatusChange(p.id, 'archived')}
                     style={actionBtnStyle}
-                    title="В архів"
+                    title="Move to Archive"
                   >
                     📦
                   </button>
                 )}
-                {filterStatus !== 'trash' && (
+                {filter === 'archived' && (
                   <button
-                    onClick={(e) => handleSetStatus(e, p.id, 'trash')}
-                    style={{ ...actionBtnStyle, color: '#ff3b30' }}
-                    title="У кошик"
+                    onClick={() => handleStatusChange(p.id, 'active')}
+                    style={actionBtnStyle}
+                    title="Restore to Active"
+                  >
+                    ↩️
+                  </button>
+                )}
+                {filter !== 'trash' && (
+                  <button
+                    onClick={() => handleStatusChange(p.id, 'trash')}
+                    style={actionBtnStyle}
+                    title="Move to Trash"
                   >
                     🗑️
                   </button>
                 )}
-                {filterStatus === 'trash' && isSuperAdmin && (
+                {filter === 'trash' && (
                   <>
                     <button
-                      onClick={(e) => handleSetStatus(e, p.id, 'active')}
+                      onClick={() => handleStatusChange(p.id, 'active')}
                       style={actionBtnStyle}
-                      title="Відновити"
+                      title="Restore"
                     >
                       ↩️
                     </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (confirm('Видалити проект назавжди разом із гілкою у Telegram?')) {
-                          onPermanentDelete(p.id);
-                        }
-                      }}
-                      style={{ ...actionBtnStyle, backgroundColor: '#ff3b30', color: '#fff' }}
-                      title="Видалити остаточно"
-                    >
-                      ✕
-                    </button>
+                    {onPermanentDelete && (
+                      <button
+                        onClick={() => onPermanentDelete(p.id)}
+                        style={{ ...actionBtnStyle, color: '#ff3b30' }}
+                        title="Delete Permanently"
+                      >
+                        ❌
+                      </button>
+                    )}
                   </>
                 )}
               </div>
@@ -168,13 +170,13 @@ export const ProjectList: React.FC<ProjectListProps> = ({
   );
 };
 
-const filterBtnStyle = (active: boolean): React.CSSProperties => ({
+const tabBtnStyle = (active: boolean): React.CSSProperties => ({
   flex: 1,
-  padding: '8px',
-  borderRadius: '8px',
-  border: 'none',
+  padding: '10px',
   backgroundColor: active ? '#007aff' : '#f2f2f7',
   color: active ? '#ffffff' : '#1c1c1e',
+  border: 'none',
+  borderRadius: '10px',
   fontWeight: 600,
   fontSize: '12px',
   cursor: 'pointer'
@@ -183,9 +185,9 @@ const filterBtnStyle = (active: boolean): React.CSSProperties => ({
 const actionBtnStyle: React.CSSProperties = {
   background: '#ffffff',
   border: 'none',
-  borderRadius: '6px',
-  padding: '4px 8px',
-  fontSize: '12px',
+  borderRadius: '8px',
+  padding: '6px 8px',
+  fontSize: '13px',
   cursor: 'pointer'
 };
 
