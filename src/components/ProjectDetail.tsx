@@ -145,6 +145,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     setStages(stages.map(s => s.id === stageId ? { ...s, title: newTitle } : s));
   };
 
+  // =========================================================================
+  // ЗНАЙТИ ТУТ: Функція оновлення виконавця стадії ( Contractor / Assignee )
+  // =========================================================================
   const handleUpdateStageContractor = (stageId: string, contractorName: string) => {
     setStages(stages.map(s => s.id === stageId ? { ...s, contractor: contractorName } : s));
   };
@@ -279,12 +282,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     const m = Math.floor((sec % 3600) / 60);
     return `${h}h ${m}min`;
   };
-
-  // Формуємо список доступних виконавців (команда проекту + можливість підрядника)
-  const availableTeamMembers = projectTeam.map(pt => {
-    const member = teamDatabase.find(m => m.id === pt.memberId);
-    return member ? member.fullName : 'Member';
-  });
 
   return (
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e' }}>
@@ -530,15 +527,27 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       </div>
                     </div>
 
-                    {/* Вибір виконавця / підрядника для стадії */}
+                    {/* ========================================================================= */}
+                    {/* ЗНАЙТИ ТУТ: Вибір виконавця/підрядника через випадаючий список (<select>)   */}
+                    {/* Він автоматично підтягує учасників команди цього проекту                  */}
+                    {/* ========================================================================= */}
                     <div style={{ marginBottom: '8px' }}>
-                      <input
-                        type="text"
-                        placeholder="Виконавець / Підрядник (напр. Підрядник 1)"
+                      <select
                         value={st.contractor || ''}
                         onChange={(e) => handleUpdateStageContractor(st.id, e.target.value)}
-                        style={{ ...cardInputStyle, fontSize: '11px', padding: '4px 8px' }}
-                      />
+                        style={{ ...cardInputStyle, fontSize: '12px', padding: '6px 8px' }}
+                      >
+                        <option value="">Select contractor / assignee...</option>
+                        {projectTeam.map(pt => {
+                          const member = teamDatabase.find(m => m.id === pt.memberId);
+                          return (
+                            <option key={pt.id} value={member?.fullName || ''}>
+                              {member?.fullName || 'Member'} ({pt.role})
+                            </option>
+                          );
+                        })}
+                        <option value="Outsourced Contractor">Outsourced Contractor</option>
+                      </select>
                     </div>
 
                     {editingTimeStageId === st.id && (
