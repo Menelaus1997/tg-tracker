@@ -53,7 +53,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   ]);
 
   const [isStructureOpen, setIsStructureOpen] = useState(true);
-  const [stages, setStages] = useState<Stage[]>(project.stages || []);
+  const [stages, setStages] = useState<Stage[]>(() => (project.stages || []).map(s => ({
+    ...s,
+    contractors: (s as any).contractors || (s.contractor ? [s.contractor] : [])
+  })));
   const [collapsedStages, setCollapsedStages] = useState<{ [key: string]: boolean }>({});
   const [newStageTitle, setNewStageTitle] = useState('');
   const [newSubStageTitle, setNewSubStageTitle] = useState<{ [key: string]: string }>({});
@@ -72,7 +75,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const [templateNameInput, setTemplateNameInput] = useState(project.name);
 
-  // Drag and drop states
   const [draggedDataIndex, setDraggedDataIndex] = useState<number | null>(null);
   const [draggedSubStage, setDraggedSubStage] = useState<{ stageId: string; index: number } | null>(null);
 
@@ -115,7 +117,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     setGeneralRows(generalRows.filter(r => r.id !== id));
   };
 
-  // Drag and drop for Data rows
   const handleDataDragStart = (index: number) => {
     setDraggedDataIndex(index);
   };
@@ -142,8 +143,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       isTimerRunning: false,
       startDate: '',
       endDate: '',
-      contractor: ''
-    };
+      contractors: []
+    } as any;
 
     setStages([...stages, newStage]);
     setNewStageTitle('');
@@ -153,8 +154,28 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     setStages(stages.map(s => s.id === stageId ? { ...s, title: newTitle } : s));
   };
 
-  const handleUpdateStageContractor = (stageId: string, contractorName: string) => {
-    setStages(stages.map(s => s.id === stageId ? { ...s, contractor: contractorName } : s));
+  // Функції для керування багатьма виконавцями на стадії
+  const handleAddStageContractor = (stageId: string, contractorName: string) => {
+    if (!contractorName) return;
+    setStages(stages.map(s => {
+      if (s.id === stageId) {
+        const currentList = (s as any).contractors || (s.contractor ? [s.contractor] : []);
+        if (!currentList.includes(contractorName)) {
+          return { ...s, contractors: [...currentList, contractorName] };
+        }
+      }
+      return s;
+    }));
+  };
+
+  const handleRemoveStageContractor = (stageId: string, contractorName: string) => {
+    setStages(stages.map(s => {
+      if (s.id === stageId) {
+        const currentList = (s as any).contractors || (s.contractor ? [s.contractor] : []);
+        return { ...s, contractors: currentList.filter((c: string) => c !== contractorName) };
+      }
+      return s;
+    }));
   };
 
   const handleDeleteStage = (id: string) => {
@@ -227,7 +248,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     }));
   };
 
-  // Drag and drop for SubStages
   const handleSubStageDragStart = (stageId: string, index: number) => {
     setDraggedSubStage({ stageId, index });
   };
@@ -299,7 +319,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         ← Back
       </button>
 
-      {/* 1. Header Block (ЖК Варшавський клікабельний замість олівця) */}
+      {/* 1. Header Block */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
         <div 
           onClick={() => setIsHeaderOpen(!isHeaderOpen)} 
@@ -399,7 +419,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* 2. Data Block (з перетягуванням за номер) */}
+      {/* 2. Data Block */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
         <div 
           onClick={() => setIsGeneralDataOpen(!isGeneralDataOpen)}
@@ -458,7 +478,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* 3. Structure Block (з перетягуванням за номер підзадач) */}
+      {/* 3. Structure Block */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '20px' }}>
         <div 
           onClick={() => setIsStructureOpen(!isStructureOpen)}
@@ -487,6 +507,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               {stages.map((st) => {
                 const isCollapsed = collapsedStages[st.id];
                 const isTrackTimeOn = st.trackTime !== false;
+                const stageContractors: string[] = (st as any).contractors || (st.contractor ? [st.contractor] : []);
 
                 return (
                   <div key={st.id} style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '10px', border: '1px solid #e5e5ea' }}>
@@ -544,23 +565,57 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       </div>
                     </div>
 
-                    {/* Вибір виконавця стадії (тільки реальні учасники з Team) */}
-                    <div style={{ marginBottom: '8px' }}>
-                      <select
-                        value={st.contractor || ''}
-                        onChange={(e) => handleUpdateStageContractor(st.id, e.target.value)}
-                        style={{ ...cardInputStyle, fontSize: '12px', padding: '6px 8px' }}
-                      >
-                        <option value="">Select contractor / assignee...</option>
-                        {projectTeam.map(pt => {
-                          const member = teamDatabase.find(m => m.id === pt.memberId);
-                          return (
-                            <option key={pt.id} value={member?.fullName || ''}>
-                              {member?.fullName || 'Member'} ({pt.role})
-                            </option>
-                          );
-                        })}
-                      </select>
+                    {/* Додавання кількох виконавців через селект та кнопку + */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        <select
+                          id={`select-contractor-${st.id}`}
+                          defaultValue=""
+                          style={{ ...cardInputStyle, fontSize: '12px', padding: '6px 8px', flex: 1 }}
+                        >
+                          <option value="">Select contractor / assignee...</option>
+                          {projectTeam.map(pt => {
+                            const member = teamDatabase.find(m => m.id === pt.memberId);
+                            const nameStr = `${member?.fullName || 'Member'} (${pt.role})`;
+                            return (
+                              <option key={pt.id} value={member?.fullName || ''}>
+                                {nameStr}
+                              </option>
+                            );
+                          })}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const selectEl = document.getElementById(`select-contractor-${st.id}`) as HTMLSelectElement;
+                            if (selectEl && selectEl.value) {
+                              handleAddStageContractor(st.id, selectEl.value);
+                              selectEl.value = '';
+                            }
+                          }}
+                          style={compactPlusBtnStyle}
+                          title="Add contractor"
+                        >
+                          +
+                        </button>
+                      </div>
+
+                      {stageContractors.length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '2px' }}>
+                          {stageContractors.map((cName, cIdx) => (
+                            <div key={cIdx, cName} style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#e5e5ea', padding: '4px 8px', borderRadius: '6px', fontSize: '12px' }}>
+                              <span>{cName}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveStageContractor(st.id, cName)}
+                                style={{ background: 'none', border: 'none', color: '#ff3b30', cursor: 'pointer', fontSize: '11px', padding: 0, fontWeight: 700 }}
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     {editingTimeStageId === st.id && (
