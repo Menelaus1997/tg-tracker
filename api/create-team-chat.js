@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   const { projectName, projectId, members } = req.body;
 
   const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-  const GROUP_ID = process.env.TELEGRAM_GROUP_ID;
+  const GROUP_ID = process.env.TELEGRAM_GROUP_ID; // ID вашої спільної групи-форуму
 
   if (!BOT_TOKEN || !GROUP_ID) {
     return res.status(500).json({ 
@@ -16,16 +16,15 @@ export default async function handler(req, res) {
   }
 
   try {
-    const linkName = `${projectName} (${projectId})`;
+    const topicName = `${projectName} (${projectId})`;
 
-    // Створюємо посилання-запрошення через Telegram Bot API
-    const tgResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/createChatInviteLink`, {
+    // 1. Бот створює нову тему (гілку) у спільному чаті
+    const tgResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/createForumTopic`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: GROUP_ID,
-        name: linkName,
-        creates_join_request: false
+        name: topicName
       })
     });
 
@@ -35,20 +34,35 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, error: tgData.description });
     }
 
-    const inviteLink = tgData.result.invite_link;
+    const threadId = tgData.result.message_thread_id;
 
+    // 2. Бот публікує у створену гілку склад команди з ролями та нікнеймами
     const textList = (members || [])
       .map((m) => `• ${m.fullName} (${m.role}): ${m.telegramUsername ? `@${m.telegramUsername}` : 'без ТГ'}`)
       .join('\n');
 
-    const fullMessage = `📌 *Проект:* ${projectName} (${projectId})\n\n` +
-      `👥 *Склад команди:*\n${textList}\n\n` +
-      `🔗 *Приєднатися до чату:* ${inviteLink}`;
+    const fullMessage = `📌 *Проект створено:* ${projectName} (${projectId})\n\n` +
+      `👥 *Команда проекту:*\n${textList}`;
+
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: GROUP_ID,
+        message_thread_id: threadId,
+        text: fullMessage,
+        parse_mode: 'Markdown'
+      })
+    });
+
+    // 3. Формуємо пряме посилання на створену гілку
+    const cleanGroupId = String(GROUP_ID).replace('-100', '');
+    const topicLink = `https://t.me/c/${cleanGroupId}/${threadId}`;
 
     return res.status(200).json({
       success: true,
-      inviteLink: inviteLink,
-      messageText: fullMessage
+      topicLink: topicLink,
+      threadId: threadId
     });
   } catch (err) {
     console.error('API Error:', err);
