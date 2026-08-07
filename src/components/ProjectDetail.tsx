@@ -269,7 +269,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     setTeamMembers(teamMembers.filter(m => m.id !== id));
   };
 
-  // Автоматичне отримання посилання через Bot API
   const handleAutoCreateTeamChat = async () => {
     if (teamMembers.length === 0) {
       alert('Спочатку додайте хоча б одного учасника в команду!');
@@ -292,7 +291,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       const data = await response.json();
 
       if (data.success && data.inviteLink) {
-        // Відкриваємо інвайт-посилання у Telegram
         if ((window as any).Telegram?.WebApp) {
           (window as any).Telegram.WebApp.openTelegramLink(data.inviteLink);
         } else {
@@ -794,7 +792,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             <p style={{ fontSize: '14px', color: '#636366' }}>Основні дані проекту оновлено.</p>
 
             <div style={{ marginTop: '14px', marginBottom: '14px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer', fontWeight 500 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer', fontWeight: 500 }}>
                 <input type="checkbox" checked={saveAsTemplateChecked} onChange={(e) => setSaveAsTemplateChecked(e.target.checked)} />
                 Зберегти цю структуру як новий шаблон?
               </label>
