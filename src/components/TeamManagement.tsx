@@ -20,7 +20,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
 }) => {
   const [name, setName] = useState('');
   const [telegramId, setTelegramId] = useState('');
-  const [role, setRole] = useState(availableRoles[0] || 'Manager');
+  const [role, setRole] = useState(availableRoles[0] || '');
   
   const [isFullMember, setIsFullMember] = useState(true);
 
@@ -43,7 +43,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
       id: Date.now().toString(),
       fullName: name.trim(),
       telegramId: isFullMember ? telegramId.trim() : undefined,
-      role: isFullMember ? role : 'Contractor',
+      role: isFullMember ? role : '',
       active: true
     };
 
@@ -61,7 +61,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
       ...m,
       ...editForm,
       telegramId: editIsFull ? editForm.telegramId : undefined,
-      role: editIsFull ? editForm.role : 'Contractor'
+      role: editIsFull ? (editForm.role || availableRoles[0] || '') : ''
     } : m));
     setEditingId(null);
   };
@@ -96,6 +96,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
   return (
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e' }}>
       
+      {/* Форма створення */}
       <form onSubmit={handleAddMember} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px', backgroundColor: '#f2f2f7', padding: '16px', borderRadius: '12px' }}>
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
@@ -159,6 +160,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                 onChange={(e) => setRole(e.target.value)}
                 style={inputStyle}
               >
+                <option value="">Select role...</option>
                 {availableRoles.map((r) => (
                   <option key={r} value={r}>{r}</option>
                 ))}
@@ -185,13 +187,14 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
         </button>
       </form>
 
+      {/* Список учасників (Participants без числа та без трикутника) */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '12px 14px', borderRadius: '12px', marginBottom: '20px' }}>
         <div
           onClick={() => setIsParticipantsOpen(!isParticipantsOpen)}
           style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
           <span style={{ fontSize: '14px', fontWeight: 700, color: '#8e8e93', textAlign: 'center' }}>
-            Participants ({members.length}) {isParticipantsOpen ? '▲' : '▼'}
+            Participants
           </span>
         </div>
 
@@ -237,10 +240,11 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                                 style={{ ...inputStyle, padding: '6px 8px', fontSize: '12px' }}
                               />
                               <select
-                                value={editForm.role || m.role}
+                                value={editForm.role !== undefined ? editForm.role : (m.role || '')}
                                 onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
                                 style={{ ...inputStyle, padding: '6px 8px', fontSize: '12px' }}
                               >
+                                <option value="">Select role...</option>
                                 {availableRoles.map(r => <option key={r} value={r}>{r}</option>)}
                               </select>
                             </>
@@ -266,7 +270,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                         <div>
                           <div style={{ fontWeight: 600, fontSize: '14px', color: '#1c1c1e' }}>{m.fullName}</div>
                           <div style={{ fontSize: '12px', color: '#8e8e93', marginTop: '2px' }}>
-                            {m.role} {m.telegramId ? `• ID: ${m.telegramId}` : '• Contractor / Stats only'}
+                            {m.role ? `${m.role} ` : ''}{m.telegramId ? `• ID: ${m.telegramId}` : '• Contractor / Stats only'}
                           </div>
                         </div>
                       )}
@@ -278,7 +282,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                         onClick={() => {
                           setEditingId(m.id);
                           setEditForm(m);
-                          setEditIsFull(!!m.telegramId || m.role !== 'Contractor');
+                          setEditIsFull(!!m.telegramId || !!m.role);
                         }}
                         style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', padding: '4px' }}
                         title="Edit"
@@ -330,13 +334,14 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
         )}
       </div>
 
+      {/* Блок управління ролями (без трикутника, напис Edit замість Edit Permissions, тумблери замість галочок) */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px' }}>
         <div
           onClick={() => setIsRolesOpen(!isRolesOpen)}
           style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
           <span style={{ fontSize: '14px', fontWeight: 700, color: '#8e8e93', textAlign: 'center' }}>
-            Roles & Permissions Management {isRolesOpen ? '▲' : '▼'}
+            Roles & Permissions Management
           </span>
         </div>
 
@@ -373,7 +378,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                         }}
                         style={{ background: 'none', border: 'none', color: '#007aff', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
                       >
-                        {editingRoleId === r.id ? 'Close' : 'Edit Permissions'}
+                        {editingRoleId === r.id ? 'Close' : 'Edit'}
                       </button>
                       <button
                         type="button"
@@ -386,36 +391,83 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                   </div>
 
                   {editingRoleId === r.id && roleEditForm && (
-                    <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #f2f2f7', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', color: '#1c1c1e' }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#1c1c1e', cursor: 'pointer' }}>
-                        <input
-                          type="checkbox"
-                          checked={roleEditForm.permissions?.canViewAnalytics ?? false}
-                          onChange={(e) => setRoleEditForm({
+                    <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #f2f2f7', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12px', color: '#1c1c1e' }}>
+                      
+                      {/* Тумблер замість галочки для Analytics */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>Can view analytics</span>
+                        <div
+                          onClick={() => setRoleEditForm({
                             ...roleEditForm,
-                            permissions: { ...roleEditForm.permissions, canViewAnalytics: e.target.checked }
+                            permissions: { ...roleEditForm.permissions, canViewAnalytics: !(roleEditForm.permissions?.canViewAnalytics ?? false) }
                           })}
-                        />
-                        Can view analytics
-                      </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#1c1c1e', cursor: 'pointer' }}>
-                        <input
-                          type="checkbox"
-                          checked={roleEditForm.permissions?.canEditProjects ?? false}
-                          onChange={(e) => setRoleEditForm({
+                          style={{
+                            width: '36px',
+                            height: '20px',
+                            borderRadius: '10px',
+                            backgroundColor: (roleEditForm.permissions?.canViewAnalytics ?? false) ? '#34c759' : '#e5e5ea',
+                            position: 'relative',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.2s',
+                            flexShrink: 0
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: '16px',
+                              height: '16px',
+                              borderRadius: '50%',
+                              backgroundColor: '#fff',
+                              position: 'absolute',
+                              top: '2px',
+                              left: (roleEditForm.permissions?.canViewAnalytics ?? false) ? '18px' : '2px',
+                              transition: 'left 0.2s'
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Тумблер замість галочки для Edit Projects */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>Can edit projects</span>
+                        <div
+                          onClick={() => setRoleEditForm({
                             ...roleEditForm,
-                            permissions: { ...roleEditForm.permissions, canEditProjects: e.target.checked }
+                            permissions: { ...roleEditForm.permissions, canEditProjects: !(roleEditForm.permissions?.canEditProjects ?? false) }
                           })}
-                        />
-                        Can edit projects
-                      </label>
+                          style={{
+                            width: '36px',
+                            height: '20px',
+                            borderRadius: '10px',
+                            backgroundColor: (roleEditForm.permissions?.canEditProjects ?? false) ? '#34c759' : '#e5e5ea',
+                            position: 'relative',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.2s',
+                            flexShrink: 0
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: '16px',
+                              height: '16px',
+                              borderRadius: '50%',
+                              backgroundColor: '#fff',
+                              position: 'absolute',
+                              top: '2px',
+                              left: (roleEditForm.permissions?.canEditProjects ?? false) ? '18px' : '2px',
+                              transition: 'left 0.2s'
+                            }}
+                          />
+                        </div>
+                      </div>
+
                       <button
                         type="button"
                         onClick={() => {
                           onSaveRole(roleEditForm);
                           setEditingRoleId(null);
                         }}
-                        style={{ padding: '6px 12px', backgroundColor: '#34c759', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, marginTop: '6px', width: 'fit-content' }}
+                        style={{ padding: '6px 12px', backgroundColor: '#34c759', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, marginTop: '4px', width: 'fit-content' }}
                       >
                         Save Role
                       </button>
@@ -424,6 +476,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                 </div>
               ))}
             </div>
+
           </div>
         )}
       </div>
