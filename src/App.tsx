@@ -118,8 +118,15 @@ export const App: React.FC = () => {
     setActiveTab(2);
   };
 
-  const handleSaveTemplate = (template: any) => {
-    setTemplates([...templates, template]);
+  // Повноцінна функція збереження шаблонів
+  const handleSaveTemplate = (project: Project) => {
+    const newTemplate = {
+      id: Date.now().toString(),
+      name: project.name,
+      stages: project.stages || []
+    };
+    setTemplates(prev => [...prev, newTemplate]);
+    alert(`Проект "${project.name}" успішно збережено як новий шаблон!`);
   };
 
   const handlePermanentDelete = async (projectId: string) => {
@@ -137,7 +144,7 @@ export const App: React.FC = () => {
         <ProjectDetail
           project={activeProject}
           onUpdateProject={(updated) => setProjects(projects.map(p => p.id === updated.id ? updated : p))}
-          onSaveAsTemplate={handleSaveTemplate}
+          onSaveAsTemplate={() => handleSaveTemplate(activeProject)}
           onBack={() => setSelectedProjectId(null)}
         />
       ) : (
