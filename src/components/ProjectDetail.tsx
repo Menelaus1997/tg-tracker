@@ -47,7 +47,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     return idx !== -1 ? idx : 0;
   });
 
-  // 2. Data Block
+  // 2. Data Block (Порожні поля за замовчуванням)
   const [isGeneralDataOpen, setIsGeneralDataOpen] = useState(true);
   const [generalRows, setGeneralRows] = useState<GeneralDataRow[]>(() => project.passportRows || [
     { id: '1', type: 'single', value: '' },
@@ -313,7 +313,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   setName(e.target.value);
                   handleAutoSaveBasicInfo(e.target.value, undefined, undefined);
                 }}
-                style={inputStyle}
+                style={cardInputStyle}
               />
             </div>
 
@@ -326,11 +326,11 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   setProjectId(e.target.value);
                   handleAutoSaveBasicInfo(undefined, e.target.value, undefined);
                 }}
-                style={inputStyle}
+                style={cardInputStyle}
               />
             </div>
 
-            {/* Геометрично відцентрована палітра кольорів */}
+            {/* Відцентрована палітра з однакової кнопкою + */}
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
               {colors.map((c, idx) => {
                 const isSelected = selectedColorIndex === idx;
@@ -371,10 +371,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0,
-                  fontSize: '22px',
+                  fontSize: '20px',
                   fontWeight: 700,
+                  lineHeight: '1',
                   color: '#007aff',
-                  position: 'relative'
+                  position: 'relative',
+                  padding: 0,
+                  margin: 0
                 }}
               >
                 +
@@ -414,7 +417,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     type="text"
                     value={r.value}
                     onChange={(e) => handleUpdateGeneralRow(r.id, 'value', e.target.value)}
-                    style={{ ...inputStyle, flex: 1 }}
+                    style={{ ...cardInputStyle, flex: 1 }}
                   />
                 ) : (
                   <>
@@ -422,19 +425,17 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       type="text"
                       value={r.label || ''}
                       onChange={(e) => handleUpdateGeneralRow(r.id, 'label', e.target.value)}
-                      style={{ ...inputStyle, flex: 1 }}
+                      style={{ ...cardInputStyle, flex: 1 }}
                     />
-                    {/* Фіксоване числове поле 60px під 5 цифр */}
                     <input
                       type="text"
                       value={r.value}
                       onChange={(e) => handleUpdateGeneralRow(r.id, 'value', e.target.value)}
-                      style={{ ...inputStyle, width: '60px', flexShrink: 0, textAlign: 'center' }}
+                      style={{ ...cardInputStyle, width: '60px', flexShrink: 0, textAlign: 'center' }}
                     />
                   </>
                 )}
 
-                {/* Блок дій, вирівняний чітко по лінії з основними іконками */}
                 <div style={{ display: 'flex', gap: '4px', alignItems: 'center', width: '70px', justifyContent: 'center' }}>
                   <button onClick={() => handleAddRowAfter(index)} style={actionIconBtnStyle}>+</button>
                   <button onClick={() => handleDeleteGeneralRow(r.id)} style={{ ...actionIconBtnStyle, color: '#ff3b30' }}>🗑️</button>
@@ -463,9 +464,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 placeholder="come up with your own structure"
                 value={newStageTitle}
                 onChange={(e) => setNewStageTitle(e.target.value)}
-                style={{ ...inputStyle, flex: 1 }}
+                style={{ ...cardInputStyle, flex: 1 }}
               />
-              <button type="submit" style={{ ...btnStyle, backgroundColor: '#e5e5ea', color: '#1c1c1e', width: '38px', fontSize: '22px', fontWeight: 700, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <button type="submit" style={universalPlusBtnStyle}>
                 +
               </button>
             </form>
@@ -523,7 +524,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           </>
                         )}
 
-                        {/* Контейнер кошика, зміщений на 1px вправо відносно осей */}
                         <div style={{ width: '38px', display: 'flex', justifyContent: 'center', transform: 'translateX(1px)' }}>
                           <button onClick={() => handleDeleteStage(st.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}>
                             🗑️
@@ -535,9 +535,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     {editingTimeStageId === st.id && (
                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '8px', padding: '6px', backgroundColor: '#f2f2f7', borderRadius: '6px', fontSize: '12px' }}>
                         <span>Hours:</span>
-                        <input type="number" value={manualHours} onChange={(e) => setManualHours(e.target.value)} style={{ ...inputStyle, width: '50px', padding: '2px 4px' }} />
+                        <input type="number" value={manualHours} onChange={(e) => setManualHours(e.target.value)} style={{ ...cardInputStyle, width: '50px', padding: '2px 4px' }} />
                         <span>Min:</span>
-                        <input type="number" value={manualMinutes} onChange={(e) => setManualMinutes(e.target.value)} style={{ ...inputStyle, width: '50px', padding: '2px 4px' }} />
+                        <input type="number" value={manualMinutes} onChange={(e) => setManualMinutes(e.target.value)} style={{ ...cardInputStyle, width: '50px', padding: '2px 4px' }} />
                         <button onClick={() => handleSaveManualTime(st.id)} style={{ ...btnStyle, backgroundColor: '#34c759', color: '#fff', padding: '2px 6px', fontSize: '11px' }}>✓</button>
                       </div>
                     )}
@@ -574,23 +574,21 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           </div>
                         </div>
 
-                        {/* Чисті календарі */}
                         <div style={{ display: 'flex', gap: '8px', fontSize: '11px' }}>
                           <input
                             type="date"
                             value={st.startDate || ''}
                             onChange={(e) => handleUpdateStageDates(st.id, 'startDate', e.target.value)}
-                            style={{ ...inputStyle, flex: 1, padding: '4px', fontSize: '11px' }}
+                            style={{ ...cardInputStyle, flex: 1, padding: '4px', fontSize: '11px' }}
                           />
                           <input
                             type="date"
                             value={st.endDate || ''}
                             onChange={(e) => handleUpdateStageDates(st.id, 'endDate', e.target.value)}
-                            style={{ ...inputStyle, flex: 1, padding: '4px', fontSize: '11px' }}
+                            style={{ ...cardInputStyle, flex: 1, padding: '4px', fontSize: '11px' }}
                           />
                         </div>
 
-                        {/* SubStages */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px' }}>
                           {st.subStages.map((sub, idx) => (
                             <div key={sub.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px' }}>
@@ -634,9 +632,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                             placeholder="Add task/subtask"
                             value={newSubStageTitle[st.id] || ''}
                             onChange={(e) => setNewSubStageTitle({ ...newSubStageTitle, [st.id]: e.target.value })}
-                            style={{ ...inputStyle, padding: '6px 8px', fontSize: '12px' }}
+                            style={{ ...cardInputStyle, padding: '6px 8px', fontSize: '12px' }}
                           />
-                          <button onClick={() => handleAddSubStage(st.id)} style={{ ...btnStyle, backgroundColor: '#e5e5ea', width: '38px', fontSize: '22px', fontWeight: 700, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <button onClick={() => handleAddSubStage(st.id)} style={universalPlusBtnStyle}>
                             +
                           </button>
                         </div>
@@ -666,7 +664,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               <select
                 value={selectedMemberId}
                 onChange={(e) => setSelectedMemberId(e.target.value)}
-                style={{ ...inputStyle, flex: 1, fontSize: '12px' }}
+                style={{ ...cardInputStyle, flex: 1, fontSize: '12px' }}
               >
                 {teamDatabase.length === 0 && <option value="">No members in DB</option>}
                 {teamDatabase.map((m) => (
@@ -677,14 +675,14 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               <select
                 value={selectedProjectRole}
                 onChange={(e) => setSelectedProjectRole(e.target.value)}
-                style={{ ...inputStyle, flex: 1, fontSize: '12px' }}
+                style={{ ...cardInputStyle, flex: 1, fontSize: '12px' }}
               >
                 {availableRoles.map((r) => (
                   <option key={r} value={r}>{r}</option>
                 ))}
               </select>
 
-              <button onClick={handleAddProjectMember} style={{ ...btnStyle, backgroundColor: '#e5e5ea', color: '#1c1c1e', width: '38px', fontSize: '22px', fontWeight: 700, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <button onClick={handleAddProjectMember} style={universalPlusBtnStyle}>
                 +
               </button>
             </div>
@@ -693,9 +691,12 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               {projectTeam.map((pt) => {
                 const member = teamDatabase.find(m => m.id === pt.memberId);
                 return (
-                  <div key={pt.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', backgroundColor: '#ffffff', borderRadius: '8px', fontSize: '13px' }}>
+                  <div key={pt.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', backgroundColor: '#ffffff', borderRadius: '8px', fontSize: '13px', border: '1px solid #e5e5ea' }}>
                     <span><strong>{member?.fullName || 'Member'}</strong> ({pt.role})</span>
-                    <button onClick={() => handleRemoveProjectMember(pt.id)} style={{ background: 'none', border: 'none', color: '#ff3b30', cursor: 'pointer' }}>✕</button>
+                    {/* Іконка кошика замість хрестика ✕ */}
+                    <div style={{ width: '38px', display: 'flex', justifyContent: 'center', transform: 'translateX(1px)' }}>
+                      <button onClick={() => handleRemoveProjectMember(pt.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}>🗑️</button>
+                    </div>
                   </div>
                 );
               })}
@@ -721,7 +722,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             placeholder="Template Name"
             value={templateNameInput}
             onChange={(e) => setTemplateNameInput(e.target.value)}
-            style={inputStyle}
+            style={cardInputStyle}
           />
         )}
 
@@ -736,15 +737,17 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   );
 };
 
-const inputStyle: React.CSSProperties = {
+// Чіткий контрастний сірий фон для інпутів у картках
+const cardInputStyle: React.CSSProperties = {
   width: '100%',
   padding: '8px 10px',
-  backgroundColor: '#ffffff',
-  border: '1px solid #e5e5ea',
+  backgroundColor: '#e5e5ea',
+  border: '1px solid #d1d1d6',
   borderRadius: '8px',
   fontSize: '13px',
   outline: 'none',
-  boxSizing: 'border-box'
+  boxSizing: 'border-box',
+  color: '#1c1c1e'
 };
 
 const inlineTitleInputStyle: React.CSSProperties = {
@@ -785,7 +788,7 @@ const iconBtnStyle: React.CSSProperties = {
 
 const actionIconBtnStyle: React.CSSProperties = {
   backgroundColor: '#e5e5ea',
-  border: 'none',
+  border: '1px solid #d1d1d6',
   borderRadius: '6px',
   width: '26px',
   height: '26px',
@@ -795,6 +798,25 @@ const actionIconBtnStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center'
+};
+
+// Єдиний стиль кномок + для всіх блоків
+const universalPlusBtnStyle: React.CSSProperties = {
+  backgroundColor: '#e5e5ea',
+  border: '1px solid #d1d1d6',
+  borderRadius: '8px',
+  width: '38px',
+  height: '34px',
+  fontSize: '20px',
+  fontWeight: 700,
+  lineHeight: '1',
+  color: '#1c1c1e',
+  padding: 0,
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flexShrink: 0
 };
 
 export default ProjectDetail;
