@@ -1,329 +1,255 @@
 import React, { useState } from 'react';
-import { TeamMember, RoleConfig, RolePermissions } from '../App';
+import { TeamMember } from '../App';
 
 interface TeamManagementProps {
-  teamMembers: TeamMember[];
-  onSaveTeamMember: (member: TeamMember) => void;
-  onDeleteTeamMember: (id: string) => void;
-  roles: RoleConfig[];
-  onSaveRole: (role: RoleConfig) => void;
-  onDeleteRole: (roleId: string) => void;
-  isSuperAdmin: boolean;
+  members: TeamMember[];
+  onUpdateMembers: (members: TeamMember[]) => void;
+  availableRoles: string[];
 }
 
-const DEFAULT_PERMISSIONS: RolePermissions = {
-  canViewCreateProject: false,
-  canViewVor: true,
-  canViewAnalytics: false,
-  canViewTeam: false,
-  canViewSettings: false,
-  canSeeAllProjects: false,
-  canEditProjects: false,
-  canDeleteProjects: false,
-  canManageStages: true,
-  canManageTimer: true,
-  canAssignTeam: false,
-  onlyAssignedStages: true
-};
+export const TeamManagement: React.FC<TeamManagementProps> = ({ members, onUpdateMembers, availableRoles }) => {
+  const [name, setName] = useState('');
+  const [telegramId, setTelegramId] = useState('');
+  const [role, setRole] = useState(availableRoles[0] || 'Draftsman');
 
-export const TeamManagement: React.FC<TeamManagementProps> = ({
-  teamMembers,
-  onSaveTeamMember,
-  onDeleteTeamMember,
-  roles,
-  onSaveRole,
-  isSuperAdmin
-}) => {
-  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
-  const [fullName, setFullName] = useState('');
-  const [telegramUserId, setTelegramUserId] = useState('');
-  const [selectedRole, setSelectedRole] = useState<string>(roles[0]?.name || 'Кресляр');
+  // Інлайн-редагування
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<Partial<TeamMember>>({});
 
-  const [isRolesSectionOpen, setIsRolesSectionOpen] = useState(false);
-  const [newRoleName, setNewRoleName] = useState('');
-  const [editingRole, setEditingRole] = useState<RoleConfig | null>(null);
-
-  const [editingRoleTitleId, setEditingRoleTitleId] = useState<string | null>(null);
-  const [roleTitleInput, setRoleTitleInput] = useState('');
-
-  const handleResetForm = () => {
-    setEditingMemberId(null);
-    setFullName('');
-    setTelegramUserId('');
-    setSelectedRole(roles[0]?.name || 'Кресляр');
-  };
-
-  const handleEditClick = (m: TeamMember) => {
-    setEditingMemberId(m.id);
-    setFullName(m.fullName);
-    setTelegramUserId(m.telegramUserId || '');
-    setSelectedRole(m.role);
-  };
-
-  const handleSubmitMember = (e: React.FormEvent) => {
+  const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName.trim()) return;
+    if (!name.trim()) return;
 
-    const existingMember = teamMembers.find((m) => m.id === editingMemberId);
-
-    onSaveTeamMember({
-      id: editingMemberId || Date.now().toString(),
-      fullName: fullName.trim(),
-      telegramUserId: telegramUserId.trim() || undefined,
-      role: selectedRole,
-      isActive: existingMember ? existingMember.isActive : true
-    });
-
-    handleResetForm();
-  };
-
-  const handleToggleActive = (m: TeamMember) => {
-    onSaveTeamMember({
-      ...m,
-      isActive: m.isActive === false ? true : false
-    });
-  };
-
-  const handleCreateRole = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newRoleName.trim()) return;
-
-    const newRole: RoleConfig = {
+    const newMember: TeamMember = {
       id: Date.now().toString(),
-      name: newRoleName.trim(),
-      permissions: { ...DEFAULT_PERMISSIONS }
+      fullName: name.trim(),
+      telegramId: telegramId.trim(),
+      role,
+      active: true // Тумблер активний за замовчуванням
     };
 
-    onSaveRole(newRole);
-    setNewRoleName('');
+    onUpdateMembers([...members, newMember]);
+    setName('');
+    setTelegramId('');
   };
 
-  const handleSaveRoleTitle = (role: RoleConfig) => {
-    if (!roleTitleInput.trim()) return;
-    onSaveRole({
-      ...role,
-      name: roleTitleInput.trim()
-    });
-    setEditingRoleTitleId(null);
+  const toggleStatus = (id: string) => {
+    onUpdateMembers(members.map(m => m.id === id ? { ...m, active: !m.active } : m));
   };
 
-  const handleTogglePermission = (role: RoleConfig, key: keyof RolePermissions) => {
-    const updated: RoleConfig = {
-      ...role,
-      permissions: {
-        ...role.permissions,
-        [key]: !role.permissions[key]
-      }
-    };
-    onSaveRole(updated);
-    if (editingRole?.id === role.id) {
-      setEditingRole(updated);
-    }
+  const handleSaveEdit = (id: string) => {
+    onUpdateMembers(members.map(m => m.id === id ? { ...m, ...editForm } : m));
+    setEditingId(null);
   };
 
-  const renderToggle = (active: boolean, onClick: () => void) => (
-    <div
-      onClick={onClick}
-      style={{
-        width: '38px',
-        height: '22px',
-        borderRadius: '11px',
-        backgroundColor: active ? '#34c759' : '#e5e5ea',
-        position: 'relative',
-        cursor: 'pointer',
-        transition: 'background-color 0.2s',
-        flexShrink: 0
-      }}
-    >
-      <div
-        style={{
-          width: '18px',
-          height: '18px',
-          borderRadius: '50%',
-          backgroundColor: '#ffffff',
-          position: 'absolute',
-          top: '2px',
-          left: active ? '18px' : '2px',
-          transition: 'left 0.2s',
-          boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
-        }}
-      />
-    </div>
-  );
+  const handleDelete = (id: string) => {
+    onUpdateMembers(members.filter(m => m.id !== id));
+  };
 
   return (
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e' }}>
-      <form onSubmit={handleSubmitMember} style={{ backgroundColor: '#f2f2f7', padding: '16px', borderRadius: '12px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      {/* Форма додавання нового фахівця */}
+      <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px', backgroundColor: '#f2f2f7', padding: '16px', borderRadius: '12px' }}>
         <div>
-          <label style={labelStyle}>Ім'я та прізвище</label>
-          <input type="text" placeholder="напр. Іван Іванов" value={fullName} onChange={(e) => setFullName(e.target.value)} required style={inputStyle} />
+          <label style={labelStyle}>Full Name</label>
+          <input
+            type="text"
+            placeholder="e.g. Ivan Ivanov"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            style={inputStyle}
+          />
         </div>
 
         <div>
-          <label style={labelStyle}>Telegram User ID (Цифровий ID)</label>
-          <input type="text" placeholder="напр. 492810482" value={telegramUserId} onChange={(e) => setTelegramUserId(e.target.value)} style={inputStyle} />
+          <label style={labelStyle}>Telegram User ID (Digital ID)</label>
+          <input
+            type="text"
+            placeholder="e.g. 492810482 (optional for stats)"
+            value={telegramId}
+            onChange={(e) => setTelegramId(e.target.value)}
+            style={inputStyle}
+          />
         </div>
 
         <div>
-          <label style={labelStyle}>Роль за замовчуванням</label>
-          <select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)} style={inputStyle}>
-            {roles.map((r) => (
-              <option key={r.id} value={r.name}>{r.name}</option>
+          <label style={labelStyle}>Default Role</label>
+          <select
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            style={inputStyle}
+          >
+            {availableRoles.map((r) => (
+              <option key={r} value={r}>{r}</option>
             ))}
           </select>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-          <button type="submit" style={{ ...btnStyle, backgroundColor: '#34c759', color: '#fff', flex: 1 }}>
-            {editingMemberId ? 'Зберегти зміни' : 'Додати в базу'}
-          </button>
-          {editingMemberId && (
-            <button type="button" onClick={handleResetForm} style={{ ...btnStyle, backgroundColor: '#e5e5ea', color: '#1c1c1e' }}>
-              Скасувати
-            </button>
-          )}
-        </div>
+        <button
+          type="submit"
+          style={{
+            padding: '12px',
+            backgroundColor: '#34c759',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '10px',
+            fontWeight: 700,
+            fontSize: '14px',
+            cursor: 'pointer',
+            marginTop: '4px'
+          }}
+        >
+          Add to Database
+        </button>
       </form>
 
-      {/* Список працівників */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
-        <h4 style={{ margin: '0 0 6px 0', fontSize: '15px' }}>Список фахівців ({teamMembers.length})</h4>
-        {teamMembers.length === 0 ? (
-          <div style={{ fontSize: '13px', color: '#8e8e93' }}>Співробітників ще не додано.</div>
+      {/* Список фахівців (без заголовка та без шестерні) */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {members.length === 0 ? (
+          <div style={{ textAlign: 'center', color: '#8e8e93', fontSize: '13px', marginTop: '10px' }}>
+            No team members added yet.
+          </div>
         ) : (
-          teamMembers.map((m) => {
-            const active = m.isActive !== false;
+          members.map((m) => {
+            const isEditing = editingId === m.id;
+
             return (
-              <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', backgroundColor: '#f9f9f9', borderRadius: '10px', borderLeft: active ? '4px solid #34c759' : '4px solid #8e8e93' }}>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: '14px', color: active ? '#1c1c1e' : '#8e8e93' }}>
-                    {m.fullName}
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#8e8e93' }}>
-                    {m.role} {m.telegramUserId && `• ID: ${m.telegramUserId}`}
-                  </div>
+              <div
+                key={m.id}
+                style={{
+                  padding: '12px 14px',
+                  borderRadius: '10px',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e5e5ea',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}
+              >
+                {/* Трикутник згортання перенесено на лівий бік */}
+                <span style={{ fontSize: '10px', color: '#8e8e93', cursor: 'pointer' }}>▼</span>
+
+                <div style={{ flex: 1 }}>
+                  {isEditing ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <input
+                        type="text"
+                        value={editForm.fullName !== undefined ? editForm.fullName : m.fullName}
+                        onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })}
+                        style={{ ...inputStyle, padding: '6px 8px', fontSize: '12px' }}
+                      />
+                      <input
+                        type="text"
+                        value={editForm.telegramId !== undefined ? editForm.telegramId : m.telegramId}
+                        onChange={(e) => setEditForm({ ...editForm, telegramId: e.target.value })}
+                        placeholder="Telegram ID"
+                        style={{ ...inputStyle, padding: '6px 8px', fontSize: '12px' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleSaveEdit(m.id)}
+                        style={{ padding: '4px 8px', backgroundColor: '#34c759', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', width: 'fit-content' }}
+                      >
+                        Save
+                      </button>
+                    </div>
+                  ) : (
+                    /* Інлайн-редагування за кліком на текст або олівець */
+                    <div
+                      onClick={() => {
+                        setEditingId(m.id);
+                        setEditForm(m);
+                      }}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <div style={{ fontWeight: 600, fontSize: '14px', color: '#1c1c1e' }}>{m.fullName}</div>
+                      <div style={{ fontSize: '12px', color: '#8e8e93', marginTop: '2px' }}>
+                        {m.role} {m.telegramId ? `• ID: ${m.telegramId}` : '• No ID (Stats only)'}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <button onClick={() => handleEditClick(m)} style={iconBtnStyle}>✏️</button>
-                  <button onClick={() => onDeleteTeamMember(m.id)} style={{ ...iconBtnStyle, color: '#ff3b30' }}>✕</button>
-                  {renderToggle(active, () => handleToggleActive(m))}
+                {/* Кнопка олівця для редагування */}
+                {!isEditing && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingId(m.id);
+                      setEditForm(m);
+                    }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', padding: '4px' }}
+                    title="Edit"
+                  >
+                    ✏️
+                  </button>
+                )}
+
+                {/* Кнопка видалення (кошик) */}
+                <button
+                  type="button"
+                  onClick={() => handleDelete(m.id)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', padding: '4px', color: '#ff3b30' }}
+                  title="Delete"
+                >
+                  🗑️
+                </button>
+
+                {/* Тумблер On/Off (активність / ноунейм для статистики) */}
+                <div
+                  onClick={() => toggleStatus(m.id)}
+                  style={{
+                    width: '36px',
+                    height: '20px',
+                    borderRadius: '10px',
+                    backgroundColor: m.active !== false ? '#34c759' : '#e5e5ea',
+                    position: 'relative',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s',
+                    flexShrink: 0
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '16px',
+                      height: '16px',
+                      borderRadius: '50%',
+                      backgroundColor: '#fff',
+                      position: 'absolute',
+                      top: '2px',
+                      left: m.active !== false ? '18px' : '2px',
+                      transition: 'left 0.2s'
+                    }}
+                  />
                 </div>
               </div>
             );
           })
         )}
       </div>
-
-      {/* Редагування ролей та прав (Олівець перенесено до шестірні) */}
-      <div style={{ borderTop: '1px solid #e5e5ea', paddingTop: '16px' }}>
-        <div 
-          onClick={() => setIsRolesSectionOpen(!isRolesSectionOpen)}
-          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#8e8e93' }}
-        >
-          <span style={{ fontSize: '13px', fontWeight: 500 }}>⚙️ Редагування ролей та прав доступу</span>
-          <span style={{ fontSize: '12px' }}>{isRolesSectionOpen ? '▲' : '▼'}</span>
-        </div>
-
-        {isRolesSectionOpen && (
-          <div style={{ marginTop: '12px', backgroundColor: '#f9f9f9', padding: '12px', borderRadius: '10px' }}>
-            <form onSubmit={handleCreateRole} style={{ display: 'flex', gap: '6px', marginBottom: '12px' }}>
-              <input
-                type="text"
-                placeholder="Нова роль"
-                value={newRoleName}
-                onChange={(e) => setNewRoleName(e.target.value)}
-                style={{ ...inputStyle, fontSize: '13px' }}
-              />
-              <button type="submit" style={{ ...btnStyle, backgroundColor: '#007aff', color: '#fff', fontSize: '13px' }}>Додати</button>
-            </form>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {roles.map((r) => (
-                <div key={r.id} style={{ padding: '10px', backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #e5e5ea' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    {editingRoleTitleId === r.id ? (
-                      <div style={{ display: 'flex', gap: '4px', flex: 1, marginRight: '8px' }}>
-                        <input
-                          type="text"
-                          value={roleTitleInput}
-                          onChange={(e) => setRoleTitleInput(e.target.value)}
-                          style={{ ...inputStyle, padding: '4px 8px', fontSize: '13px' }}
-                        />
-                        <button onClick={() => handleSaveRoleTitle(r)} style={{ ...btnStyle, backgroundColor: '#34c759', color: '#fff', padding: '4px 8px' }}>✓</button>
-                      </div>
-                    ) : (
-                      <span 
-                        onClick={() => {
-                          setEditingRoleTitleId(r.id);
-                          setRoleTitleInput(r.name);
-                        }}
-                        style={{ fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}
-                      >
-                        {r.name}
-                      </span>
-                    )}
-
-                    {/* Олівець і шестірня розташовані поруч праворуч */}
-                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                      <button 
-                        onClick={() => {
-                          setEditingRoleTitleId(r.id);
-                          setRoleTitleInput(r.name);
-                        }} 
-                        style={{ ...btnStyle, backgroundColor: '#e5e5ea', fontSize: '12px', padding: '4px 8px' }}
-                      >
-                        ✏️
-                      </button>
-                      <button 
-                        onClick={() => setEditingRole(editingRole?.id === r.id ? null : r)} 
-                        style={{ ...btnStyle, backgroundColor: '#e5e5ea', fontSize: '12px', padding: '4px 8px' }}
-                      >
-                        ⚙️
-                      </button>
-                    </div>
-                  </div>
-
-                  {editingRole?.id === r.id && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px', paddingTop: '8px', borderTop: '1px solid #f2f2f7', fontSize: '12px' }}>
-                      <div style={permissionRowStyle}>
-                        <span>Бачити тільки свої стадії</span>
-                        {renderToggle(r.permissions.onlyAssignedStages !== false, () => handleTogglePermission(r, 'onlyAssignedStages'))}
-                      </div>
-                      <div style={permissionRowStyle}>
-                        <span>Бачити всі проекти</span>
-                        {renderToggle(r.permissions.canSeeAllProjects, () => handleTogglePermission(r, 'canSeeAllProjects'))}
-                      </div>
-                      <div style={permissionRowStyle}>
-                        <span>Створювати та редагувати проекти</span>
-                        {renderToggle(r.permissions.canEditProjects, () => handleTogglePermission(r, 'canEditProjects'))}
-                      </div>
-                      <div style={permissionRowStyle}>
-                        <span>Переміщувати в Кошик</span>
-                        {renderToggle(r.permissions.canDeleteProjects, () => handleTogglePermission(r, 'canDeleteProjects'))}
-                      </div>
-                      <div style={permissionRowStyle}>
-                        <span>Керувати стадіями та задачами</span>
-                        {renderToggle(r.permissions.canManageStages, () => handleTogglePermission(r, 'canManageStages'))}
-                      </div>
-                      <div style={permissionRowStyle}>
-                        <span>Керувати таймером роботи</span>
-                        {renderToggle(r.permissions.canManageTimer, () => handleTogglePermission(r, 'canManageTimer'))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
     </div>
   );
 };
 
-const inputStyle: React.CSSProperties = { width: '100%', padding: '8px 10px', backgroundColor: '#ffffff', border: '1px solid #e5e5ea', borderRadius: '8px', fontSize: '13px', outline: 'none', boxSizing: 'border-box' };
-const labelStyle: React.CSSProperties = { fontSize: '12px', fontWeight: 500, color: '#636366', marginBottom: '2px', display: 'block' };
-const btnStyle: React.CSSProperties = { padding: '8px 12px', borderRadius: '8px', border: 'none', fontWeight: 600, fontSize: '13px', cursor: 'pointer' };
-const iconBtnStyle: React.CSSProperties = { background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', padding: '2px' };
-const permissionRowStyle: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#1c1c1e' };
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '10px',
+  backgroundColor: '#ffffff',
+  border: '1px solid #d1d1d6',
+  borderRadius: '8px',
+  fontSize: '13px',
+  outline: 'none',
+  boxSizing: 'border-box',
+  color: '#1c1c1e'
+};
+
+const labelStyle: React.CSSProperties = {
+  fontSize: '12px',
+  color: '#636366',
+  marginBottom: '4px',
+  display: 'block',
+  fontWeight: 600
+};
+
+export default TeamManagement;
