@@ -19,7 +19,6 @@ export const ProjectList: React.FC<ProjectListProps> = ({
   const [filterStatus, setFilterStatus] = useState<'active' | 'archived' | 'trash'>('active');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Пошук за назвою або ID
   const filteredProjects = projects.filter((p) => {
     const statusMatch = filterStatus === 'active' ? (p.status === 'active' || !p.status) : p.status === filterStatus;
     const query = searchQuery.toLowerCase().trim();
@@ -39,11 +38,11 @@ export const ProjectList: React.FC<ProjectListProps> = ({
   return (
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e' }}>
       
-      {/* Рядок пошуку (Фільтр за назвою або ID) */}
+      {/* Строка пошуку без символу лупи */}
       <div style={{ marginBottom: '12px' }}>
         <input
           type="text"
-          placeholder="🔍 Пошук за назвою або ID..."
+          placeholder="Пошук"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           style={{
@@ -59,7 +58,6 @@ export const ProjectList: React.FC<ProjectListProps> = ({
         />
       </div>
 
-      {/* Таби статусів */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
         <button
           onClick={() => setFilterStatus('active')}
@@ -83,7 +81,6 @@ export const ProjectList: React.FC<ProjectListProps> = ({
         )}
       </div>
 
-      {/* Список проектів */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {filteredProjects.length === 0 ? (
           <div style={{ fontSize: '14px', color: '#8e8e93', textAlign: 'center', marginTop: '20px' }}>
