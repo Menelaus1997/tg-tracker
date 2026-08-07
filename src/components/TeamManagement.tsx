@@ -13,19 +13,17 @@ interface TeamManagementProps {
 export const TeamManagement: React.FC<TeamManagementProps> = ({
   members,
   onUpdateMembers,
-  roles,
+  roles = [],
   onSaveRole,
   onDeleteRole,
-  availableRoles
+  availableRoles = []
 }) => {
   const [name, setName] = useState('');
   const [telegramId, setTelegramId] = useState('');
   const [role, setRole] = useState(availableRoles[0] || 'Manager');
   
-  // Тумблер для створення (True = повноцінний учасник, False = підрядник)
   const [isFullMember, setIsFullMember] = useState(true);
 
-  // Інлайн-редагування фахівця
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<TeamMember>>({});
   const [editIsFull, setEditIsFull] = useState(true);
@@ -317,22 +315,20 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
         )}
       </div>
 
-      {/* Блок управління ролями та правами доступу (Roles & Permissions Management) */}
+      {/* Блок управління ролями: без трикутника, текст по центру, клікабельний рядок */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px' }}>
         <div
           onClick={() => setIsRolesOpen(!isRolesOpen)}
-          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '12px', color: '#8e8e93' }}>{isRolesOpen ? '▼' : '▲'}</span>
-            <span style={{ fontSize: '14px', fontWeight: 700, color: '#1c1c1e' }}>Roles & Permissions Management</span>
-          </div>
+          <span style={{ fontSize: '14px', fontWeight: 700, color: '#1c1c1e', textAlign: 'center' }}>
+            Roles & Permissions Management
+          </span>
         </div>
 
         {isRolesOpen && (
           <div style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             
-            {/* Форма створення нової ролі */}
             <div style={{ display: 'flex', gap: '6px' }}>
               <input
                 type="text"
@@ -350,11 +346,10 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
               </button>
             </div>
 
-            {/* Список існуючих ролей з можливістю редагування/видалення */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {roles.map((r) => (
                 <div key={r.id} style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '8px', border: '1px solid #e5e5ea', color: '#1c1c1e' }}>
-                  <div style={{ fontWeight: 600, fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontWeight: 600, fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#1c1c1e' }}>
                     <span>{r.name}</span>
                     <div style={{ display: 'flex', gap: '10px' }}>
                       <button
@@ -378,11 +373,11 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                   </div>
 
                   {editingRoleId === r.id && roleEditForm && (
-                    <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #f2f2f7', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px' }}>
+                    <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #f2f2f7', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', color: '#1c1c1e' }}>
                       <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#1c1c1e', cursor: 'pointer' }}>
                         <input
                           type="checkbox"
-                          checked={roleEditForm.permissions.canViewAnalytics}
+                          checked={roleEditForm.permissions?.canViewAnalytics ?? false}
                           onChange={(e) => setRoleEditForm({
                             ...roleEditForm,
                             permissions: { ...roleEditForm.permissions, canViewAnalytics: e.target.checked }
@@ -393,7 +388,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                       <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#1c1c1e', cursor: 'pointer' }}>
                         <input
                           type="checkbox"
-                          checked={roleEditForm.permissions.canEditProjects}
+                          checked={roleEditForm.permissions?.canEditProjects ?? false}
                           onChange={(e) => setRoleEditForm({
                             ...roleEditForm,
                             permissions: { ...roleEditForm.permissions, canEditProjects: e.target.checked }
