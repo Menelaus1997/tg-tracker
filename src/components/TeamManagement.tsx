@@ -66,9 +66,8 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
     setEditingId(null);
   };
 
-  const handleCreateNewRole = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
+  // Чіткий обробник кліку для створення нової ролі з дефолтними правами
+  const handleCreateNewRole = () => {
     if (!newRoleName.trim()) return;
 
     const newRole: RoleConfig = {
@@ -330,6 +329,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
         )}
       </div>
 
+      {/* Блок управління ролями (працююча кнопка та виправлений клік) */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px' }}>
         <div
           onClick={() => setIsRolesOpen(!isRolesOpen)}
@@ -341,7 +341,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
         </div>
 
         {isRolesOpen && (
-          <div style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', gap: '6px' }}>
               <input
                 type="text"
@@ -353,7 +353,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
               <button
                 type="button"
                 onClick={handleCreateNewRole}
-                style={{ padding: '8px 12px', backgroundColor: '#007aff', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+                style={{ padding: '8px 12px', backgroundColor: '#007aff', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', zIndex: 10, position: 'relative' }}
               >
                 Add Role
               </button>
