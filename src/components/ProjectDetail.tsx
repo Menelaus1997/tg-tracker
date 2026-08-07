@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Project, CustomField, Stage, TeamMember } from '../App';
 
 interface ProjectDetailProps {
@@ -49,12 +49,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [editingSubStageId, setEditingSubStageId] = useState<string | null>(null);
   const [editingSubStageTitle, setEditingSubStageTitle] = useState('');
 
-  // Розділ Команда
+  // Розділ Команда та Чат
   const [isTeamSectionHidden, setIsTeamSectionHidden] = useState<boolean>(false);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>(project.teamMembers || []);
   const [memberFullName, setMemberFullName] = useState('');
   const [memberTelegram, setMemberTelegram] = useState('');
   const [memberRole, setMemberRole] = useState<RoleType>('Кресляр');
+  const [topicLink, setTopicLink] = useState<string | undefined>((project as any).topicLink);
 
   const [isLoadingLink, setIsLoadingLink] = useState(false);
 
@@ -66,6 +67,27 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [manualHoursInput, setManualHoursInput] = useState<string>('');
 
   const isArchived = project.status === 'archived';
+
+  // Оновлення таймерів кожну секунду для активних відліків
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStages((prevStages) =>
+        prevStages.map((st) => {
+          if (st.isTimerRunning && (st as any).timerStartedAt) {
+            const now = Date.now();
+            const elapsedSec = Math.floor((now - (st as any).timerStartedAt) / 1000);
+            return {
+              ...st,
+              loggedSeconds: ((st as any).baseLoggedSeconds || 0) + elapsedSec
+            };
+          }
+          return st;
+        })
+      );
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const toggleStageCollapse = (stageId: string) => {
     setCollapsedStages((prev) => ({ ...prev, [stageId]: !prev[stageId] }));
@@ -89,8 +111,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       generalInfoList,
       customFields,
       stages,
-      teamMembers
-    });
+      teamMembers,
+      ...(topicLink ? { topicLink } : {})
+    } as any);
   };
 
   const handleAddGeneralInfo = (e: React.FormEvent) => {
@@ -217,10 +240,26 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     return index >= 1 && index <= 5;
   };
 
+  // Точний таймер на основі Date.now()
   const toggleTimer = (stageId: string) => {
     setStages(stages.map(st => {
       if (st.id === stageId) {
-        return { ...st, isTimerRunning: !st.isTimerRunning };
+        const isRunning = !st.isTimerRunning;
+        if (isRunning) {
+          return {
+            ...st,
+            isTimerRunning: true,
+            timerStartedAt: Date.now(),
+            baseLoggedSeconds: st.loggedSeconds || 0
+          } as any;
+        } else {
+          return {
+            ...st,
+            isTimerRunning: false,
+            timerStartedAt: undefined,
+            baseLoggedSeconds: undefined
+          } as any;
+        }
       }
       return st;
     }));
@@ -230,7 +269,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     const hours = parseFloat(manualHoursInput);
     if (!isNaN(hours) && hours >= 0) {
       const seconds = Math.round(hours * 3600);
-      setStages(stages.map(st => st.id === stageId ? { ...st, loggedSeconds: seconds } : st));
+      setStages(stages.map(st => st.id === stageId ? { ...st, loggedSeconds: seconds, baseLoggedSeconds: seconds } : st));
     }
     setEditingTimeStageId(null);
   };
@@ -269,6 +308,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     setTeamMembers(teamMembers.filter(m => m.id !== id));
   };
 
+  // Створення гілки (Topic) через Bot API
   const handleAutoCreateTeamChat = async () => {
     if (teamMembers.length === 0) {
       alert('Спочатку додайте хоча б одного учасника в команду!');
@@ -290,20 +330,26 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
       const data = await response.json();
 
-      if (data.success && data.inviteLink) {
-        if ((window as any).Telegram?.WebApp) {
-          (window as any).Telegram.WebApp.openTelegramLink(data.inviteLink);
-        } else {
-          window.open(data.inviteLink, '_blank');
-        }
+      if (data.success && data.topicLink) {
+        setTopicLink(data.topicLink);
+        alert('Гілку проекту успішно створено!');
       } else {
-        alert(`Помилка Telegram API: ${data.error || 'Не вдалося створити посилання'}`);
+        alert(`Помилка Telegram API: ${data.error || 'Не вдалося створити гілку'}`);
       }
     } catch (err) {
       console.error(err);
       alert('Помилка підключення до сервера бота.');
     } finally {
       setIsLoadingLink(false);
+    }
+  };
+
+  const handleOpenChat = () => {
+    if (!topicLink) return;
+    if ((window as any).Telegram?.WebApp) {
+      (window as any).Telegram.WebApp.openTelegramLink(topicLink);
+    } else {
+      window.open(topicLink, '_blank');
     }
   };
 
@@ -321,8 +367,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       generalInfoList,
       customFields,
       stages,
-      teamMembers
-    });
+      teamMembers,
+      ...(topicLink ? { topicLink } : {})
+    } as any);
 
     setShowSaveModal(false);
   };
@@ -749,28 +796,49 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               )}
             </div>
 
-            {/* Кнопка автоматичного створення чату */}
+            {/* Кнопка створення або переходу в гілку */}
             {teamMembers.length > 0 && (
-              <button
-                type="button"
-                onClick={handleAutoCreateTeamChat}
-                disabled={isLoadingLink}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  backgroundColor: '#0088cc',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: '10px',
-                  fontWeight: 600,
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  marginTop: '6px',
-                  opacity: isLoadingLink ? 0.7 : 1
-                }}
-              >
-                {isLoadingLink ? '⏳ Створення посилання...' : '⚡ Автоматично створити/отримати чат у Telegram'}
-              </button>
+              <div style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {!topicLink ? (
+                  <button
+                    type="button"
+                    onClick={handleAutoCreateTeamChat}
+                    disabled={isLoadingLink}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      backgroundColor: '#0088cc',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontWeight: 600,
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      opacity: isLoadingLink ? 0.7 : 1
+                    }}
+                  >
+                    {isLoadingLink ? '⏳ Створення гілки...' : '⚡ Створити гілку проекту в Telegram'}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleOpenChat}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      backgroundColor: '#34c759',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontWeight: 600,
+                      fontSize: '14px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    💬 Перейти до чату проекту
+                  </button>
+                )}
+              </div>
             )}
           </div>
         )}
