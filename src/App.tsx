@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { ProjectList } from './components/ProjectList';
+
+import ProjectList from './components/ProjectList';
 import { ProjectDetail } from './components/ProjectDetail';
-import { ProjectForm } from './components/ProjectForm';
+import { CreateProject } from './components/CreateProject';
 import { VorCalculator } from './components/VorCalculator';
 import { Analytics } from './components/Analytics';
 import { TeamManagement } from './components/TeamManagement';
@@ -205,6 +206,9 @@ export const App: React.FC = () => {
   const canSeeTab5 = isSuperAdmin || permissions?.canViewTeam;
   const canSeeTab6 = isSuperAdmin;
 
+  const ProjectListComponent = (ProjectList as any).ProjectList || ProjectList;
+  const CreateProjectComponent = (CreateProject as any).CreateProject || CreateProject;
+
   return (
     <div style={{ paddingBottom: '70px', minHeight: '100vh', backgroundColor: '#ffffff' }}>
       {selectedProjectId && activeProject ? (
@@ -216,11 +220,13 @@ export const App: React.FC = () => {
         />
       ) : (
         <>
-          {activeTab === 1 && canSeeTab1 && <ProjectForm onCreateProject={handleCreateProject} />}
+          {activeTab === 1 && canSeeTab1 && (
+            <CreateProjectComponent onCreateProject={handleCreateProject} />
+          )}
           {activeTab === 2 && (
-            <ProjectList
+            <ProjectListComponent
               projects={projects}
-              onSelectProject={(id) => setSelectedProjectId(id)}
+              onSelectProject={(id: string) => setSelectedProjectId(id)}
               onUpdateProjects={setProjects}
               isSuperAdmin={isSuperAdmin}
               onPermanentDelete={handlePermanentDelete}
