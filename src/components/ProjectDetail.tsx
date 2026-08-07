@@ -47,14 +47,14 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     return idx !== -1 ? idx : 0;
   });
 
-  // 2. Data
+  // 2. Data Block
   const [isGeneralDataOpen, setIsGeneralDataOpen] = useState(true);
   const [generalRows, setGeneralRows] = useState<GeneralDataRow[]>(() => project.passportRows || [
-    { id: '1', type: 'single', value: 'м. Київ, вул. Хрещатик, 1' },
-    { id: '2', type: 'double', label: 'Загальна площа', value: '85 кв.м' }
+    { id: '1', type: 'single', value: '' },
+    { id: '2', type: 'double', label: '', value: '' }
   ]);
 
-  // 3. Structure
+  // 3. Structure Block
   const [isStructureOpen, setIsStructureOpen] = useState(true);
   const [stages, setStages] = useState<Stage[]>(project.stages || []);
   const [collapsedStages, setCollapsedStages] = useState<{ [key: string]: boolean }>({});
@@ -66,13 +66,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [manualHours, setManualHours] = useState('0');
   const [manualMinutes, setManualMinutes] = useState('0');
 
-  // 4. Team
+  // 4. Team Block
   const [isTeamOpen, setIsTeamOpen] = useState(true);
   const [projectTeam, setProjectTeam] = useState<{ id: string; memberId: string; role: string }[]>(
     project.projectTeam || []
   );
   const [selectedMemberId, setSelectedMemberId] = useState(teamDatabase[0]?.id || '');
-  const [selectedProjectRole, setSelectedProjectRole] = useState(availableRoles[0] || 'Кресляр');
+  const [selectedProjectRole, setSelectedProjectRole] = useState(availableRoles[0] || 'Draftsman');
 
   // 5. Template
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
@@ -330,7 +330,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               />
             </div>
 
-            {/* Центрована палітра кольорів */}
+            {/* Геометрично відцентрована палітра кольорів */}
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
               {colors.map((c, idx) => {
                 const isSelected = selectedColorIndex === idx;
@@ -371,8 +371,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0,
-                  fontSize: '16px',
-                  fontWeight: 600,
+                  fontSize: '22px',
+                  fontWeight: 700,
                   color: '#007aff',
                   position: 'relative'
                 }}
@@ -412,23 +412,21 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 {r.type === 'single' ? (
                   <input
                     type="text"
-                    placeholder="Location / Link"
                     value={r.value}
                     onChange={(e) => handleUpdateGeneralRow(r.id, 'value', e.target.value)}
-                    style={{ ...inputStyle, width: '180px', flexShrink: 0 }}
+                    style={{ ...inputStyle, flex: 1 }}
                   />
                 ) : (
                   <>
                     <input
                       type="text"
-                      placeholder="Parameter"
                       value={r.label || ''}
                       onChange={(e) => handleUpdateGeneralRow(r.id, 'label', e.target.value)}
-                      style={{ ...inputStyle, width: '180px', flexShrink: 0 }}
+                      style={{ ...inputStyle, flex: 1 }}
                     />
+                    {/* Фіксоване числове поле 60px під 5 цифр */}
                     <input
                       type="text"
-                      placeholder="85 m²"
                       value={r.value}
                       onChange={(e) => handleUpdateGeneralRow(r.id, 'value', e.target.value)}
                       style={{ ...inputStyle, width: '60px', flexShrink: 0, textAlign: 'center' }}
@@ -436,7 +434,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   </>
                 )}
 
-                <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexShrink: 0, marginLeft: 'auto' }}>
+                {/* Блок дій, вирівняний чітко по лінії з основними іконками */}
+                <div style={{ display: 'flex', gap: '4px', alignItems: 'center', width: '70px', justifyContent: 'center' }}>
                   <button onClick={() => handleAddRowAfter(index)} style={actionIconBtnStyle}>+</button>
                   <button onClick={() => handleDeleteGeneralRow(r.id)} style={{ ...actionIconBtnStyle, color: '#ff3b30' }}>🗑️</button>
                 </div>
@@ -466,7 +465,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 onChange={(e) => setNewStageTitle(e.target.value)}
                 style={{ ...inputStyle, flex: 1 }}
               />
-              <button type="submit" style={{ ...btnStyle, backgroundColor: '#e5e5ea', color: '#1c1c1e' }}>+</button>
+              <button type="submit" style={{ ...btnStyle, backgroundColor: '#e5e5ea', color: '#1c1c1e', width: '38px', fontSize: '22px', fontWeight: 700, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                +
+              </button>
             </form>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -493,37 +494,42 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                         />
                       </div>
 
-                      {isTrackTimeOn && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginRight: '8px' }}>
-                          <button
-                            onClick={() => handleToggleStageTimer(st.id)}
-                            style={{
-                              ...btnStyle,
-                              backgroundColor: st.isTimerRunning ? '#ff3b30' : '#34c759',
-                              color: '#fff',
-                              fontSize: '11px',
-                              padding: '4px 8px'
-                            }}
-                          >
-                            {st.isTimerRunning ? `⏸ [ ${formatTime(st.loggedSeconds)} ]` : `▶ [ ${formatTime(st.loggedSeconds)} ]`}
-                          </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        {isTrackTimeOn && (
+                          <>
+                            <button
+                              onClick={() => handleToggleStageTimer(st.id)}
+                              style={{
+                                ...btnStyle,
+                                backgroundColor: st.isTimerRunning ? '#ff3b30' : '#34c759',
+                                color: '#fff',
+                                fontSize: '11px',
+                                padding: '4px 8px'
+                              }}
+                            >
+                              {st.isTimerRunning ? `⏸ [ ${formatTime(st.loggedSeconds)} ]` : `▶ [ ${formatTime(st.loggedSeconds)} ]`}
+                            </button>
 
-                          <button
-                            onClick={() => {
-                              setEditingTimeStageId(editingTimeStageId === st.id ? null : st.id);
-                              setManualHours(Math.floor((st.loggedSeconds || 0) / 3600).toString());
-                              setManualMinutes(Math.floor(((st.loggedSeconds || 0) % 3600) / 60).toString());
-                            }}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}
-                          >
-                            ⏱️
+                            <button
+                              onClick={() => {
+                                setEditingTimeStageId(editingTimeStageId === st.id ? null : st.id);
+                                setManualHours(Math.floor((st.loggedSeconds || 0) / 3600).toString());
+                                setManualMinutes(Math.floor(((st.loggedSeconds || 0) % 3600) / 60).toString());
+                              }}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}
+                            >
+                              ⏱️
+                            </button>
+                          </>
+                        )}
+
+                        {/* Контейнер кошика, зміщений на 1px вправо відносно осей */}
+                        <div style={{ width: '38px', display: 'flex', justifyContent: 'center', transform: 'translateX(1px)' }}>
+                          <button onClick={() => handleDeleteStage(st.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}>
+                            🗑️
                           </button>
                         </div>
-                      )}
-
-                      <button onClick={() => handleDeleteStage(st.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}>
-                        🗑️
-                      </button>
+                      </div>
                     </div>
 
                     {editingTimeStageId === st.id && (
@@ -540,33 +546,35 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #f2f2f7' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
                           <span>time</span>
-                          <div
-                            onClick={() => handleToggleStageTrackTime(st.id)}
-                            style={{
-                              width: '34px',
-                              height: '20px',
-                              borderRadius: '10px',
-                              backgroundColor: isTrackTimeOn ? '#34c759' : '#e5e5ea',
-                              position: 'relative',
-                              cursor: 'pointer'
-                            }}
-                          >
+                          <div style={{ width: '38px', display: 'flex', justifyContent: 'center', transform: 'translateX(1px)' }}>
                             <div
+                              onClick={() => handleToggleStageTrackTime(st.id)}
                               style={{
-                                width: '16px',
-                                height: '16px',
-                                borderRadius: '50%',
-                                backgroundColor: '#fff',
-                                position: 'absolute',
-                                top: '2px',
-                                left: isTrackTimeOn ? '16px' : '2px',
-                                transition: 'left 0.2s'
+                                width: '34px',
+                                height: '20px',
+                                borderRadius: '10px',
+                                backgroundColor: isTrackTimeOn ? '#34c759' : '#e5e5ea',
+                                position: 'relative',
+                                cursor: 'pointer'
                               }}
-                            />
+                            >
+                              <div
+                                style={{
+                                  width: '16px',
+                                  height: '16px',
+                                  borderRadius: '50%',
+                                  backgroundColor: '#fff',
+                                  position: 'absolute',
+                                  top: '2px',
+                                  left: isTrackTimeOn ? '16px' : '2px',
+                                  transition: 'left 0.2s'
+                                }}
+                              />
+                            </div>
                           </div>
                         </div>
 
-                        {/* Чисті календарі без тексту START та END */}
+                        {/* Чисті календарі */}
                         <div style={{ display: 'flex', gap: '8px', fontSize: '11px' }}>
                           <input
                             type="date"
@@ -613,7 +621,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                 />
                               </div>
 
-                              <button onClick={() => handleDeleteSubStage(st.id, sub.id)} style={{ ...iconBtnStyle, color: '#ff3b30' }}>🗑️</button>
+                              <div style={{ width: '38px', display: 'flex', justifyContent: 'center', transform: 'translateX(1px)' }}>
+                                <button onClick={() => handleDeleteSubStage(st.id, sub.id)} style={{ ...iconBtnStyle, color: '#ff3b30' }}>🗑️</button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -626,7 +636,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                             onChange={(e) => setNewSubStageTitle({ ...newSubStageTitle, [st.id]: e.target.value })}
                             style={{ ...inputStyle, padding: '6px 8px', fontSize: '12px' }}
                           />
-                          <button onClick={() => handleAddSubStage(st.id)} style={{ ...btnStyle, backgroundColor: '#e5e5ea', fontSize: '12px' }}>
+                          <button onClick={() => handleAddSubStage(st.id)} style={{ ...btnStyle, backgroundColor: '#e5e5ea', width: '38px', fontSize: '22px', fontWeight: 700, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             +
                           </button>
                         </div>
@@ -674,7 +684,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 ))}
               </select>
 
-              <button onClick={handleAddProjectMember} style={{ ...btnStyle, backgroundColor: '#e5e5ea', color: '#1c1c1e', fontSize: '12px' }}>
+              <button onClick={handleAddProjectMember} style={{ ...btnStyle, backgroundColor: '#e5e5ea', color: '#1c1c1e', width: '38px', fontSize: '22px', fontWeight: 700, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 +
               </button>
             </div>
@@ -777,10 +787,14 @@ const actionIconBtnStyle: React.CSSProperties = {
   backgroundColor: '#e5e5ea',
   border: 'none',
   borderRadius: '6px',
-  padding: '4px 6px',
-  fontSize: '11px',
+  width: '26px',
+  height: '26px',
+  fontSize: '16px',
   fontWeight: 700,
-  cursor: 'pointer'
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center'
 };
 
 export default ProjectDetail;
