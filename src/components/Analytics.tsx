@@ -19,9 +19,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
 
   return (
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>📊 Analytics & Progress</h2>
-        
+      {/* Верхня панель з тумблером праворуч (назву прибрано) */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <div
             onClick={() => setShowWorkload(!showWorkload)}
@@ -68,7 +67,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
             const projectProgress = totalSubStages > 0 ? Math.round((completedSubStages / totalSubStages) * 100) : 0;
             const projectColor = proj.color || '#007aff';
 
-            // Обчислення загального часу по всьому проєкту (враховуючи і секундний таймер, і календарні дні по 8 годин)
             let totalProjectSeconds = 0;
             stages.forEach(st => {
               let stageCalendarDays = 0;
@@ -98,8 +96,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
                     <span style={{ fontSize: '12px', color: '#8e8e93' }}>{isProjCollapsed ? '▼' : '▲'}</span>
                     <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>{proj.name} ({proj.id})</h3>
                   </div>
-                  {/* Жирний відсоток проєкту, зсунутий на 0.5px вправо для точного вирівнювання */}
-                  <span style={{ fontSize: '13px', fontWeight: 700, color: projectColor, marginRight: '21.5px' }}>
+                  {/* Жирний відсоток проєкту, зсунутий ще на 0.5px вправо (marginRight: 21px) */}
+                  <span style={{ fontSize: '13px', fontWeight: 700, color: projectColor, marginRight: '21px' }}>
                     {projectProgress}%
                   </span>
                 </div>
@@ -147,7 +145,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
                       const stageContractors: string[] = (st as any).contractors || (st.contractor ? [st.contractor] : []);
                       const contractorsText = stageContractors.length > 0 ? stageContractors.join(', ') : 'No assignee';
 
-                      // Розрахунок календарних днів з дати початку та кінця
                       let stageCalendarDays = 0;
                       if (st.startDate && st.endDate) {
                         const [sY, sM, sD] = st.startDate.split('-').map(Number);
