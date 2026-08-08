@@ -220,7 +220,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     setEditingTimeStageId(null);
   };
 
-  // Валідація дат із повідомленням англійською для вихідних днів
   const handleUpdateStageDates = (stageId: string, field: 'startDate' | 'reviewDate' | 'correctionDate' | 'endDate', val: string) => {
     if (!isSuperAdmin) return;
     if (val) {
@@ -483,10 +482,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 onDrop={() => handleDataDrop(index)}
                 style={{ display: 'flex', gap: '8px', alignItems: 'center', cursor: isSuperAdmin ? 'grab' : 'default' }}
               >
-                <span style={{ fontSize: '12px', fontWeight: 600, color: '#8e8e93', width: '16px', textAlign: 'center', userSelect: 'none' }}>
-                  {index + 1}.
-                </span>
-
                 <input
                   type="text"
                   value={r.value}
@@ -543,7 +538,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 return (
                   <div key={st.id} style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '10px', border: '1px solid #e5e5ea' }}>
                     
-                    {/* Дата здачі зверху над заголовком стадії (лише іконка і дата без слова "Здача") */}
+                    {/* Дата здачі зверху над заголовком стадії */}
                     {((st as any).reviewDate || st.endDate) && (
                       <div style={{ fontSize: '11px', fontWeight: 600, color: '#007aff', backgroundColor: '#eef5ff', padding: '2px 6px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
                         📅 {formatDateShort((st as any).reviewDate || st.endDate)}
