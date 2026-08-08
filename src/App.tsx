@@ -17,6 +17,7 @@ export interface RolePermissions {
   canViewAnalytics: boolean;
   canViewTeam: boolean;
   canViewSettings: boolean;
+  canViewFinance?: boolean;
   canSeeAllProjects: boolean;
   canEditProjects: boolean;
   canDeleteProjects: boolean;
@@ -24,6 +25,9 @@ export interface RolePermissions {
   canManageTimer: boolean;
   canAssignTeam: boolean;
   onlyAssignedStages?: boolean;
+  showDates?: boolean;
+  canManageSubtasks?: boolean;
+  showOnlyAssignedStages?: boolean;
 }
 
 export interface RoleConfig {
@@ -58,23 +62,26 @@ const INITIAL_ROLES: RoleConfig[] = [
   {
     id: '1',
     name: 'Керівник',
-    permissions: { canViewCreateProject: true, canViewVor: true, canViewAnalytics: true, canViewTeam: true, canViewSettings: true, canSeeAllProjects: true, canEditProjects: true, canDeleteProjects: true, canManageStages: true, canManageTimer: true, canAssignTeam: true }
+    permissions: { canViewCreateProject: true, canViewVor: true, canViewAnalytics: true, canViewTeam: true, canViewSettings: true, canViewFinance: true, canSeeAllProjects: true, canEditProjects: true, canDeleteProjects: true, canManageStages: true, canManageTimer: true, canAssignTeam: true, showDates: true, canManageSubtasks: true, showOnlyAssignedStages: false }
   },
   {
     id: '2',
     name: 'Кресляр',
-    permissions: { canViewCreateProject: false, canViewVor: true, canViewAnalytics: false, canViewTeam: false, canViewSettings: false, canSeeAllProjects: false, canEditProjects: false, canDeleteProjects: false, canManageStages: true, canManageTimer: true, canAssignTeam: false, onlyAssignedStages: true }
+    permissions: { canViewCreateProject: false, canViewVor: true, canViewAnalytics: false, canViewTeam: false, canViewSettings: false, canViewFinance: false, canSeeAllProjects: false, canEditProjects: false, canDeleteProjects: false, canManageStages: true, canManageTimer: true, canAssignTeam: false, showDates: false, canManageSubtasks: true, showOnlyAssignedStages: true }
   },
   {
     id: '3',
     name: 'Візуалізатор',
-    permissions: { canViewCreateProject: false, canViewVor: true, canViewAnalytics: false, canViewTeam: false, canViewSettings: false, canSeeAllProjects: false, canEditProjects: false, canDeleteProjects: false, canManageStages: true, canManageTimer: true, canAssignTeam: false, onlyAssignedStages: true }
+    permissions: { canViewCreateProject: false, canViewVor: true, canViewAnalytics: false, canViewTeam: false, canViewSettings: false, canViewFinance: false, canSeeAllProjects: false, canEditProjects: false, canDeleteProjects: false, canManageStages: true, canManageTimer: true, canAssignTeam: false, showDates: false, canManageSubtasks: true, showOnlyAssignedStages: true }
   }
 ];
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<number>(2);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  
+  // Для прикладу беремо поточну роль (можна буде винести в стейт або налаштування)
+  const [currentRoleName, setCurrentRoleName] = useState<string>('Керівник');
 
   const [projects, setProjects] = useState<Project[]>(() => {
     const saved = localStorage.getItem('app_projects');
@@ -165,6 +172,8 @@ export const App: React.FC = () => {
           onBack={() => setSelectedProjectId(null)}
           teamDatabase={teamMembers}
           availableRoles={roles.map((r) => r.name)}
+          currentUserRole={currentRoleName}
+          rolesConfig={roles}
         />
       ) : (
         <>
