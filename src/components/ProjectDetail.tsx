@@ -8,6 +8,8 @@ interface ProjectDetailProps {
   onBack: () => void;
   teamDatabase: TeamMember[];
   availableRoles: string[];
+  currentUserRole?: string;
+  rolesConfig?: any[];
 }
 
 interface GeneralDataRow {
@@ -28,8 +30,24 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   onSaveAsTemplate,
   onBack,
   teamDatabase = [],
-  availableRoles = []
+  availableRoles = [],
+  currentUserRole = 'Керівник',
+  rolesConfig = []
 }) => {
+  // Визначаємо права поточного користувача на основі його ролі
+  const currentRoleConfig = rolesConfig.find(r => r.name === currentUserRole);
+  const permissions = currentRoleConfig?.permissions || {
+    showDates: true,
+    canManageSubtasks: true,
+    showOnlyAssignedStages: false,
+    canEditProjects: true
+  };
+
+  const isSuperAdmin = currentUserRole === 'Керівник' || permissions.canEditProjects;
+  const showDates = permissions.showDates ?? true;
+  const canManageSubtasks = permissions.canManageSubtasks ?? true;
+  const showOnlyAssignedStages = permissions.showOnlyAssignedStages ?? false;
+
   const [isHeaderOpen, setIsHeaderOpen] = useState(false);
   const [name, setName] = useState(project.name);
   const [projectId, setProjectId] = useState(project.id);
@@ -48,8 +66,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
   const [isGeneralDataOpen, setIsGeneralDataOpen] = useState(true);
   const [generalRows, setGeneralRows] = useState<GeneralDataRow[]>(() => project.passportRows || [
-    { id: '1', type: 'single', value: '' },
-    { id: '2', type: 'double', label: '', value: '' }
+    { id: '1', type: 'single', value: '' }
   ]);
 
   const [isStructureOpen, setIsStructureOpen] = useState(true);
@@ -103,7 +120,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   };
 
   const handleAddRowAfter = (index: number) => {
-    const newRow: GeneralDataRow = { id: Date.now().toString(), type: 'double', label: '', value: '' };
+    const newRow: GeneralDataRow = { id: Date.now().toString(), type: 'single', value: '' };
     const updated = [...generalRows];
     updated.splice(index + 1, 0, newRow);
     setGeneralRows(updated);
@@ -132,7 +149,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
   const handleAddStage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newStageTitle.trim()) return;
+    if (!newStageTitle.trim() || !isSuperAdmin) return;
 
     const newStage: Stage = {
       id: Date.now().toString(),
@@ -143,6 +160,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       isTimerRunning: false,
       startDate: '',
       endDate: '',
+      reviewDate: '',
+      correctionDate: '',
       contractors: []
     } as any;
 
@@ -151,6 +170,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   };
 
   const handleUpdateStageTitle = (stageId: string, newTitle: string) => {
+    if (!isSuperAdmin) return;
     setStages(stages.map(s => s.id === stageId ? { ...s, title: newTitle } : s));
   };
 
@@ -178,6 +198,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   };
 
   const handleDeleteStage = (id: string) => {
+    if (!isSuperAdmin) return;
     setStages(stages.filter(s => s.id !== id));
   };
 
@@ -200,7 +221,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     setEditingTimeStageId(null);
   };
 
-  const handleUpdateStageDates = (stageId: string, field: 'startDate' | 'endDate', val: string) => {
+  const handleUpdateStageDates = (stageId: string, field: 'startDate' | 'reviewDate' | 'correctionDate' | 'endDate', val: string) => {
+    if (!isSuperAdmin) return;
     setStages(stages.map(s => s.id === stageId ? { ...s, [field]: val } : s));
   };
 
@@ -248,11 +270,12 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   };
 
   const handleSubStageDragStart = (stageId: string, index: number) => {
+    if (!canManageSubtasks) return;
     setDraggedSubStage({ stageId, index });
   };
 
   const handleSubStageDrop = (stageId: string, targetIndex: number) => {
-    if (!draggedSubStage || draggedSubStage.stageId !== stageId || draggedSubStage.index === targetIndex) return;
+    if (!canManageSubtasks || !draggedSubStage || draggedSubStage.stageId !== stageId || draggedSubStage.index === targetIndex) return;
 
     setStages(stages.map(s => {
       if (s.id === stageId) {
@@ -267,6 +290,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   };
 
   const handleDeleteSubStage = (stageId: string, subStageId: string) => {
+    if (!canManageSubtasks) return;
     setStages(stages.map(s => {
       if (s.id === stageId) {
         return { ...s, subStages: s.subStages.filter(sub => sub.id !== subStageId) };
@@ -276,12 +300,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   };
 
   const handleAddProjectMember = () => {
-    if (!selectedMemberId) return;
+    if (!selectedMemberId || !isSuperAdmin) return;
     const newEntry = { id: Date.now().toString(), memberId: selectedMemberId, role: selectedProjectRole };
     setProjectTeam([...projectTeam, newEntry]);
   };
 
   const handleRemoveProjectMember = (id: string) => {
+    if (!isSuperAdmin) return;
     setProjectTeam(projectTeam.filter(m => m.id !== id));
   };
 
@@ -312,13 +337,20 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     return `${h}h ${m}min`;
   };
 
+  // Фільтруємо стадії, якщо увімкнено показ лише призначених стадій
+  const displayedStages = stages.filter(st => {
+    if (!showOnlyAssignedStages || isSuperAdmin) return true;
+    const stageContractors: string[] = (st as any).contractors || (st.contractor ? [st.contractor] : []);
+    return stageContractors.some(c => c.toLowerCase().includes(currentUserRole.toLowerCase()));
+  });
+
   return (
-    <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e' }}>
+    <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e', paddingBottom: '80px' }}>
       <button onClick={onBack} style={{ background: 'none', border: 'none', fontSize: '14px', color: '#007aff', cursor: 'pointer', marginBottom: '16px', fontWeight: 600 }}>
         ← Back
       </button>
 
-      {/* 1. Header Block (Без трикутника/стрілочки) */}
+      {/* 1. Header Block */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
         <div 
           onClick={() => setIsHeaderOpen(!isHeaderOpen)} 
@@ -327,7 +359,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>{name || 'Untitled'}</h3>
         </div>
 
-        {isHeaderOpen && (
+        {isHeaderOpen && isSuperAdmin && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }} onClick={(e) => e.stopPropagation()}>
             <div>
               <label style={labelStyle}>Project Name</label>
@@ -417,7 +449,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* 2. Data Block */}
+      {/* 2. Data Block (Лише 1 рядок з динамічним додаванням) */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
         <div 
           onClick={() => setIsGeneralDataOpen(!isGeneralDataOpen)}
@@ -432,44 +464,30 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             {generalRows.map((r, index) => (
               <div 
                 key={r.id} 
-                draggable
+                draggable={isSuperAdmin}
                 onDragStart={() => handleDataDragStart(index)}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={() => handleDataDrop(index)}
-                style={{ display: 'flex', gap: '8px', alignItems: 'center', cursor: 'grab' }}
+                style={{ display: 'flex', gap: '8px', alignItems: 'center', cursor: isSuperAdmin ? 'grab' : 'default' }}
               >
                 <span style={{ fontSize: '12px', fontWeight: 600, color: '#8e8e93', width: '16px', textAlign: 'center', userSelect: 'none' }}>
                   {index + 1}.
                 </span>
 
-                {r.type === 'single' ? (
-                  <input
-                    type="text"
-                    value={r.value}
-                    onChange={(e) => handleUpdateGeneralRow(r.id, 'value', e.target.value)}
-                    style={{ ...cardInputStyle, flex: 1, height: '28px', padding: '2px 8px', boxSizing: 'border-box' }}
-                  />
-                ) : (
-                  <>
-                    <input
-                      type="text"
-                      value={r.label || ''}
-                      onChange={(e) => handleUpdateGeneralRow(r.id, 'label', e.target.value)}
-                      style={{ ...cardInputStyle, flex: 1, height: '28px', padding: '2px 8px', boxSizing: 'border-box' }}
-                    />
-                    <input
-                      type="text"
-                      value={r.value}
-                      onChange={(e) => handleUpdateGeneralRow(r.id, 'value', e.target.value)}
-                      style={{ ...cardInputStyle, width: '60px', flexShrink: 0, textAlign: 'center', height: '28px', padding: '2px 4px', boxSizing: 'border-box' }}
-                    />
-                  </>
-                )}
+                <input
+                  type="text"
+                  value={r.value}
+                  onChange={(e) => handleUpdateGeneralRow(r.id, 'value', e.target.value)}
+                  disabled={!isSuperAdmin}
+                  style={{ ...cardInputStyle, flex: 1, height: '28px', padding: '2px 8px', boxSizing: 'border-box' }}
+                />
 
-                <div style={{ display: 'flex', gap: '4px', alignItems: 'center', width: '70px', justifyContent: 'center' }}>
-                  <button onClick={() => handleAddRowAfter(index)} style={compactPlusBtnStyle}>+</button>
-                  <button onClick={() => handleDeleteGeneralRow(r.id)} style={{ ...compactPlusBtnStyle, color: '#ff3b30' }}>🗑️</button>
-                </div>
+                {isSuperAdmin && (
+                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center', width: '70px', justifyContent: 'center' }}>
+                    <button onClick={() => handleAddRowAfter(index)} style={compactPlusBtnStyle}>+</button>
+                    <button onClick={() => handleDeleteGeneralRow(r.id)} style={{ ...compactPlusBtnStyle, color: '#ff3b30' }}>🗑️</button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -488,24 +506,33 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
         {isStructureOpen && (
           <>
-            <form onSubmit={handleAddStage} style={{ display: 'flex', gap: '6px', marginBottom: '14px', alignItems: 'center' }}>
-              <input
-                type="text"
-                placeholder="come up with your own structure"
-                value={newStageTitle}
-                onChange={(e) => setNewStageTitle(e.target.value)}
-                style={{ ...cardInputStyle, flex: 1, height: '28px', padding: '2px 8px', boxSizing: 'border-box' }}
-              />
-              <button type="submit" style={compactPlusBtnStyle}>
-                +
-              </button>
-            </form>
+            {isSuperAdmin && (
+              <form onSubmit={handleAddStage} style={{ display: 'flex', gap: '6px', marginBottom: '14px', alignItems: 'center' }}>
+                <input
+                  type="text"
+                  placeholder="come up with your own structure"
+                  value={newStageTitle}
+                  onChange={(e) => setNewStageTitle(e.target.value)}
+                  style={{ ...cardInputStyle, flex: 1, height: '28px', padding: '2px 8px', boxSizing: 'border-box' }}
+                />
+                <button type="submit" style={compactPlusBtnStyle}>
+                  +
+                </button>
+              </form>
+            )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {stages.map((st) => {
+              {displayedStages.map((st) => {
                 const isCollapsed = collapsedStages[st.id];
                 const isTrackTimeOn = st.trackTime !== false;
                 const stageContractors: string[] = (st as any).contractors || (st.contractor ? [st.contractor] : []);
+
+                // Форматування фіксованої дати для ролей без доступу до редагування дат (день та місяць)
+                const formatDateShort = (dateStr?: string) => {
+                  if (!dateStr) return '';
+                  const [y, m, d] = dateStr.split('-');
+                  return `${d}.${m}`;
+                };
 
                 return (
                   <div key={st.id} style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '10px', border: '1px solid #e5e5ea' }}>
@@ -518,13 +545,24 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           {isCollapsed ? '▼' : '▲'}
                         </span>
 
-                        <input
-                          type="text"
-                          value={st.title}
-                          onChange={(e) => handleUpdateStageTitle(st.id, e.target.value)}
-                          style={inlineTitleInputStyle}
-                        />
+                        {isSuperAdmin ? (
+                          <input
+                            type="text"
+                            value={st.title}
+                            onChange={(e) => handleUpdateStageTitle(st.id, e.target.value)}
+                            style={inlineTitleInputStyle}
+                          />
+                        ) : (
+                          <span style={{ fontSize: '14px', fontWeight: 700, color: '#1c1c1e' }}>{st.title}</span>
+                        )}
                       </div>
+
+                      {/* Фіксована дата здачі над стадією для виконавців (якщо дати вимкнені в правах) */}
+                      {!showDates && (st as any).reviewDate && (
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#007aff', backgroundColor: '#eef5ff', padding: '2px 6px', borderRadius: '4px', marginRight: '6px' }}>
+                          📅 Здача: {formatDateShort((st as any).reviewDate)}
+                        </span>
+                      )}
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                         {isTrackTimeOn && (
@@ -555,64 +593,14 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           </>
                         )}
 
-                        <div style={{ width: '38px', display: 'flex', justifyContent: 'center', transform: 'translateX(1px)' }}>
-                          <button onClick={() => handleDeleteStage(st.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}>
-                            🗑️
-                          </button>
-                        </div>
+                        {isSuperAdmin && (
+                          <div style={{ width: '38px', display: 'flex', justifyContent: 'center', transform: 'translateX(1px)' }}>
+                            <button onClick={() => handleDeleteStage(st.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}>
+                              🗑️
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
-                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                        <select
-                          id={`select-contractor-${st.id}`}
-                          defaultValue=""
-                          style={{ ...cardInputStyle, fontSize: '12px', height: '28px', padding: '2px 8px', boxSizing: 'border-box', flex: 1 }}
-                        >
-                          <option value="">Select contractor / assignee...</option>
-                          {projectTeam.map(pt => {
-                            const member = teamDatabase.find(m => m.id === pt.memberId);
-                            const nameStr = `${member?.fullName || 'Member'} (${pt.role})`;
-                            return (
-                              <option key={pt.id} value={member?.fullName || ''}>
-                                {nameStr}
-                              </option>
-                            );
-                          })}
-                        </select>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const selectEl = document.getElementById(`select-contractor-${st.id}`) as HTMLSelectElement;
-                            if (selectEl && selectEl.value) {
-                              handleAddStageContractor(st.id, selectEl.value);
-                              selectEl.value = '';
-                            }
-                          }}
-                          style={{ ...compactPlusBtnStyle, width: '28px', height: '28px', boxSizing: 'border-box' }}
-                          title="Add contractor"
-                        >
-                          +
-                        </button>
-                      </div>
-
-                      {stageContractors.length > 0 && (
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '2px' }}>
-                          {stageContractors.map((cName, cIdx) => (
-                            <div key={cIdx} style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#e5e5ea', padding: '4px 8px', borderRadius: '6px', fontSize: '12px' }}>
-                              <span>{cName}</span>
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveStageContractor(st.id, cName)}
-                                style={{ background: 'none', border: 'none', color: '#ff3b30', cursor: 'pointer', fontSize: '11px', padding: 0, fontWeight: 700 }}
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
                     </div>
 
                     {editingTimeStageId === st.id && (
@@ -627,6 +615,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
                     {!isCollapsed && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #f2f2f7' }}>
+                        
+                        {/* Тумблер таймера всередині стадії */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
                           <span>time</span>
                           <div style={{ width: '38px', display: 'flex', justifyContent: 'center', transform: 'translateX(1px)' }}>
@@ -657,30 +647,16 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           </div>
                         </div>
 
-                        <div style={{ display: 'flex', gap: '8px', fontSize: '11px' }}>
-                          <input
-                            type="date"
-                            value={st.startDate || ''}
-                            onChange={(e) => handleUpdateStageDates(st.id, 'startDate', e.target.value)}
-                            style={{ ...cardInputStyle, flex: 1, padding: '4px', fontSize: '11px', height: '28px', boxSizing: 'border-box' }}
-                          />
-                          <input
-                            type="date"
-                            value={st.endDate || ''}
-                            onChange={(e) => handleUpdateStageDates(st.id, 'endDate', e.target.value)}
-                            style={{ ...cardInputStyle, flex: 1, padding: '4px', fontSize: '11px', height: '28px', boxSizing: 'border-box' }}
-                          />
-                        </div>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px' }}>
+                        {/* Підзадачі */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
                           {st.subStages.map((sub, idx) => (
                             <div 
                               key={sub.id} 
-                              draggable
+                              draggable={canManageSubtasks}
                               onDragStart={() => handleSubStageDragStart(st.id, idx)}
                               onDragOver={(e) => e.preventDefault()}
                               onDrop={() => handleSubStageDrop(st.id, idx)}
-                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px', cursor: 'grab' }}
+                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px', cursor: canManageSubtasks ? 'grab' : 'default' }}
                             >
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
                                 <input
@@ -688,12 +664,12 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                   checked={sub.completed}
                                   onChange={() => handleToggleSubStage(st.id, sub.id)}
                                 />
-                                
                                 <span style={{ fontWeight: 600, color: '#8e8e93', userSelect: 'none', minWidth: '16px' }}>{idx + 1}.</span>
 
                                 <input
                                   type="text"
                                   value={sub.title}
+                                  disabled={!canManageSubtasks}
                                   onChange={(e) => handleUpdateSubStageTitle(st.id, sub.id, e.target.value)}
                                   style={{
                                     ...inlineTitleInputStyle,
@@ -704,25 +680,121 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                 />
                               </div>
 
-                              <div style={{ width: '38px', display: 'flex', justifyContent: 'center', transform: 'translateX(1px)' }}>
-                                <button onClick={() => handleDeleteSubStage(st.id, sub.id)} style={{ ...iconBtnStyle, color: '#ff3b30' }}>🗑️</button>
-                              </div>
+                              {canManageSubtasks && (
+                                <div style={{ width: '38px', display: 'flex', justifyContent: 'center', transform: 'translateX(1px)' }}>
+                                  <button onClick={() => handleDeleteSubStage(st.id, sub.id)} style={{ ...iconBtnStyle, color: '#ff3b30' }}>🗑️</button>
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
 
-                        <div style={{ display: 'flex', gap: '6px', marginTop: '4px', alignItems: 'center' }}>
-                          <input
-                            type="text"
-                            placeholder="Add task/subtask"
-                            value={newSubStageTitle[st.id] || ''}
-                            onChange={(e) => setNewSubStageTitle({ ...newSubStageTitle, [st.id]: e.target.value })}
-                            style={{ ...cardInputStyle, padding: '2px 8px', fontSize: '12px', height: '28px', boxSizing: 'border-box', flex: 1 }}
-                          />
-                          <button onClick={() => handleAddSubStage(st.id)} style={{ ...compactPlusBtnStyle, width: '28px', height: '28px', boxSizing: 'border-box' }}>
-                            +
-                          </button>
+                        {/* Додавання підзадачі */}
+                        {canManageSubtasks && (
+                          <div style={{ display: 'flex', gap: '6px', marginTop: '4px', alignItems: 'center' }}>
+                            <input
+                              type="text"
+                              placeholder="Add task/subtask"
+                              value={newSubStageTitle[st.id] || ''}
+                              onChange={(e) => setNewSubStageTitle({ ...newSubStageTitle, [st.id]: e.target.value })}
+                              style={{ ...cardInputStyle, padding: '2px 8px', fontSize: '12px', height: '28px', boxSizing: 'border-box', flex: 1 }}
+                            />
+                            <button onClick={() => handleAddSubStage(st.id)} style={{ ...compactPlusBtnStyle, width: '28px', height: '28px', boxSizing: 'border-box' }}>
+                              +
+                            </button>
+                          </div>
+                        )}
+
+                        {/* === ПЕРЕНЕСЕНИЙ НИЗ СТАДІЇ: 3 дати та призначення учасників === */}
+                        <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #d1d1d6', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          
+                          {/* 3 дати (Відображаються лише якщо дозволено правами) */}
+                          {showDates && isSuperAdmin && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <span style={{ fontSize: '11px', fontWeight: 600, color: '#636366' }}>Планові терміни (Початок / Здача / Коригування):</span>
+                              <div style={{ display: 'flex', gap: '4px', fontSize: '11px' }}>
+                                <input
+                                  type="date"
+                                  title="Дата початку"
+                                  value={st.startDate || ''}
+                                  onChange={(e) => handleUpdateStageDates(st.id, 'startDate', e.target.value)}
+                                  style={{ ...cardInputStyle, flex: 1, padding: '2px', fontSize: '10px', height: '26px', boxSizing: 'border-box' }}
+                                />
+                                <input
+                                  type="date"
+                                  title="Дата здачі на перевірку"
+                                  value={(st as any).reviewDate || st.endDate || ''}
+                                  onChange={(e) => handleUpdateStageDates(st.id, 'reviewDate', e.target.value)}
+                                  style={{ ...cardInputStyle, flex: 1, padding: '2px', fontSize: '10px', height: '26px', boxSizing: 'border-box' }}
+                                />
+                                <input
+                                  type="date"
+                                  title="Дата кінцевого внесення змін"
+                                  value={(st as any).correctionDate || ''}
+                                  onChange={(e) => handleUpdateStageDates(st.id, 'correctionDate', e.target.value)}
+                                  style={{ ...cardInputStyle, flex: 1, padding: '2px', fontSize: '10px', height: '26px', boxSizing: 'border-box' }}
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Стек вибору учасників стадії (Прихований для ролей без прав адміністратора/керівника) */}
+                          {isSuperAdmin && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                <select
+                                  id={`select-contractor-${st.id}`}
+                                  defaultValue=""
+                                  style={{ ...cardInputStyle, fontSize: '12px', height: '28px', padding: '2px 8px', boxSizing: 'border-box', flex: 1 }}
+                                >
+                                  <option value="">Select contractor / assignee...</option>
+                                  {projectTeam.map(pt => {
+                                    const member = teamDatabase.find(m => m.id === pt.memberId);
+                                    const nameStr = `${member?.fullName || 'Member'} (${pt.role})`;
+                                    return (
+                                      <option key={pt.id} value={member?.fullName || ''}>
+                                        {nameStr}
+                                      </option>
+                                    );
+                                  })}
+                                </select>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const selectEl = document.getElementById(`select-contractor-${st.id}`) as HTMLSelectElement;
+                                    if (selectEl && selectEl.value) {
+                                      handleAddStageContractor(st.id, selectEl.value);
+                                      selectEl.value = '';
+                                    }
+                                  }}
+                                  style={{ ...compactPlusBtnStyle, width: '28px', height: '28px', boxSizing: 'border-box' }}
+                                  title="Add contractor"
+                                >
+                                  +
+                                </button>
+                              </div>
+
+                              {stageContractors.length > 0 && (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '2px' }}>
+                                  {stageContractors.map((cName, cIdx) => (
+                                    <div key={cIdx} style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#e5e5ea', padding: '4px 8px', borderRadius: '6px', fontSize: '12px' }}>
+                                      <span>{cName}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveStageContractor(st.id, cName)}
+                                        style={{ background: 'none', border: 'none', color: '#ff3b30', cursor: 'pointer', fontSize: '11px', padding: 0, fontWeight: 700 }}
+                                      >
+                                        ✕
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
                         </div>
+
                       </div>
                     )}
                   </div>
@@ -733,64 +805,66 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* 4. Team Block */}
-      <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '20px' }}>
-        <div 
-          onClick={() => setIsTeamOpen(!isTeamOpen)}
-          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: isTeamOpen ? '10px' : 0 }}
-        >
-          <span style={{ fontSize: '12px', color: '#8e8e93' }}>{isTeamOpen ? '▲' : '▼'}</span>
-          <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>Team</h3>
-        </div>
+      {/* 4. Team Block (Лише для керівника/адміна) */}
+      {isSuperAdmin && (
+        <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '20px' }}>
+          <div 
+            onClick={() => setIsTeamOpen(!isTeamOpen)}
+            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: isTeamOpen ? '10px' : 0 }}
+          >
+            <span style={{ fontSize: '12px', color: '#8e8e93' }}>{isTeamOpen ? '▲' : '▼'}</span>
+            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>Team</h3>
+          </div>
 
-        {isTeamOpen && (
-          <>
-            <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', alignItems: 'center' }}>
-              <select
-                value={selectedMemberId}
-                onChange={(e) => setSelectedMemberId(e.target.value)}
-                style={{ ...cardInputStyle, flex: 1, fontSize: '12px', height: '28px', padding: '2px 8px', boxSizing: 'border-box' }}
-              >
-                {teamDatabase.length === 0 && <option value="">No members in DB</option>}
-                {teamDatabase.map((m) => (
-                  <option key={m.id} value={m.id}>{m.fullName}</option>
-                ))}
-              </select>
+          {isTeamOpen && (
+            <>
+              <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', alignItems: 'center' }}>
+                <select
+                  value={selectedMemberId}
+                  onChange={(e) => setSelectedMemberId(e.target.value)}
+                  style={{ ...cardInputStyle, flex: 1, fontSize: '12px', height: '28px', padding: '2px 8px', boxSizing: 'border-box' }}
+                >
+                  {teamDatabase.length === 0 && <option value="">No members in DB</option>}
+                  {teamDatabase.map((m) => (
+                    <option key={m.id} value={m.id}>{m.fullName}</option>
+                  ))}
+                </select>
 
-              <select
-                value={selectedProjectRole}
-                onChange={(e) => setSelectedProjectRole(e.target.value)}
-                style={{ ...cardInputStyle, flex: 1, fontSize: '12px', height: '28px', padding: '2px 8px', boxSizing: 'border-box' }}
-              >
-                {availableRoles.map((r) => (
-                  <option key={r} value={r}>{r}</option>
-                ))}
-              </select>
+                <select
+                  value={selectedProjectRole}
+                  onChange={(e) => setSelectedProjectRole(e.target.value)}
+                  style={{ ...cardInputStyle, flex: 1, fontSize: '12px', height: '28px', padding: '2px 8px', boxSizing: 'border-box' }}
+                >
+                  {availableRoles.map((r) => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
 
-              <button 
-                onClick={handleAddProjectMember} 
-                style={{ ...compactPlusBtnStyle, width: '28px', height: '28px', boxSizing: 'border-box' }}
-              >
-                +
-              </button>
-            </div>
+                <button 
+                  onClick={handleAddProjectMember} 
+                  style={{ ...compactPlusBtnStyle, width: '28px', height: '28px', boxSizing: 'border-box' }}
+                >
+                  +
+                </button>
+              </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {projectTeam.map((pt) => {
-                const member = teamDatabase.find(m => m.id === pt.memberId);
-                return (
-                  <div key={pt.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', backgroundColor: '#ffffff', borderRadius: '8px', fontSize: '13px', border: '1px solid #e5e5ea' }}>
-                    <span><strong>{member?.fullName || 'Member'}</strong> ({pt.role})</span>
-                    <div style={{ width: '38px', display: 'flex', justifyContent: 'center', transform: 'translateX(1px)' }}>
-                      <button onClick={() => handleRemoveProjectMember(pt.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}>🗑️</button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {projectTeam.map((pt) => {
+                  const member = teamDatabase.find(m => m.id === pt.memberId);
+                  return (
+                    <div key={pt.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', backgroundColor: '#ffffff', borderRadius: '8px', fontSize: '13px', border: '1px solid #e5e5ea' }}>
+                      <span><strong>{member?.fullName || 'Member'}</strong> ({pt.role})</span>
+                      <div style={{ width: '38px', display: 'flex', justifyContent: 'center', transform: 'translateX(1px)' }}>
+                        <button onClick={() => handleRemoveProjectMember(pt.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}>🗑️</button>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        )}
-      </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* 5. Save Block */}
       <div style={{ backgroundColor: '#ffffff', padding: '14px', border: '1px solid #e5e5ea', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
