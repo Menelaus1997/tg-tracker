@@ -18,7 +18,9 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
   const [searchTerm, setSearchTerm] = useState('');
   
   const [collapsedProjects, setCollapsedProjects] = useState<{ [key: string]: boolean }>({});
-  const [showWorkload, setShowWorkload] = useState(false);
+  
+  // Детальний час вшито в код назавжди (завжди true)
+  const showWorkload = true;
 
   const toggleProject = (id: string) => {
     setCollapsedProjects(prev => ({ ...prev, [id]: !prev[id] }));
@@ -27,11 +29,10 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // 1. Фільтрація проєктів та підзадач за текстовим запитом (напр. "ХАЙТАК")
+  // 1. Фільтрація проєктів та підзадач за текстовим запитом
   const filteredProjects = projects.map(proj => {
     const stages = proj.stages || [];
     
-    // Якщо є пошуковий запит, фільтруємо стадії або підзадачі, які містять цей текст
     if (!searchTerm.trim()) return proj;
 
     const query = searchTerm.toLowerCase();
@@ -39,7 +40,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
     
     if (matchesProjectName) return proj;
 
-    // Фільтруємо стадії, де є збіг у назві або підзадачах
     const filteredStages = stages.filter(st => 
       st.title.toLowerCase().includes(query) ||
       (st.subStages || []).some((sub: any) => sub.title.toLowerCase().includes(query))
@@ -57,7 +57,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
     return matchesProj || hasStages;
   });
 
-  // 2. Формуємо дані для кругової діаграми на основі відфільтрованих даних
+  // 2. Формуємо дані для кругової діаграми
   const chartData = filteredProjects.map((proj, index) => {
     const stages = proj.stages || [];
     let totalSec = 0;
@@ -92,7 +92,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
   return (
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e', paddingBottom: '80px' }}>
       
-      {/* ПАНЕЛЬ ФІЛЬТРІВ ТА ПЕРІОДУ */}
+      {/* ПАНЕЛЬ ФІЛЬТРІВ ТА ПЕРІОДУ (без повзунка детального часу) */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px', backgroundColor: '#f9f9fb', padding: '12px', borderRadius: '12px', border: '1px solid #e5e5ea' }}>
         
         {/* Вибір періоду */}
@@ -118,7 +118,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
           ))}
         </div>
 
-        {/* Метрика та Текстовий пошук (багатозадачний фільтр) */}
+        {/* Метрика та Текстовий пошук */}
         <div style={{ display: 'flex', gap: '8px' }}>
           <select
             value={metric}
@@ -136,36 +136,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
             onChange={(e) => setSearchTerm(e.target.value)}
             style={{ padding: '8px', borderRadius: '8px', border: '1px solid #c7c7cc', fontSize: '12px', flex: 1, background: '#fff' }}
           />
-        </div>
-
-        {/* Тумблер детального навантаження */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '4px', borderTop: '1px solid #e5e5ea' }}>
-          <span style={{ fontSize: '12px', color: '#3a3a3c', fontWeight: 500 }}>Детальний час (години/дні)</span>
-          <div
-            onClick={() => setShowWorkload(!showWorkload)}
-            style={{
-              width: '34px',
-              height: '20px',
-              borderRadius: '10px',
-              backgroundColor: showWorkload ? '#34c759' : '#e5e5ea',
-              position: 'relative',
-              cursor: 'pointer',
-              transition: 'background-color 0.2s'
-            }}
-          >
-            <div
-              style={{
-                width: '16px',
-                height: '16px',
-                borderRadius: '50%',
-                backgroundColor: '#fff',
-                position: 'absolute',
-                top: '2px',
-                left: showWorkload ? '16px' : '2px',
-                transition: 'left 0.2s'
-              }}
-            />
-          </div>
         </div>
       </div>
 
@@ -197,7 +167,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
         </div>
       )}
 
-      {/* СПИСОК ПРОЄКТІВ (Вкладка 2 дані з розгорнутими стадіями) */}
+      {/* СПИСОК ПРОЄКТІВ З ДЕТАЛЬНИМ ЧАСОМ */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {filteredProjects.length === 0 ? (
           <div style={{ textAlign: 'center', color: '#8e8e93', fontSize: '13px', marginTop: '20px' }}>
