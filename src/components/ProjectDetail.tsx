@@ -34,7 +34,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   currentUserRole = 'Керівник',
   rolesConfig = []
 }) => {
-  // Визначаємо права поточного користувача на основі його ролі
   const currentRoleConfig = rolesConfig.find(r => r.name === currentUserRole);
   const permissions = currentRoleConfig?.permissions || {
     showDates: true,
@@ -337,12 +336,17 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     return `${h}h ${m}min`;
   };
 
-  // Фільтруємо стадії, якщо увімкнено показ лише призначених стадій
   const displayedStages = stages.filter(st => {
     if (!showOnlyAssignedStages || isSuperAdmin) return true;
     const stageContractors: string[] = (st as any).contractors || (st.contractor ? [st.contractor] : []);
     return stageContractors.some(c => c.toLowerCase().includes(currentUserRole.toLowerCase()));
   });
+
+  const formatDateShort = (dateStr?: string) => {
+    if (!dateStr) return '';
+    const [y, m, d] = dateStr.split('-');
+    return `${d}.${m}`;
+  };
 
   return (
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e', paddingBottom: '80px' }}>
@@ -449,7 +453,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* 2. Data Block (Лише 1 рядок з динамічним додаванням) */}
+      {/* 2. Data Block */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
         <div 
           onClick={() => setIsGeneralDataOpen(!isGeneralDataOpen)}
@@ -527,13 +531,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 const isTrackTimeOn = st.trackTime !== false;
                 const stageContractors: string[] = (st as any).contractors || (st.contractor ? [st.contractor] : []);
 
-                // Форматування фіксованої дати для ролей без доступу до редагування дат (день та місяць)
-                const formatDateShort = (dateStr?: string) => {
-                  if (!dateStr) return '';
-                  const [y, m, d] = dateStr.split('-');
-                  return `${d}.${m}`;
-                };
-
                 return (
                   <div key={st.id} style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '10px', border: '1px solid #e5e5ea' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
@@ -557,9 +554,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                         )}
                       </div>
 
-                      {/* Фіксована дата здачі над стадією для виконавців (якщо дати вимкнені в правах) */}
-                      {!showDates && (st as any).reviewDate && (
-                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#007aff', backgroundColor: '#eef5ff', padding: '2px 6px', borderRadius: '4px', marginRight: '6px' }}>
+                      {/* Фіксована дата здачі по 2-й даті (reviewDate) — видно і адміну, і виконавцям */}
+                      {(st as any).reviewDate && (
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: '#007aff', backgroundColor: '#eef5ff', padding: '2px 6px', borderRadius: '4px', marginRight: '6px' }}>
                           📅 Здача: {formatDateShort((st as any).reviewDate)}
                         </span>
                       )}
@@ -614,9 +611,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     )}
 
                     {!isCollapsed && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #f2f2f7' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #e5e5ea' }}>
                         
-                        {/* Тумблер таймера всередині стадії */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
                           <span>time</span>
                           <div style={{ width: '38px', display: 'flex', justifyContent: 'center', transform: 'translateX(1px)' }}>
@@ -647,7 +643,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           </div>
                         </div>
 
-                        {/* Підзадачі */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
                           {st.subStages.map((sub, idx) => (
                             <div 
@@ -689,7 +684,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           ))}
                         </div>
 
-                        {/* Додавання підзадачі */}
                         {canManageSubtasks && (
                           <div style={{ display: 'flex', gap: '6px', marginTop: '4px', alignItems: 'center' }}>
                             <input
@@ -705,10 +699,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           </div>
                         )}
 
-                        {/* === ПЕРЕНЕСЕНИЙ НИЗ СТАДІЇ: 3 дати та призначення учасників === */}
+                        {/* Низ стадії: 3 дати та учасники */}
                         <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #d1d1d6', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                           
-                          {/* 3 дати (Відображаються лише якщо дозволено правами) */}
                           {showDates && isSuperAdmin && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                               <span style={{ fontSize: '11px', fontWeight: 600, color: '#636366' }}>Планові терміни (Початок / Здача / Коригування):</span>
@@ -722,7 +715,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                 />
                                 <input
                                   type="date"
-                                  title="Дата здачі на перевірку"
+                                  title="Дата здачі на перевірку (2-га дата)"
                                   value={(st as any).reviewDate || st.endDate || ''}
                                   onChange={(e) => handleUpdateStageDates(st.id, 'reviewDate', e.target.value)}
                                   style={{ ...cardInputStyle, flex: 1, padding: '2px', fontSize: '10px', height: '26px', boxSizing: 'border-box' }}
@@ -738,7 +731,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                             </div>
                           )}
 
-                          {/* Стек вибору учасників стадії (Прихований для ролей без прав адміністратора/керівника) */}
                           {isSuperAdmin && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                               <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
@@ -805,7 +797,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* 4. Team Block (Лише для керівника/адміна) */}
+      {/* 4. Team Block */}
       {isSuperAdmin && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '20px' }}>
           <div 
@@ -939,6 +931,7 @@ const btnStyle: React.CSSProperties = {
 };
 
 const iconBtnStyle: React.CSSProperties = {
+  badge: 'none',
   background: 'none',
   border: 'none',
   cursor: 'pointer',
