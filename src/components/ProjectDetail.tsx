@@ -220,8 +220,17 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     setEditingTimeStageId(null);
   };
 
+  // Валідація дат: блокування вихідних днів (субота та неділя)
   const handleUpdateStageDates = (stageId: string, field: 'startDate' | 'reviewDate' | 'correctionDate' | 'endDate', val: string) => {
     if (!isSuperAdmin) return;
+    if (val) {
+      const dateObj = new Date(val);
+      const dayOfWeek = dateObj.getDay(); // 0 - неділя, 6 - субота
+      if (dayOfWeek === 0 || dayOfWeek === 6) {
+        alert('Вихідні дні (субота та неділя) не можна обирати. Будь ласка, оберіть будній день (Пн-Пт).');
+        return;
+      }
+    }
     setStages(stages.map(s => s.id === stageId ? { ...s, [field]: val } : s));
   };
 
@@ -534,7 +543,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 return (
                   <div key={st.id} style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '10px', border: '1px solid #e5e5ea' }}>
                     
-                    {/* Дата здачі зверху над заголовком стадії (лише іконка і дата) */}
+                    {/* Дата здачі зверху над заголовком стадії (лише іконка і дата без слова "Здача") */}
                     {((st as any).reviewDate || st.endDate) && (
                       <div style={{ fontSize: '11px', fontWeight: 600, color: '#007aff', backgroundColor: '#eef5ff', padding: '2px 6px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
                         📅 {formatDateShort((st as any).reviewDate || st.endDate)}
@@ -543,7 +552,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                        {/* Трикутник розгортання біля назви стадії */}
+                        {/* Трикутник розгортання з лівого боку біля назви стадії */}
                         <span 
                           onClick={() => setCollapsedStages({ ...collapsedStages, [st.id]: !isCollapsed })}
                           style={{ cursor: 'pointer', fontSize: '12px', color: '#8e8e93', userSelect: 'none' }}
