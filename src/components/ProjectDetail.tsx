@@ -533,11 +533,20 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
                 return (
                   <div key={st.id} style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '10px', border: '1px solid #e5e5ea' }}>
+                    
+                    {/* Дата здачі зверху над заголовком стадії (лише іконка і дата) */}
+                    {((st as any).reviewDate || st.endDate) && (
+                      <div style={{ fontSize: '11px', fontWeight: 600, color: '#007aff', backgroundColor: '#eef5ff', padding: '2px 6px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
+                        📅 {formatDateShort((st as any).reviewDate || st.endDate)}
+                      </div>
+                    )}
+
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                        {/* Трикутник розгортання біля назви стадії */}
                         <span 
                           onClick={() => setCollapsedStages({ ...collapsedStages, [st.id]: !isCollapsed })}
-                          style={{ cursor: 'pointer', fontSize: '12px', color: '#8e8e93' }}
+                          style={{ cursor: 'pointer', fontSize: '12px', color: '#8e8e93', userSelect: 'none' }}
                         >
                           {isCollapsed ? '▼' : '▲'}
                         </span>
@@ -551,13 +560,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           />
                         ) : (
                           <span style={{ fontSize: '14px', fontWeight: 700, color: '#1c1c1e' }}>{st.title}</span>
-                        )}
-
-                        {/* Закріплений бейдж дати здачі поруч з назвою */}
-                        {((st as any).reviewDate || st.endDate) && (
-                          <span style={{ fontSize: '11px', fontWeight: 600, color: '#007aff', backgroundColor: '#eef5ff', padding: '2px 6px', borderRadius: '4px', marginLeft: '4px' }}>
-                            📅 Здача: {formatDateShort((st as any).reviewDate || st.endDate)}
-                          </span>
                         )}
                       </div>
 
