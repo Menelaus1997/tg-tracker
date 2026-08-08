@@ -534,7 +534,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 return (
                   <div key={st.id} style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '10px', border: '1px solid #e5e5ea' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, flexWrap: 'wrap' }}>
                         <span 
                           onClick={() => setCollapsedStages({ ...collapsedStages, [st.id]: !isCollapsed })}
                           style={{ cursor: 'pointer', fontSize: '12px', color: '#8e8e93' }}
@@ -552,14 +552,14 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                         ) : (
                           <span style={{ fontSize: '14px', fontWeight: 700, color: '#1c1c1e' }}>{st.title}</span>
                         )}
-                      </div>
 
-                      {/* Фіксована дата здачі по 2-й даті (reviewDate) — видно і адміну, і виконавцям */}
-                      {(st as any).reviewDate && (
-                        <span style={{ fontSize: '11px', fontWeight: 600, color: '#007aff', backgroundColor: '#eef5ff', padding: '2px 6px', borderRadius: '4px', marginRight: '6px' }}>
-                          📅 Здача: {formatDateShort((st as any).reviewDate)}
-                        </span>
-                      )}
+                        {/* Закріплений бейдж дати здачі поруч з назвою */}
+                        {((st as any).reviewDate || st.endDate) && (
+                          <span style={{ fontSize: '11px', fontWeight: 600, color: '#007aff', backgroundColor: '#eef5ff', padding: '2px 6px', borderRadius: '4px', marginLeft: '4px' }}>
+                            📅 Здача: {formatDateShort((st as any).reviewDate || st.endDate)}
+                          </span>
+                        )}
+                      </div>
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                         {isTrackTimeOn && (
@@ -715,7 +715,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                 />
                                 <input
                                   type="date"
-                                  title="Дата здачі на перевірку (2-га дата)"
+                                  title="Дата здачі на перевірку"
                                   value={(st as any).reviewDate || st.endDate || ''}
                                   onChange={(e) => handleUpdateStageDates(st.id, 'reviewDate', e.target.value)}
                                   style={{ ...cardInputStyle, flex: 1, padding: '2px', fontSize: '10px', height: '26px', boxSizing: 'border-box' }}
@@ -931,7 +931,6 @@ const btnStyle: React.CSSProperties = {
 };
 
 const iconBtnStyle: React.CSSProperties = {
-  badge: 'none',
   background: 'none',
   border: 'none',
   cursor: 'pointer',
