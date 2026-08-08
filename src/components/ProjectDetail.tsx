@@ -220,14 +220,14 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     setEditingTimeStageId(null);
   };
 
-  // Валідація дат: блокування вихідних днів (субота та неділя)
+  // Валідація дат із повідомленням англійською для вихідних днів
   const handleUpdateStageDates = (stageId: string, field: 'startDate' | 'reviewDate' | 'correctionDate' | 'endDate', val: string) => {
     if (!isSuperAdmin) return;
     if (val) {
       const dateObj = new Date(val);
-      const dayOfWeek = dateObj.getDay(); // 0 - неділя, 6 - субота
+      const dayOfWeek = dateObj.getDay();
       if (dayOfWeek === 0 || dayOfWeek === 6) {
-        alert('Вихідні дні (субота та неділя) не можна обирати. Будь ласка, оберіть будній день (Пн-Пт).');
+        alert('Weekends (Saturday and Sunday) cannot be selected. Please choose a weekday (Mon-Fri).');
         return;
       }
     }
