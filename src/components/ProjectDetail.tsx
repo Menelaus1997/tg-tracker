@@ -80,7 +80,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [collapsedStages, setCollapsedStages] = useState<{ [key: string]: boolean }>({});
   const [newStageTitle, setNewStageTitle] = useState('');
   const [newSubStageTitle, setNewSubStageTitle] = useState<{ [key: string]: string }>({});
-  const [newNestedItemTitle, setNewNestedItemTitle] = useState<{ [key: string]: string }>({});
 
   const [editingTimeStageId, setEditingTimeStageId] = useState<string | null>(null);
   const [manualHours, setManualHours] = useState('0');
@@ -249,7 +248,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           id: Date.now().toString(),
           title: title.trim(),
           completed: false,
-          nestedItems: [] // Додаткові позиції під підстадією
+          nestedItems: []
         } as any;
         return { ...s, subStages: [...s.subStages, newSub] };
       }
@@ -308,11 +307,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     }));
   };
 
-  // Функції для вкладених пунктів під підстадією (1.1, 1.2 тощо)
+  // Додавання нового вкладеного пункту одразу з кнопкою + (без попереднього текстового поля)
   const handleAddNestedItem = (stageId: string, subStageId: string) => {
-    const key = `${stageId}-${subStageId}`;
-    const title = newNestedItemTitle[key];
-    if (!title || !title.trim()) return;
+    if (!canManageSubtasks) return;
 
     setStages(stages.map(s => {
       if (s.id === stageId) {
@@ -321,7 +318,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           subStages: s.subStages.map(sub => {
             if (sub.id === subStageId) {
               const nested = (sub as any).nestedItems || [];
-              const newItem = { id: Date.now().toString(), title: title.trim(), completed: false };
+              const newItem = { id: Date.now().toString(), title: '', completed: false };
               return { ...sub, nestedItems: [...nested, newItem] };
             }
             return sub;
@@ -330,8 +327,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       }
       return s;
     }));
-
-    setNewNestedItemTitle({ ...newNestedItemTitle, [key]: '' });
   };
 
   const handleUpdateNestedItemTitle = (stageId: string, subStageId: string, itemId: string, newTitle: string) => {
@@ -780,11 +775,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           </div>
                         </div>
 
-                        {/* Підстадії (нумерація 1, 2, 3) + вкладені пункти під ними (нумерація 1.1, 1.2 тощо) */}
+                        {/* Підстадії + кнопка + та кошик у рядку кожної підстадії */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
                           {st.subStages.map((sub, idx) => {
                             const nestedItems = (sub as any).nestedItems || [];
-                            const nestedInputKey = `${st.id}-${sub.id}`;
 
                             return (
                               <div key={sub.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px', backgroundColor: '#f9f9fb', padding: '8px', borderRadius: '8px', border: '1px solid #e5e5ea' }}>
@@ -819,7 +813,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                       checked={sub.completed}
                                       onChange={() => handleToggleSubStage(st.id, sub.id)}
                                     />
-                                    {/* Звична нумерація 1, 2, 3 для підстадій */}
                                     <span style={{ fontWeight: 700, color: '#1c1c1e', userSelect: 'none', minWidth: '16px' }}>{idx + 1}.</span>
 
                                     <input
@@ -837,13 +830,23 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                   </div>
 
                                   {canManageSubtasks && (
-                                    <div style={{ width: '38px', display: 'flex', justifyContent: 'center', transform: 'translateX(1px)' }}>
-                                      <button onClick={() => handleDeleteSubStage(st.id, sub.id)} style={{ ...iconBtnStyle, color: '#ff3b30' }}>🗑️</button>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                      {/* Кнопка + для додавання вкладеного пункту одразу в рядку підстадії */}
+                                      <button 
+                                        onClick={() => handleAddNestedItem(st.id, sub.id)} 
+                                        style={{ ...compactPlusBtnStyle, width: '24px', height: '24px', fontSize: '14px' }}
+                                        title="Add sub-item"
+                                      >
+                                        +
+                                      </button>
+                                      <div style={{ width: '28px', display: 'flex', justifyContent: 'center' }}>
+                                        <button onClick={() => handleDeleteSubStage(st.id, sub.id)} style={{ ...iconBtnStyle, color: '#ff3b30' }}>🗑️</button>
+                                      </div>
                                     </div>
                                   )}
                                 </div>
 
-                                {/* Вкладені пункти (ієрархія 1.1, 1.2 тощо) всередині підстадії */}
+                                {/* Вкладені пункти (ієрархія 1.1, 1.2 тощо) */}
                                 {nestedItems.length > 0 && (
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '24px', marginTop: '4px' }}>
                                     {nestedItems.map((item: any, itemIdx: number) => (
@@ -854,7 +857,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                             checked={item.completed}
                                             onChange={() => handleToggleNestedItem(st.id, sub.id, item.id)}
                                           />
-                                          {/* Нумерація 1.1, 1.2 тощо */}
                                           <span style={{ fontWeight: 600, color: '#007aff', userSelect: 'none', minWidth: '24px' }}>{idx + 1}.{itemIdx + 1}</span>
 
                                           <input
@@ -878,22 +880,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                         )}
                                       </div>
                                     ))}
-                                  </div>
-                                )}
-
-                                {/* Інпут для додавання вкладеного пункту під підстадією */}
-                                {canManageSubtasks && (
-                                  <div style={{ display: 'flex', gap: '6px', marginTop: '4px', paddingLeft: '24px', alignItems: 'center' }}>
-                                    <input
-                                      type="text"
-                                      placeholder="Add sub-item (e.g. 1.1)..."
-                                      value={newNestedItemTitle[nestedInputKey] || ''}
-                                      onChange={(e) => setNewNestedItemTitle({ ...newNestedItemTitle, [nestedInputKey]: e.target.value })}
-                                      style={{ ...cardInputStyle, padding: '2px 8px', fontSize: '11px', height: '26px', boxSizing: 'border-box', flex: 1, backgroundColor: '#ffffff' }}
-                                    />
-                                    <button onClick={() => handleAddNestedItem(st.id, sub.id)} style={{ ...compactPlusBtnStyle, width: '26px', height: '26px', boxSizing: 'border-box', fontSize: '14px' }}>
-                                      +
-                                    </button>
                                   </div>
                                 )}
                               </div>
