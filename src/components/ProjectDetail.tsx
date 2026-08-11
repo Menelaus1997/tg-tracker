@@ -539,7 +539,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     return `${d}.${m}`;
   };
 
-  // Стандартний сірий фон для дати без контуру
   const dateBoxStyle: React.CSSProperties = {
     height: '24px',
     boxSizing: 'border-box',
@@ -700,7 +699,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         </div>
       )}
 
-      {/* Глобальний блок "Tags" без будь-яких контурів */}
+      {/* Глобальний блок "Tags" з сірим контуром для вибору кольору */}
       {isSuperAdmin && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
           <div 
@@ -717,13 +716,14 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
                 <button onClick={handleAddStatus} style={{ ...compactPlusBtnStyle, height: '24px', width: '24px', borderRadius: '12px' }} title="Додати тег">+</button>
 
+                {/* Кружечок вибору кольору із сірим контуром */}
                 <label 
                   style={{ 
                     width: '24px', 
                     height: '24px', 
                     borderRadius: '50%', 
                     backgroundColor: globalPickerColor, 
-                    border: 'none', 
+                    border: '1px solid #d1d1d6', 
                     cursor: 'pointer', 
                     display: 'flex', 
                     alignItems: 'center', 
