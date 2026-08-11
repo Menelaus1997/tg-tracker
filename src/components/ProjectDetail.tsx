@@ -680,7 +680,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         </div>
       )}
 
-      {/* Глобальний блок "Tags" (теги переносяться окремо, а кружечок і плюс фіксовані в кінці потоку) */}
+      {/* Глобальний блок "Tags" (кнопка +, потім вибір кольору, а далі теги в одному рядку) */}
       {isSuperAdmin && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
           <div 
@@ -693,6 +693,36 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
           {isTagsOpen && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+              {/* Кнопка створення нового тегу (спочатку) */}
+              <button onClick={handleAddStatus} style={{ ...compactPlusBtnStyle, height: '28px', width: '28px' }} title="Add tag">+</button>
+
+              {/* Кругла кнопка глобального вибору кольору (потім) */}
+              <label 
+                style={{ 
+                  width: '28px', 
+                  height: '28px', 
+                  borderRadius: '50%', 
+                  backgroundColor: globalPickerColor, 
+                  border: '1px solid #d1d1d6', 
+                  cursor: 'pointer', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  flexShrink: 0,
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+                title="Choose color to apply to active tag"
+              >
+                <input
+                  type="color"
+                  value={globalPickerColor}
+                  onChange={handleGlobalPickerChange}
+                  style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer', top: 0, left: 0 }}
+                />
+              </label>
+
+              {/* Далі йдуть самі теги */}
               {statuses.map(s => {
                 const isSelected = selectedTagId === s.id;
                 return (
@@ -754,36 +784,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   </div>
                 );
               })}
-
-              {/* Блок із глобальним вибором кольору та кнопкою + (знаходяться в тому ж загальному потоці) */}
-              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                <label 
-                  style={{ 
-                    width: '28px', 
-                    height: '28px', 
-                    borderRadius: '50%', 
-                    backgroundColor: globalPickerColor, 
-                    border: '1px solid #d1d1d6', 
-                    cursor: 'pointer', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    flexShrink: 0,
-                    position: 'relative',
-                    overflow: 'hidden'
-                  }}
-                  title="Choose color to apply to active tag"
-                >
-                  <input
-                    type="color"
-                    value={globalPickerColor}
-                    onChange={handleGlobalPickerChange}
-                    style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer', top: 0, left: 0 }}
-                  />
-                </label>
-
-                <button onClick={handleAddStatus} style={{ ...compactPlusBtnStyle, height: '28px', width: '28px' }} title="Add tag">+</button>
-              </div>
             </div>
           )}
         </div>
