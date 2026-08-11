@@ -146,7 +146,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const handleAddStatus = () => {
     if (!isSuperAdmin) return;
     const newStatus: ProjectStatus = { id: Date.now().toString(), label: 'New tag', color: globalPickerColor };
-    const updatedStatuses = [...statuses, newStatus];
+    // Новий тег ставимо на початок масиву, щоб він завжди був першим (на першому рядку біля кольору та +)
+    const updatedStatuses = [newStatus, ...statuses];
     setStatuses(updatedStatuses);
     setSelectedTagId(newStatus.id);
     handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, updatedStatuses);
@@ -539,6 +540,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     return `${d}.${m}`;
   };
 
+  // Виділяємо перший тег (який щойно створений або перший у списку) для першого рядка, а решту — на другий і далі
+  const firstTag = statuses[0];
+  const remainingTags = statuses.slice(1);
+
   return (
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e', paddingBottom: '80px' }}>
       <button onClick={onBack} style={{ background: 'none', border: 'none', fontSize: '14px', color: '#007aff', cursor: 'pointer', marginBottom: '16px', fontWeight: 600 }}>
@@ -680,7 +685,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         </div>
       )}
 
-      {/* Глобальний блок "Tags" (кнопка +, потім вибір кольору, а далі теги в одному рядку) */}
+      {/* Глобальний блок "Tags" */}
       {isSuperAdmin && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
           <div 
@@ -692,42 +697,42 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           </div>
 
           {isTagsOpen && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
-              {/* Кнопка створення нового тегу (спочатку) */}
-              <button onClick={handleAddStatus} style={{ ...compactPlusBtnStyle, height: '28px', width: '28px' }} title="Add tag">+</button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {/* Перший рядок: Кнопка +, вибір кольору та найновіший тег */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+                {/* Кнопка створення нового тегу */}
+                <button onClick={handleAddStatus} style={{ ...compactPlusBtnStyle, height: '28px', width: '28px' }} title="Add tag">+</button>
 
-              {/* Кругла кнопка глобального вибору кольору (потім) */}
-              <label 
-                style={{ 
-                  width: '28px', 
-                  height: '28px', 
-                  borderRadius: '50%', 
-                  backgroundColor: globalPickerColor, 
-                  border: '1px solid #d1d1d6', 
-                  cursor: 'pointer', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  flexShrink: 0,
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}
-                title="Choose color to apply to active tag"
-              >
-                <input
-                  type="color"
-                  value={globalPickerColor}
-                  onChange={handleGlobalPickerChange}
-                  style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer', top: 0, left: 0 }}
-                />
-              </label>
+                {/* Кругла кнопка глобального вибору кольору */}
+                <label 
+                  style={{ 
+                    width: '28px', 
+                    height: '28px', 
+                    borderRadius: '50%', 
+                    backgroundColor: globalPickerColor, 
+                    border: '1px solid #d1d1d6', 
+                    cursor: 'pointer', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    flexShrink: 0,
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
+                  title="Choose color to apply to active tag"
+                >
+                  <input
+                    type="color"
+                    value={globalPickerColor}
+                    onChange={handleGlobalPickerChange}
+                    style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer', top: 0, left: 0 }}
+                  />
+                </label>
 
-              {/* Далі йдуть самі теги */}
-              {statuses.map(s => {
-                const isSelected = selectedTagId === s.id;
-                return (
+                {/* Найновіший тег на першому рядку */}
+                {firstTag && (
                   <div 
-                    key={s.id} 
+                    key={firstTag.id} 
                     style={{ 
                       display: 'flex', 
                       alignItems: 'center', 
@@ -741,17 +746,16 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       fontWeight: 600
                     }}
                   >
-                    {/* Кружечок кольору для вибору активного тегу */}
                     <div 
                       onClick={() => {
-                        setSelectedTagId(s.id);
-                        setGlobalPickerColor(s.color);
+                        setSelectedTagId(firstTag.id);
+                        setGlobalPickerColor(firstTag.color);
                       }}
                       style={{ 
                         width: '20px', 
                         height: '20px', 
                         borderRadius: '50%', 
-                        backgroundColor: s.color, 
+                        backgroundColor: firstTag.color, 
                         cursor: 'pointer', 
                         display: 'flex', 
                         alignItems: 'center', 
@@ -760,21 +764,19 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       }}
                       title="Click to select this tag"
                     >
-                      {isSelected && <span style={{ color: '#fff', fontSize: '10px', fontWeight: 700, lineHeight: 1 }}>✓</span>}
+                      {selectedTagId === firstTag.id && <span style={{ color: '#fff', fontSize: '10px', fontWeight: 700, lineHeight: 1 }}>✓</span>}
                     </div>
 
-                    {/* Текст назви тегу (тільки редагування назви) */}
                     <input
                       type="text"
-                      value={s.label}
-                      onChange={(e) => handleUpdateStatusLabel(s.id, e.target.value)}
-                      style={{ border: 'none', background: 'transparent', color: '#1c1c1e', fontSize: '11px', fontWeight: 600, outline: 'none', width: `${Math.max(s.label.length, 4) * 7}px` }}
+                      value={firstTag.label}
+                      onChange={(e) => handleUpdateStatusLabel(firstTag.id, e.target.value)}
+                      style={{ border: 'none', background: 'transparent', color: '#1c1c1e', fontSize: '11px', fontWeight: 600, outline: 'none', width: `${Math.max(firstTag.label.length, 4) * 7}px` }}
                     />
 
-                    {/* Хрестик видалення тегу */}
                     {statuses.length > 1 && (
                       <button 
-                        onClick={(e) => handleDeleteStatus(s.id, e)} 
+                        onClick={(e) => handleDeleteStatus(firstTag.id, e)} 
                         style={{ background: 'none', border: 'none', color: '#8e8e93', cursor: 'pointer', fontSize: '10px', padding: 0, fontWeight: 700 }}
                         title="Delete tag"
                       >
@@ -782,8 +784,72 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       </button>
                     )}
                   </div>
-                );
-              })}
+                )}
+              </div>
+
+              {/* Другий та наступні рядки: усі інші теги, що змістилися вниз */}
+              {remainingTags.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+                  {remainingTags.map(s => {
+                    const isSelected = selectedTagId === s.id;
+                    return (
+                      <div 
+                        key={s.id} 
+                        style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '4px', 
+                          padding: '3px 8px 3px 3px', 
+                          borderRadius: '16px', 
+                          backgroundColor: '#e5e5ea', 
+                          border: '1px solid #d1d1d6',
+                          color: '#1c1c1e', 
+                          fontSize: '11px', 
+                          fontWeight: 600
+                        }}
+                      >
+                        <div 
+                          onClick={() => {
+                            setSelectedTagId(s.id);
+                            setGlobalPickerColor(s.color);
+                          }}
+                          style={{ 
+                            width: '20px', 
+                            height: '20px', 
+                            borderRadius: '50%', 
+                            backgroundColor: s.color, 
+                            cursor: 'pointer', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            flexShrink: 0
+                          }}
+                          title="Click to select this tag"
+                        >
+                          {isSelected && <span style={{ color: '#fff', fontSize: '10px', fontWeight: 700, lineHeight: 1 }}>✓</span>}
+                        </div>
+
+                        <input
+                          type="text"
+                          value={s.label}
+                          onChange={(e) => handleUpdateStatusLabel(s.id, e.target.value)}
+                          style={{ border: 'none', background: 'transparent', color: '#1c1c1e', fontSize: '11px', fontWeight: 600, outline: 'none', width: `${Math.max(s.label.length, 4) * 7}px` }}
+                        />
+
+                        {statuses.length > 1 && (
+                          <button 
+                            onClick={(e) => handleDeleteStatus(s.id, e)} 
+                            style={{ background: 'none', border: 'none', color: '#8e8e93', cursor: 'pointer', fontSize: '10px', padding: 0, fontWeight: 700 }}
+                            title="Delete tag"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>
