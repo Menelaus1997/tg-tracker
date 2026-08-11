@@ -26,7 +26,7 @@ interface ProjectStatus {
 }
 
 const DEFAULT_STATUSES: ProjectStatus[] = [
-  { id: '1', label: 'In Progress', color: '#8e8e93' },
+  { id: '1', label: 'In Progress', color: '#007aff' },
   { id: '2', label: 'On Hold', color: '#ffcc00' },
   { id: '3', label: 'In Review', color: '#ff9500' },
   { id: '4', label: 'Completed', color: '#34c759' }
@@ -74,9 +74,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
   // Стан для глобального блоку тегів
   const [isTagsOpen, setIsTagsOpen] = useState(true);
-  const [newStatusColor, setNewStatusColor] = useState('#007aff');
-  // ID вибраного тегу для зміни кольору
-  const [selectedTagId, setSelectedTagId] = useState<string | null>(statuses[0]?.id || null);
+  
+  // ID вибраного тегу та поточний колір для пікера
+  const [selectedTagId, setSelectedTagId] = useState<string>(statuses[0]?.id || '');
+  const [newStatusColor, setNewStatusColor] = useState<string>(statuses[0]?.color || '#007aff');
 
   const [colors, setColors] = useState<string[]>(() => {
     const initial = [...DEFAULT_COLORS];
@@ -142,13 +143,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     } as any);
   };
 
-  // Створення нового тегу з назвою "New tag" та обраним кольором
+  // Створення нового тегу з назвою "New tag" та кольором з пікера
   const handleAddStatus = () => {
     if (!isSuperAdmin) return;
     const newStatus: ProjectStatus = { id: Date.now().toString(), label: 'New tag', color: newStatusColor };
     const updatedStatuses = [...statuses, newStatus];
     setStatuses(updatedStatuses);
-    setSelectedTagId(newStatus.id); // Автоматично робимо новий тег вибраним
+    setSelectedTagId(newStatus.id);
     handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, updatedStatuses);
   };
 
@@ -158,7 +159,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     const updatedStatuses = statuses.filter(s => s.id !== id);
     setStatuses(updatedStatuses);
     if (selectedTagId === id) {
-      setSelectedTagId(updatedStatuses[0]?.id || null);
+      const nextActive = updatedStatuses[0];
+      setSelectedTagId(nextActive.id);
+      setNewStatusColor(nextActive.color);
     }
     handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, updatedStatuses);
   };
@@ -169,7 +172,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, updatedStatuses);
   };
 
-  // Зміна кольору активного тегу при виборі в круглому пікері
+  // Зміна кольору активного тегу через круглий пікер
   const handleColorPickerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const color = e.target.value;
     setNewStatusColor(color);
@@ -679,7 +682,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         </div>
       )}
 
-      {/* Глобальний блок "Tags" з круглим пікером кольору та кнопкою + (без рядка вводу) */}
+      {/* Глобальний блок "Tags" з тегами та пікером/кнопкою в одному рядку вгорі */}
       {isSuperAdmin && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
           <div 
@@ -691,87 +694,83 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           </div>
 
           {isTagsOpen && (
-            <>
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', alignItems: 'center', justifyContent: 'flex-end' }}>
-                {/* Кругла кнопка/індикатор вибору кольору для активного тегу */}
-                <label 
-                  style={{ 
-                    width: '28px', 
-                    height: '28px', 
-                    borderRadius: '50%', 
-                    backgroundColor: newStatusColor, 
-                    border: '1px solid #d1d1d6', 
-                    cursor: 'pointer', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    flexShrink: 0,
-                    position: 'relative',
-                    overflow: 'hidden'
-                  }}
-                  title="Choose active tag color"
-                >
-                  <input
-                    type="color"
-                    value={newStatusColor}
-                    onChange={handleColorPickerChange}
-                    style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer', top: 0, left: 0 }}
-                  />
-                </label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+              {statuses.map(s => {
+                const isSelected = selectedTagId === s.id;
+                return (
+                  <div 
+                    key={s.id} 
+                    onClick={() => {
+                      setSelectedTagId(s.id);
+                      setNewStatusColor(s.color);
+                    }}
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '4px', 
+                      padding: '4px 10px', 
+                      borderRadius: '12px', 
+                      backgroundColor: s.color, 
+                      color: '#fff', 
+                      fontSize: '11px', 
+                      fontWeight: 600, 
+                      cursor: 'pointer'
+                    }}
+                    title="Click to select for color changing"
+                  >
+                    <input
+                      type="text"
+                      value={s.label}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => handleUpdateStatusLabel(s.id, e.target.value)}
+                      style={{ border: 'none', background: 'transparent', color: '#fff', fontSize: '11px', fontWeight: 600, outline: 'none', width: `${Math.max(s.label.length, 4) * 7}px` }}
+                    />
+                    {isSelected ? (
+                      <span style={{ fontSize: '10px', fontWeight: 700, marginLeft: '2px' }}>✓</span>
+                    ) : (
+                      statuses.length > 1 && (
+                        <button 
+                          onClick={(e) => handleDeleteStatus(s.id, e)} 
+                          style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '10px', padding: 0, fontWeight: 700 }}
+                        >
+                          ✕
+                        </button>
+                      )
+                    )}
+                  </div>
+                );
+              })}
 
-                {/* Кнопка створення нового тегу */}
-                <button onClick={handleAddStatus} style={{ ...compactPlusBtnStyle, height: '28px', width: '28px' }} title="Add tag">+</button>
-              </div>
+              {/* Кругла кнопка вибору кольору активного тегу */}
+              <label 
+                style={{ 
+                  width: '28px', 
+                  height: '28px', 
+                  borderRadius: '50%', 
+                  backgroundColor: newStatusColor, 
+                  border: '1px solid #d1d1d6', 
+                  cursor: 'pointer', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  flexShrink: 0,
+                  position: 'relative',
+                  overflow: 'hidden',
+                  marginLeft: 'auto'
+                }}
+                title="Choose active tag color"
+              >
+                <input
+                  type="color"
+                  value={newStatusColor}
+                  onChange={handleColorPickerChange}
+                  style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer', top: 0, left: 0 }}
+                />
+              </label>
 
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                {statuses.map(s => {
-                  const isSelected = selectedTagId === s.id;
-                  return (
-                    <div 
-                      key={s.id} 
-                      onClick={() => {
-                        setSelectedTagId(s.id);
-                        setNewStatusColor(s.color);
-                      }}
-                      style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '4px', 
-                        padding: '4px 10px', 
-                        borderRadius: '12px', 
-                        backgroundColor: s.color, 
-                        color: '#fff', 
-                        fontSize: '11px', 
-                        fontWeight: 600, 
-                        cursor: 'pointer',
-                        boxShadow: isSelected ? '0 0 0 2px #007aff' : 'none'
-                      }}
-                      title="Click to select for color changing"
-                    >
-                      <input
-                        type="text"
-                        value={s.label}
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={(e) => handleUpdateStatusLabel(s.id, e.target.value)}
-                        style={{ border: 'none', background: 'transparent', color: '#fff', fontSize: '11px', fontWeight: 600, outline: 'none', width: `${Math.max(s.label.length, 4) * 7}px` }}
-                      />
-                      {isSelected ? (
-                        <span style={{ fontSize: '10px', fontWeight: 700, marginLeft: '2px' }}>✓</span>
-                      ) : (
-                        statuses.length > 1 && (
-                          <button 
-                            onClick={(e) => handleDeleteStatus(s.id, e)} 
-                            style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '10px', padding: 0, fontWeight: 700 }}
-                          >
-                            ✕
-                          </button>
-                        )
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </>
+              {/* Кнопка створення нового тегу */}
+              <button onClick={handleAddStatus} style={{ ...compactPlusBtnStyle, height: '28px', width: '28px' }} title="Add tag">+</button>
+            </div>
           )}
         </div>
       )}
