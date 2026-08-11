@@ -520,10 +520,11 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     onBack();
   };
 
+  // Змінено формат годинника з h/min на г/хв
   const formatTime = (sec: number = 0) => {
     const h = Math.floor(sec / 3600);
     const m = Math.floor((sec % 3600) / 60);
-    return `${h}h ${m}min`;
+    return `${h}г ${m}хв`;
   };
 
   const displayedStages = stages.filter(st => {
@@ -560,8 +561,12 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
   return (
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e', paddingBottom: '80px' }}>
-      <button onClick={onBack} style={{ background: 'none', border: 'none', fontSize: '14px', color: '#007aff', cursor: 'pointer', marginBottom: '16px', fontWeight: 600 }}>
-        ← Назад
+      {/* Кнопка "Назад" із жирною стрілкою та чорним текстом */}
+      <button 
+        onClick={onBack} 
+        style={{ background: 'none', border: 'none', fontSize: '14px', color: '#000000', cursor: 'pointer', marginBottom: '16px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}
+      >
+        <span style={{ fontWeight: 800, fontSize: '16px' }}>←</span> Назад
       </button>
 
       {/* 1. Header Block */}
@@ -716,7 +721,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
                 <button onClick={handleAddStatus} style={{ ...compactPlusBtnStyle, height: '24px', width: '24px', borderRadius: '12px' }} title="Додати тег">+</button>
 
-                {/* Кружечок вибору кольору із сірим контуром */}
                 <label 
                   style={{ 
                     width: '24px', 
@@ -1061,7 +1065,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                         
                         {enableTeamRoles && (
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
-                            <span>облік часу</span>
+                            {/* Змінено "облік часу" на з великої букви "Облік часу" */}
+                            <span>Облік часу</span>
                             <div style={{ width: '38px', display: 'flex', justifyContent: 'center', transform: 'translateX(1px)' }}>
                               <div
                                 onClick={() => handleToggleStageTrackTime(st.id)}
