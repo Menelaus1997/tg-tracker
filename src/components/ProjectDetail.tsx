@@ -174,17 +174,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     setNewStageTitle('');
   };
 
-  const handleMoveStage = (index: number, direction: 'up' | 'down') => {
-    if (!isSuperAdmin) return;
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= stages.length) return;
-
-    const updated = [...stages];
-    const [moved] = updated.splice(index, 1);
-    updated.splice(targetIndex, 0, moved);
-    setStages(updated);
-  };
-
   const handleUpdateStageTitle = (stageId: string, newTitle: string) => {
     if (!isSuperAdmin) return;
     setStages(stages.map(s => s.id === stageId ? { ...s, title: newTitle } : s));
@@ -267,6 +256,21 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     }));
 
     setNewSubStageTitle({ ...newSubStageTitle, [stageId]: '' });
+  };
+
+  const handleMoveSubStage = (stageId: string, index: number, direction: 'up' | 'down') => {
+    if (!canManageSubtasks) return;
+    setStages(stages.map(s => {
+      if (s.id === stageId) {
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        const subList = [...s.subStages];
+        if (targetIndex < 0 || targetIndex >= subList.length) return s;
+        const [moved] = subList.splice(index, 1);
+        subList.splice(targetIndex, 0, moved);
+        return { ...s, subStages: subList };
+      }
+      return s;
+    }));
   };
 
   const handleUpdateSubStageTitle = (stageId: string, subStageId: string, newTitle: string) => {
@@ -604,29 +608,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                        
-                        {/* Кнопки переміщення стадії (▲ / ▼) */}
-                        {isSuperAdmin && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-                            <button 
-                              onClick={() => handleMoveStage(stageIndex, 'up')}
-                              disabled={stageIndex === 0}
-                              style={{ background: 'none', border: 'none', cursor: stageIndex === 0 ? 'default' : 'pointer', fontSize: '9px', padding: 0, color: stageIndex === 0 ? '#d1d1d6' : '#007aff', lineHeight: 1 }}
-                              title="Move Up"
-                            >
-                              ▲
-                            </button>
-                            <button 
-                              onClick={() => handleMoveStage(stageIndex, 'down')}
-                              disabled={stageIndex === displayedStages.length - 1}
-                              style={{ background: 'none', border: 'none', cursor: stageIndex === displayedStages.length - 1 ? 'default' : 'pointer', fontSize: '9px', padding: 0, color: stageIndex === displayedStages.length - 1 ? '#d1d1d6' : '#007aff', lineHeight: 1 }}
-                              title="Move Down"
-                            >
-                              ▼
-                            </button>
-                          </div>
-                        )}
-
                         <span 
                           onClick={() => setCollapsedStages({ ...collapsedStages, [st.id]: !isCollapsed })}
                           style={{ cursor: 'pointer', fontSize: '12px', color: '#8e8e93', userSelect: 'none' }}
@@ -728,7 +709,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           </div>
                         </div>
 
-                        {/* Підстадії з маркуванням у форматі 1.1, 1.2 тощо */}
+                        {/* Підстадії зі стрілочками переміщення (▲ / ▼) та нумерацією (1.1, 1.2 тощо) */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
                           {st.subStages.map((sub, idx) => (
                             <div 
@@ -740,6 +721,29 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                               style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px', cursor: canManageSubtasks ? 'grab' : 'default' }}
                             >
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
+                                
+                                {/* Кнопки переміщення підстадії (▲ / ▼) */}
+                                {canManageSubtasks && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', marginRight: '2px' }}>
+                                    <button 
+                                      onClick={() => handleMoveSubStage(st.id, idx, 'up')}
+                                      disabled={idx === 0}
+                                      style={{ background: 'none', border: 'none', cursor: idx === 0 ? 'default' : 'pointer', fontSize: '8px', padding: 0, color: idx === 0 ? '#d1d1d6' : '#007aff', lineHeight: 1 }}
+                                      title="Move Up"
+                                    >
+                                      ▲
+                                    </button>
+                                    <button 
+                                      onClick={() => handleMoveSubStage(st.id, idx, 'down')}
+                                      disabled={idx === st.subStages.length - 1}
+                                      style={{ background: 'none', border: 'none', cursor: idx === st.subStages.length - 1 ? 'default' : 'pointer', fontSize: '8px', padding: 0, color: idx === st.subStages.length - 1 ? '#d1d1d6' : '#007aff', lineHeight: 1 }}
+                                      title="Move Down"
+                                    >
+                                      ▼
+                                    </button>
+                                  </div>
+                                )}
+
                                 <input
                                   type="checkbox"
                                   checked={sub.completed}
