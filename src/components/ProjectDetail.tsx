@@ -71,8 +71,12 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [statuses, setStatuses] = useState<ProjectStatus[]>(
     (project as any).customStatuses || DEFAULT_STATUSES
   );
-  const [newStatusLabel, setNewStatusLabel] = useState('');
-  const [newStatusColor, setNewStatusColor] = useState('#007aff');
+
+  // Стани для додавання статусу всередині кожної стадії
+  const [newStatusLabels, setNewStatusLabels] = useState<{ [stageId: string]: { label: string; color: string } }>({});
+
+  // Стани для контекстного меню ПКМ (зміна кольору статусу)
+  const [contextMenu, setContextMenu] = useState<{ statusId: string; x: number; y: number } | null>(null);
 
   const [colors, setColors] = useState<string[]>(() => {
     const initial = [...DEFAULT_COLORS];
@@ -138,20 +142,36 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     } as any);
   };
 
-  const handleAddStatus = () => {
-    if (!newStatusLabel.trim() || !isSuperAdmin) return;
-    const newStatus: ProjectStatus = { id: Date.now().toString(), label: newStatusLabel.trim(), color: newStatusColor };
+  const handleAddStatus = (stageId: string) => {
+    const stageInput = newStatusLabels[stageId] || { label: '', color: '#007aff' };
+    if (!stageInput.label.trim() || !isSuperAdmin) return;
+    
+    const newStatus: ProjectStatus = { id: Date.now().toString(), label: stageInput.label.trim(), color: stageInput.color };
     const updatedStatuses = [...statuses, newStatus];
     setStatuses(updatedStatuses);
-    setNewStatusLabel('');
+    setNewStatusLabels({ ...newStatusLabels, [stageId]: { label: '', color: '#007aff' } });
     handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, updatedStatuses);
   };
 
-  const handleDeleteStatus = (id: string) => {
+  const handleDeleteStatus = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!isSuperAdmin || statuses.length <= 1) return;
     const updatedStatuses = statuses.filter(s => s.id !== id);
     setStatuses(updatedStatuses);
     handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, updatedStatuses);
+  };
+
+  const handleUpdateStatusLabel = (statusId: string, newLabel: string) => {
+    const updatedStatuses = statuses.map(s => s.id === statusId ? { ...s, label: newLabel } : s);
+    setStatuses(updatedStatuses);
+    handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, updatedStatuses);
+  };
+
+  const handleUpdateStatusColor = (statusId: string, newColor: string) => {
+    const updatedStatuses = statuses.map(s => s.id === statusId ? { ...s, color: newColor } : s);
+    setStatuses(updatedStatuses);
+    handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, updatedStatuses);
+    setContextMenu(null);
   };
 
   const handleUpdateStageStatus = (stageId: string, statusLabel: string) => {
@@ -513,7 +533,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   };
 
   return (
-    <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e', paddingBottom: '80px' }}>
+    <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e', paddingBottom: '80px', position: 'relative' }} onClick={() => setContextMenu(null)}>
       <button onClick={onBack} style={{ background: 'none', border: 'none', fontSize: '14px', color: '#007aff', cursor: 'pointer', marginBottom: '16px', fontWeight: 600 }}>
         ← Back
       </button>
@@ -653,43 +673,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         </div>
       )}
 
-      {/* Налаштування статусів (тільки для Admin) */}
-      {isSuperAdmin && (
-        <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
-          <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: 700 }}>Stage Statuses Management</h4>
-          <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', alignItems: 'center' }}>
-            <input 
-              placeholder="Status name..." 
-              value={newStatusLabel} 
-              onChange={e => setNewStatusLabel(e.target.value)} 
-              style={{ ...cardInputStyle, flex: 1, height: '28px', padding: '2px 8px' }} 
-            />
-            <input 
-              type="color" 
-              value={newStatusColor} 
-              onChange={e => setNewStatusColor(e.target.value)} 
-              style={{ width: '32px', height: '28px', border: '1px solid #d1d1d6', borderRadius: '6px', cursor: 'pointer', padding: 0, backgroundColor: 'transparent' }} 
-            />
-            <button onClick={handleAddStatus} style={{ ...compactPlusBtnStyle, height: '28px', width: '28px' }}>+</button>
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-            {statuses.map(st => (
-              <div key={st.id} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 8px', borderRadius: '12px', backgroundColor: st.color, color: '#fff', fontSize: '11px', fontWeight: 600 }}>
-                <span>{st.label}</span>
-                {statuses.length > 1 && (
-                  <button 
-                    onClick={() => handleDeleteStatus(st.id)} 
-                    style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '10px', padding: 0, fontWeight: 700 }}
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* 2. Data Block */}
       {enableTeamRoles && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
@@ -768,6 +751,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 
                 const currentStageStatusLabel = (st as any).currentStatus || statuses[0]?.label || 'In Progress';
                 const currentStatusObj = statuses.find(s => s.label === currentStageStatusLabel) || statuses[0];
+
+                const currentStageInput = newStatusLabels[st.id] || { label: '', color: '#007aff' };
 
                 return (
                   <div key={st.id} style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '10px', border: '1px solid #e5e5ea' }}>
@@ -1093,8 +1078,57 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                             </div>
                           )}
 
+                          {/* Блок управління статусами (перенесено вниз під дати) */}
+                          {isSuperAdmin && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
+                              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                <input 
+                                  placeholder="New status name..." 
+                                  value={currentStageInput.label} 
+                                  onChange={e => setNewStatusLabels({ ...newStatusLabels, [st.id]: { ...currentStageInput, label: e.target.value } })} 
+                                  style={{ ...cardInputStyle, flex: 1, height: '28px', padding: '2px 8px', fontSize: '12px' }} 
+                                />
+                                <input 
+                                  type="color" 
+                                  value={currentStageInput.color} 
+                                  onChange={e => setNewStatusLabels({ ...newStatusLabels, [st.id]: { ...currentStageInput, color: e.target.value } })} 
+                                  style={{ width: '32px', height: '28px', border: '1px solid #d1d1d6', borderRadius: '6px', cursor: 'pointer', padding: 0, backgroundColor: 'transparent' }} 
+                                />
+                                <button onClick={() => handleAddStatus(st.id)} style={{ ...compactPlusBtnStyle, height: '28px', width: '28px' }}>+</button>
+                              </div>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                {statuses.map(s => (
+                                  <div 
+                                    key={s.id} 
+                                    onContextMenu={(e) => {
+                                      e.preventDefault();
+                                      setContextMenu({ statusId: s.id, x: e.clientX, y: e.clientY });
+                                    }}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 8px', borderRadius: '12px', backgroundColor: s.color, color: '#fff', fontSize: '11px', fontWeight: 600, cursor: 'pointer', userSelect: 'none' }}
+                                    title="Click to edit name, Right-click to change color"
+                                  >
+                                    <input
+                                      type="text"
+                                      value={s.label}
+                                      onChange={(e) => handleUpdateStatusLabel(s.id, e.target.value)}
+                                      style={{ border: 'none', background: 'transparent', color: '#fff', fontSize: '11px', fontWeight: 600, outline: 'none', width: `${Math.max(s.label.length, 4) * 7}px` }}
+                                    />
+                                    {statuses.length > 1 && (
+                                      <button 
+                                        onClick={(e) => handleDeleteStatus(s.id, e)} 
+                                        style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '10px', padding: 0, fontWeight: 700 }}
+                                      >
+                                        ✕
+                                      </button>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
                           {isSuperAdmin && enableTeamRoles && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px' }}>
                               <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                                 <select
                                   id={`select-contractor-${st.id}`}
@@ -1158,6 +1192,22 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           </>
         )}
       </div>
+
+      {/* Контекстне меню для зміни кольору тегу за ПКМ */}
+      {contextMenu && (
+        <div style={{ position: 'fixed', top: contextMenu.y, left: contextMenu.x, backgroundColor: '#fff', border: '1px solid #d1d1d6', borderRadius: '8px', padding: '8px', zIndex: 1000, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <span style={{ fontSize: '11px', fontWeight: 600, color: '#8e8e93', marginBottom: '2px' }}>Change Color</span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 24px)', gap: '4px' }}>
+            {DEFAULT_COLORS.concat(['#8e8e93', '#ffcc00', '#ff9500', '#34c759']).map((c, i) => (
+              <div 
+                key={i} 
+                onClick={() => handleUpdateStatusColor(contextMenu.statusId, c)} 
+                style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: c, cursor: 'pointer', border: '1px solid #d1d1d6' }} 
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 4. Team Block */}
       {isSuperAdmin && enableTeamRoles && (
