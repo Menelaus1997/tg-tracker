@@ -74,8 +74,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
   // Стан для глобального блоку тегів
   const [isTagsOpen, setIsTagsOpen] = useState(true);
-  const [newStatusLabel, setNewStatusLabel] = useState('');
   const [newStatusColor, setNewStatusColor] = useState('#007aff');
+  // ID вибраного тегу для зміни кольору
+  const [selectedTagId, setSelectedTagId] = useState<string | null>(statuses[0]?.id || null);
 
   const [colors, setColors] = useState<string[]>(() => {
     const initial = [...DEFAULT_COLORS];
@@ -141,20 +142,42 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     } as any);
   };
 
+  // Створення нового тегу з назвою "New tag" та обраним кольором
   const handleAddStatus = () => {
-    if (!newStatusLabel.trim() || !isSuperAdmin) return;
-    const newStatus: ProjectStatus = { id: Date.now().toString(), label: newStatusLabel.trim(), color: newStatusColor };
+    if (!isSuperAdmin) return;
+    const newStatus: ProjectStatus = { id: Date.now().toString(), label: 'New tag', color: newStatusColor };
     const updatedStatuses = [...statuses, newStatus];
     setStatuses(updatedStatuses);
-    setNewStatusLabel('');
+    setSelectedTagId(newStatus.id); // Автоматично робимо новий тег вибраним
     handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, updatedStatuses);
   };
 
-  const handleDeleteStatus = (id: string) => {
+  const handleDeleteStatus = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!isSuperAdmin || statuses.length <= 1) return;
     const updatedStatuses = statuses.filter(s => s.id !== id);
     setStatuses(updatedStatuses);
+    if (selectedTagId === id) {
+      setSelectedTagId(updatedStatuses[0]?.id || null);
+    }
     handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, updatedStatuses);
+  };
+
+  const handleUpdateStatusLabel = (statusId: string, newLabel: string) => {
+    const updatedStatuses = statuses.map(s => s.id === statusId ? { ...s, label: newLabel } : s);
+    setStatuses(updatedStatuses);
+    handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, updatedStatuses);
+  };
+
+  // Зміна кольору активного тегу при виборі в круглому пікері
+  const handleColorPickerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const color = e.target.value;
+    setNewStatusColor(color);
+    if (selectedTagId) {
+      const updatedStatuses = statuses.map(s => s.id === selectedTagId ? { ...s, color } : s);
+      setStatuses(updatedStatuses);
+      handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, updatedStatuses);
+    }
   };
 
   const handleUpdateStageStatus = (stageId: string, statusLabel: string) => {
@@ -656,7 +679,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         </div>
       )}
 
-      {/* Глобальний блок "Tags" з можливістю згортання та круглим пікером кольору */}
+      {/* Глобальний блок "Tags" з круглим пікером кольору та кнопкою + (без рядка вводу) */}
       {isSuperAdmin && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
           <div 
@@ -669,15 +692,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
           {isTagsOpen && (
             <>
-              <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', alignItems: 'center' }}>
-                <input 
-                  placeholder="New tag name..." 
-                  value={newStatusLabel} 
-                  onChange={e => setNewStatusLabel(e.target.value)} 
-                  style={{ ...cardInputStyle, flex: 1, height: '28px', padding: '2px 8px', fontSize: '12px' }} 
-                />
-                
-                {/* Кругла кнопка/індикатор кольору */}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', alignItems: 'center', justifyContent: 'flex-end' }}>
+                {/* Кругла кнопка/індикатор вибору кольору для активного тегу */}
                 <label 
                   style={{ 
                     width: '28px', 
@@ -693,36 +709,67 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     position: 'relative',
                     overflow: 'hidden'
                   }}
-                  title="Choose tag color"
+                  title="Choose active tag color"
                 >
                   <input
                     type="color"
                     value={newStatusColor}
-                    onChange={e => setNewStatusColor(e.target.value)}
+                    onChange={handleColorPickerChange}
                     style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer', top: 0, left: 0 }}
                   />
                 </label>
 
-                <button onClick={handleAddStatus} style={{ ...compactPlusBtnStyle, height: '28px', width: '28px' }}>+</button>
+                {/* Кнопка створення нового тегу */}
+                <button onClick={handleAddStatus} style={{ ...compactPlusBtnStyle, height: '28px', width: '28px' }} title="Add tag">+</button>
               </div>
 
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                {statuses.map(s => (
-                  <div 
-                    key={s.id} 
-                    style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 8px', borderRadius: '12px', backgroundColor: s.color, color: '#fff', fontSize: '11px', fontWeight: 600 }}
-                  >
-                    <span>{s.label}</span>
-                    {statuses.length > 1 && (
-                      <button 
-                        onClick={() => handleDeleteStatus(s.id)} 
-                        style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '10px', padding: 0, fontWeight: 700 }}
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                ))}
+                {statuses.map(s => {
+                  const isSelected = selectedTagId === s.id;
+                  return (
+                    <div 
+                      key={s.id} 
+                      onClick={() => {
+                        setSelectedTagId(s.id);
+                        setNewStatusColor(s.color);
+                      }}
+                      style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '4px', 
+                        padding: '4px 10px', 
+                        borderRadius: '12px', 
+                        backgroundColor: s.color, 
+                        color: '#fff', 
+                        fontSize: '11px', 
+                        fontWeight: 600, 
+                        cursor: 'pointer',
+                        boxShadow: isSelected ? '0 0 0 2px #007aff' : 'none'
+                      }}
+                      title="Click to select for color changing"
+                    >
+                      <input
+                        type="text"
+                        value={s.label}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => handleUpdateStatusLabel(s.id, e.target.value)}
+                        style={{ border: 'none', background: 'transparent', color: '#fff', fontSize: '11px', fontWeight: 600, outline: 'none', width: `${Math.max(s.label.length, 4) * 7}px` }}
+                      />
+                      {isSelected ? (
+                        <span style={{ fontSize: '10px', fontWeight: 700, marginLeft: '2px' }}>✓</span>
+                      ) : (
+                        statuses.length > 1 && (
+                          <button 
+                            onClick={(e) => handleDeleteStatus(s.id, e)} 
+                            style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '10px', padding: 0, fontWeight: 700 }}
+                          >
+                            ✕
+                          </button>
+                        )
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </>
           )}
