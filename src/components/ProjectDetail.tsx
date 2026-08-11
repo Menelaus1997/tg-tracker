@@ -539,44 +539,21 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     return `${d}.${m}`;
   };
 
-  // Стандартний сірий фон для дати з однаковою висотою та чорним контуром
-  const getDateBoxStyle = (dateStr?: string) => {
-    let bg = '#e5e5ea';
-    let color = '#1c1c1e';
-
-    if (dateStr) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const deadline = new Date(dateStr);
-      deadline.setHours(0, 0, 0, 0);
-
-      const diffTime = deadline.getTime() - today.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-      if (diffDays < 0) {
-        bg = '#ff3b30';
-        color = '#ffffff';
-      } else if (diffDays <= 7) {
-        bg = '#ffcc00';
-        color = '#1c1c1e';
-      }
-    }
-
-    return {
-      height: '24px',
-      boxSizing: 'border-box' as const,
-      fontSize: '11px',
-      fontWeight: 600,
-      color: color,
-      backgroundColor: bg,
-      border: '1px solid #000000',
-      padding: '0 8px',
-      borderRadius: '12px',
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: '4px',
-      lineHeight: 1
-    };
+  // Стандартний сірий фон для дати без контуру
+  const dateBoxStyle: React.CSSProperties = {
+    height: '24px',
+    boxSizing: 'border-box',
+    fontSize: '11px',
+    fontWeight: 600,
+    color: '#1c1c1e',
+    backgroundColor: '#e5e5ea',
+    border: 'none',
+    padding: '0 8px',
+    borderRadius: '12px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    lineHeight: 1
   };
 
   const firstTag = statuses[0];
@@ -723,7 +700,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         </div>
       )}
 
-      {/* Глобальний блок "Tags" з однаковою висотою та чорним контуром */}
+      {/* Глобальний блок "Tags" без будь-яких контурів */}
       {isSuperAdmin && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
           <div 
@@ -746,7 +723,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     height: '24px', 
                     borderRadius: '50%', 
                     backgroundColor: globalPickerColor, 
-                    border: '1px solid #000000', 
+                    border: 'none', 
                     cursor: 'pointer', 
                     display: 'flex', 
                     alignItems: 'center', 
@@ -778,7 +755,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       padding: '0 8px 0 2px', 
                       borderRadius: '12px', 
                       backgroundColor: '#e5e5ea', 
-                      border: '1px solid #000000',
+                      border: 'none',
                       color: '#1c1c1e', 
                       fontSize: '11px', 
                       fontWeight: 600
@@ -840,7 +817,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           padding: '0 8px 0 2px', 
                           borderRadius: '12px', 
                           backgroundColor: '#e5e5ea', 
-                          border: '1px solid #000000',
+                          border: 'none',
                           color: '#1c1c1e', 
                           fontSize: '11px', 
                           fontWeight: 600
@@ -978,7 +955,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     {/* Рядок над назвою стадії */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                       {deadlineDateStr && (
-                        <div style={getDateBoxStyle(deadlineDateStr)}>
+                        <div style={dateBoxStyle}>
                           📅 {formatDateShort(deadlineDateStr)}
                         </div>
                       )}
@@ -989,7 +966,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                         style={{ 
                           height: '24px',
                           boxSizing: 'border-box',
-                          border: '1px solid #000000', 
+                          border: 'none', 
                           borderRadius: '12px', 
                           padding: '0 10px', 
                           fontSize: '11px', 
