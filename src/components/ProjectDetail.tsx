@@ -78,6 +78,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     contractors: (s as any).contractors || (s.contractor ? [s.contractor] : [])
   })));
   const [collapsedStages, setCollapsedStages] = useState<{ [key: string]: boolean }>({});
+  
+  // Стан для згортання/розгортання тегів підстадії
+  const [collapsedSubStages, setCollapsedSubStages] = useState<{ [key: string]: boolean }>({});
+
   const [newStageTitle, setNewStageTitle] = useState('');
   const [newSubStageTitle, setNewSubStageTitle] = useState<{ [key: string]: string }>({});
 
@@ -307,7 +311,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     }));
   };
 
-  // Додавання нового вкладеного пункту одразу з кнопкою + (без попереднього текстового поля)
+  // Дії для вкладених тегів (пунктів) під підстадією
   const handleAddNestedItem = (stageId: string, subStageId: string) => {
     if (!canManageSubtasks) return;
 
@@ -320,6 +324,29 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               const nested = (sub as any).nestedItems || [];
               const newItem = { id: Date.now().toString(), title: '', completed: false };
               return { ...sub, nestedItems: [...nested, newItem] };
+            }
+            return sub;
+          })
+        };
+      }
+      return s;
+    }));
+  };
+
+  const handleMoveNestedItem = (stageId: string, subStageId: string, index: number, direction: 'up' | 'down') => {
+    if (!canManageSubtasks) return;
+    setStages(stages.map(s => {
+      if (s.id === stageId) {
+        return {
+          ...s,
+          subStages: s.subStages.map(sub => {
+            if (sub.id === subStageId) {
+              const nested = [...((sub as any).nestedItems || [])];
+              const targetIndex = direction === 'up' ? index - 1 : index + 1;
+              if (targetIndex < 0 || targetIndex >= nested.length) return sub;
+              const [moved] = nested.splice(index, 1);
+              nested.splice(targetIndex, 0, moved);
+              return { ...sub, nestedItems: nested };
             }
             return sub;
           })
@@ -775,10 +802,11 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           </div>
                         </div>
 
-                        {/* Підстадії + кнопка + та кошик у рядку кожної підстадії */}
+                        {/* Підстадії */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
                           {st.subStages.map((sub, idx) => {
                             const nestedItems = (sub as any).nestedItems || [];
+                            const isSubCollapsed = collapsedSubStages[sub.id];
 
                             return (
                               <div key={sub.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px', backgroundColor: '#f9f9fb', padding: '8px', borderRadius: '8px', border: '1px solid #e5e5ea' }}>
@@ -786,7 +814,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
                                     
-                                    {/* Стрілочки переміщення підстадії (▲ / ▼) */}
+                                    {/* Спадане меню для приховування/показу тегів біля стрілочок переміщення */}
                                     {canManageSubtasks && (
                                       <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', marginRight: '2px' }}>
                                         <button 
@@ -807,6 +835,14 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                         </button>
                                       </div>
                                     )}
+
+                                    {/* Кнопка розгортання/згортання тегів */}
+                                    <span 
+                                      onClick={() => setCollapsedSubStages({ ...collapsedSubStages, [sub.id]: !isSubCollapsed })}
+                                      style={{ cursor: 'pointer', fontSize: '10px', color: '#8e8e93', userSelect: 'none', width: '12px', textAlign: 'center' }}
+                                    >
+                                      {isSubCollapsed ? '▶' : '▼'}
+                                    </span>
 
                                     <input
                                       type="checkbox"
@@ -831,11 +867,15 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
                                   {canManageSubtasks && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                      {/* Кнопка + для додавання вкладеного пункту одразу в рядку підстадії */}
                                       <button 
-                                        onClick={() => handleAddNestedItem(st.id, sub.id)} 
+                                        onClick={() => {
+                                          if (isSubCollapsed) {
+                                            setCollapsedSubStages({ ...collapsedSubStages, [sub.id]: false });
+                                          }
+                                          handleAddNestedItem(st.id, sub.id);
+                                        }} 
                                         style={{ ...compactPlusBtnStyle, width: '24px', height: '24px', fontSize: '14px' }}
-                                        title="Add sub-item"
+                                        title="Add tag"
                                       >
                                         +
                                       </button>
@@ -846,18 +886,41 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                   )}
                                 </div>
 
-                                {/* Вкладені пункти (ієрархія 1.1, 1.2 тощо) */}
-                                {nestedItems.length > 0 && (
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '24px', marginTop: '4px' }}>
+                                {/* Вкладені теги (темно-сірий колір тексту, повний функціонал з ідентичним вирівнюванням кошиків) */}
+                                {!isSubCollapsed && nestedItems.length > 0 && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '28px', marginTop: '4px' }}>
                                     {nestedItems.map((item: any, itemIdx: number) => (
                                       <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
+                                          
+                                          {/* Стрілочки для переміщення тегів */}
+                                          {canManageSubtasks && (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', marginRight: '2px' }}>
+                                              <button 
+                                                onClick={() => handleMoveNestedItem(st.id, sub.id, itemIdx, 'up')}
+                                                disabled={itemIdx === 0}
+                                                style={{ background: 'none', border: 'none', cursor: itemIdx === 0 ? 'default' : 'pointer', fontSize: '8px', padding: 0, color: itemIdx === 0 ? '#d1d1d6' : '#636366', lineHeight: 1 }}
+                                                title="Move Up"
+                                              >
+                                                ▲
+                                              </button>
+                                              <button 
+                                                onClick={() => handleMoveNestedItem(st.id, sub.id, itemIdx, 'down')}
+                                                disabled={itemIdx === nestedItems.length - 1}
+                                                style={{ background: 'none', border: 'none', cursor: itemIdx === nestedItems.length - 1 ? 'default' : 'pointer', fontSize: '8px', padding: 0, color: itemIdx === nestedItems.length - 1 ? '#d1d1d6' : '#636366', lineHeight: 1 }}
+                                                title="Move Down"
+                                              >
+                                                ▼
+                                              </button>
+                                            </div>
+                                          )}
+
                                           <input
                                             type="checkbox"
                                             checked={item.completed}
                                             onChange={() => handleToggleNestedItem(st.id, sub.id, item.id)}
                                           />
-                                          <span style={{ fontWeight: 600, color: '#007aff', userSelect: 'none', minWidth: '24px' }}>{idx + 1}.{itemIdx + 1}</span>
+                                          <span style={{ fontWeight: 600, color: '#636366', userSelect: 'none', minWidth: '24px' }}>{idx + 1}.{itemIdx + 1}</span>
 
                                           <input
                                             type="text"
@@ -868,14 +931,18 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                               ...inlineTitleInputStyle,
                                               fontSize: '12px',
                                               textDecoration: item.completed ? 'line-through' : 'none',
-                                              color: item.completed ? '#8e8e93' : '#1c1c1e'
+                                              color: item.completed ? '#8e8e93' : '#3a3a3c' // Темно-сірий колір
                                             }}
                                           />
                                         </div>
 
                                         {canManageSubtasks && (
-                                          <div style={{ width: '38px', display: 'flex', justifyContent: 'center' }}>
-                                            <button onClick={() => handleDeleteNestedItem(st.id, sub.id, item.id)} style={{ ...iconBtnStyle, color: '#ff3b30' }}>🗑️</button>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            {/* Пустий контейнер для симетрії з кнопкою "+" у підстадії, щоб кошики були на одній осі */}
+                                            <div style={{ width: '24px' }} />
+                                            <div style={{ width: '28px', display: 'flex', justifyContent: 'center' }}>
+                                              <button onClick={() => handleDeleteNestedItem(st.id, sub.id, item.id)} style={{ ...iconBtnStyle, color: '#ff3b30' }}>🗑️</button>
+                                            </div>
                                           </div>
                                         )}
                                       </div>
