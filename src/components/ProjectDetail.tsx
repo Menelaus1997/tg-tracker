@@ -26,10 +26,10 @@ interface ProjectStatus {
 }
 
 const DEFAULT_STATUSES: ProjectStatus[] = [
-  { id: '1', label: 'In Progress', color: '#007aff' },
-  { id: '2', label: 'On Hold', color: '#ffcc00' },
-  { id: '3', label: 'In Review', color: '#ff9500' },
-  { id: '4', label: 'Completed', color: '#34c759' }
+  { id: '1', label: 'В процесі', color: '#007aff' },
+  { id: '2', label: 'На паузі', color: '#ffcc00' },
+  { id: '3', label: 'На перевірці', color: '#ff9500' },
+  { id: '4', label: 'Завершено', color: '#34c759' }
 ];
 
 const DEFAULT_COLORS = [
@@ -145,8 +145,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
   const handleAddStatus = () => {
     if (!isSuperAdmin) return;
-    const newStatus: ProjectStatus = { id: Date.now().toString(), label: 'New tag', color: globalPickerColor };
-    // Новий тег ставимо на початок масиву, щоб він завжди був першим (на першому рядку біля кольору та +)
+    const newStatus: ProjectStatus = { id: Date.now().toString(), label: 'Новий тег', color: globalPickerColor };
     const updatedStatuses = [newStatus, ...statuses];
     setStatuses(updatedStatuses);
     setSelectedTagId(newStatus.id);
@@ -238,7 +237,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       reviewDate: '',
       correctionDate: '',
       contractors: [],
-      currentStatus: statuses[0]?.label || 'In Progress'
+      currentStatus: statuses[0]?.label || 'В процесі'
     } as any;
 
     setStages([...stages, newStage]);
@@ -303,7 +302,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       const dateObj = new Date(val);
       const dayOfWeek = dateObj.getDay();
       if (dayOfWeek === 0 || dayOfWeek === 6) {
-        alert('Weekends (Saturday and Sunday) cannot be selected. Please choose a weekday (Mon-Fri).');
+        alert('Вихідні (субота та неділя) не можуть бути вибрані. Будь ласка, оберіть будній день.');
         return;
       }
     }
@@ -517,7 +516,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       onSaveAsTemplate(updatedProject, templateNameInput.trim());
     }
 
-    alert('Changes saved successfully!');
+    alert('Зміни успішно збережено!');
     onBack();
   };
 
@@ -540,14 +539,52 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     return `${d}.${m}`;
   };
 
-  // Виділяємо перший тег (який щойно створений або перший у списку) для першого рядка, а решту — на другий і далі
+  // Функція для визначення стилю дати (годинника) залежно від умов
+  const getDateBoxStyle = (dateStr?: string) => {
+    let bg = '#ffffff';
+    let color = '#1c1c1e';
+
+    if (dateStr) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const deadline = new Date(dateStr);
+      deadline.setHours(0, 0, 0, 0);
+
+      const diffTime = deadline.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays < 0) {
+        // Пройшло не вчасно -> червоний
+        bg = '#ff3b30';
+        color = '#ffffff';
+      } else if (diffDays <= 7) {
+        // Залишився 1 тиждень або менше -> жовтий
+        bg = '#ffcc00';
+        color = '#1c1c1e';
+      }
+    }
+
+    return {
+      fontSize: '12px',
+      fontWeight: 600,
+      color: color,
+      backgroundColor: bg,
+      border: '1px solid #000000',
+      padding: '3px 8px',
+      borderRadius: '8px',
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '4px'
+    };
+  };
+
   const firstTag = statuses[0];
   const remainingTags = statuses.slice(1);
 
   return (
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e', paddingBottom: '80px' }}>
       <button onClick={onBack} style={{ background: 'none', border: 'none', fontSize: '14px', color: '#007aff', cursor: 'pointer', marginBottom: '16px', fontWeight: 600 }}>
-        ← Back
+        ← Назад
       </button>
 
       {/* 1. Header Block */}
@@ -556,13 +593,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           onClick={() => setIsHeaderOpen(!isHeaderOpen)} 
           style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
         >
-          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>{name || 'Untitled'}</h3>
+          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>{name || 'Без назви'}</h3>
         </div>
 
         {isHeaderOpen && isSuperAdmin && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }} onClick={(e) => e.stopPropagation()}>
             <div>
-              <label style={labelStyle}>Project Name</label>
+              <label style={labelStyle}>Назва проекту</label>
               <input
                 type="text"
                 value={name}
@@ -575,7 +612,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             </div>
 
             <div>
-              <label style={labelStyle}>Project ID</label>
+              <label style={labelStyle}>ID проекту</label>
               <input
                 type="text"
                 value={projectId}
@@ -652,7 +689,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       {/* Повзунок Roles */}
       {isSuperAdmin && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '12px 14px', borderRadius: '12px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
-          <span style={{ fontSize: '13px', fontWeight: 600, color: '#1c1c1e' }}>Roles</span>
+          <span style={{ fontSize: '13px', fontWeight: 600, color: '#1c1c1e' }}>Ролі</span>
           <div
             onClick={() => {
               const nextVal = !enableTeamRoles;
@@ -685,7 +722,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         </div>
       )}
 
-      {/* Глобальний блок "Tags" */}
+      {/* Глобальний блок "Tags" із чорним контуром для тегів */}
       {isSuperAdmin && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
           <div 
@@ -693,17 +730,15 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: isTagsOpen ? '10px' : 0 }}
           >
             <span style={{ fontSize: '12px', color: '#8e8e93' }}>{isTagsOpen ? '▲' : '▼'}</span>
-            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>Tags</h3>
+            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>Теги</h3>
           </div>
 
           {isTagsOpen && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {/* Перший рядок: Кнопка +, вибір кольору та найновіший тег */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
-                {/* Кнопка створення нового тегу */}
-                <button onClick={handleAddStatus} style={{ ...compactPlusBtnStyle, height: '28px', width: '28px' }} title="Add tag">+</button>
+                <button onClick={handleAddStatus} style={{ ...compactPlusBtnStyle, height: '28px', width: '28px' }} title="Додати тег">+</button>
 
-                {/* Кругла кнопка глобального вибору кольору */}
                 <label 
                   style={{ 
                     width: '28px', 
@@ -715,11 +750,11 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     display: 'flex', 
                     alignItems: 'center', 
                     justifyContent: 'center', 
-                    flexShrink: 0,
+                    flexShrink: '0',
                     position: 'relative',
                     overflow: 'hidden'
                   }}
-                  title="Choose color to apply to active tag"
+                  title="Обрати колір"
                 >
                   <input
                     type="color"
@@ -729,7 +764,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   />
                 </label>
 
-                {/* Найновіший тег на першому рядку */}
                 {firstTag && (
                   <div 
                     key={firstTag.id} 
@@ -740,7 +774,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       padding: '3px 8px 3px 3px', 
                       borderRadius: '16px', 
                       backgroundColor: '#e5e5ea', 
-                      border: '1px solid #d1d1d6',
+                      border: '1px solid #000000',
                       color: '#1c1c1e', 
                       fontSize: '11px', 
                       fontWeight: 600
@@ -762,7 +796,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                         justifyContent: 'center', 
                         flexShrink: 0
                       }}
-                      title="Click to select this tag"
                     >
                       {selectedTagId === firstTag.id && <span style={{ color: '#fff', fontSize: '10px', fontWeight: 700, lineHeight: 1 }}>✓</span>}
                     </div>
@@ -778,7 +811,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       <button 
                         onClick={(e) => handleDeleteStatus(firstTag.id, e)} 
                         style={{ background: 'none', border: 'none', color: '#8e8e93', cursor: 'pointer', fontSize: '10px', padding: 0, fontWeight: 700 }}
-                        title="Delete tag"
                       >
                         ✕
                       </button>
@@ -787,7 +819,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 )}
               </div>
 
-              {/* Другий та наступні рядки: усі інші теги, що змістилися вниз */}
+              {/* Другий рядок: решта тегів з чорним контуром */}
               {remainingTags.length > 0 && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
                   {remainingTags.map(s => {
@@ -802,7 +834,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           padding: '3px 8px 3px 3px', 
                           borderRadius: '16px', 
                           backgroundColor: '#e5e5ea', 
-                          border: '1px solid #d1d1d6',
+                          border: '1px solid #000000',
                           color: '#1c1c1e', 
                           fontSize: '11px', 
                           fontWeight: 600
@@ -824,7 +856,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                             justifyContent: 'center', 
                             flexShrink: 0
                           }}
-                          title="Click to select this tag"
                         >
                           {isSelected && <span style={{ color: '#fff', fontSize: '10px', fontWeight: 700, lineHeight: 1 }}>✓</span>}
                         </div>
@@ -840,7 +871,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           <button 
                             onClick={(e) => handleDeleteStatus(s.id, e)} 
                             style={{ background: 'none', border: 'none', color: '#8e8e93', cursor: 'pointer', fontSize: '10px', padding: 0, fontWeight: 700 }}
-                            title="Delete tag"
                           >
                             ✕
                           </button>
@@ -863,7 +893,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
             <span style={{ fontSize: '12px', color: '#8e8e93' }}>{isGeneralDataOpen ? '▲' : '▼'}</span>
-            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>Data</h3>
+            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>Дані</h3>
           </div>
 
           {isGeneralDataOpen && (
@@ -905,7 +935,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}
         >
           <span style={{ fontSize: '12px', color: '#8e8e93' }}>{isStructureOpen ? '▲' : '▼'}</span>
-          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>Structure</h3>
+          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>Структура</h3>
         </div>
 
         {isStructureOpen && (
@@ -914,7 +944,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               <form onSubmit={handleAddStage} style={{ display: 'flex', gap: '6px', marginBottom: '14px', alignItems: 'center' }}>
                 <input
                   type="text"
-                  placeholder="come up with your own structure"
+                  placeholder="створіть власну структуру"
                   value={newStageTitle}
                   onChange={(e) => setNewStageTitle(e.target.value)}
                   style={{ ...cardInputStyle, flex: 1, height: '28px', padding: '2px 8px', boxSizing: 'border-box' }}
@@ -931,17 +961,19 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 const isTrackTimeOn = st.trackTime !== false;
                 const stageContractors: string[] = (st as any).contractors || (st.contractor ? [st.contractor] : []);
                 
-                const currentStageStatusLabel = (st as any).currentStatus || statuses[0]?.label || 'In Progress';
+                const currentStageStatusLabel = (st as any).currentStatus || statuses[0]?.label || 'В процесі';
                 const currentStatusObj = statuses.find(s => s.label === currentStageStatusLabel) || statuses[0];
+
+                const deadlineDateStr = (st as any).reviewDate || st.endDate;
 
                 return (
                   <div key={st.id} style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '10px', border: '1px solid #e5e5ea' }}>
                     
-                    {/* Рядок над назвою стадії: Дата та кольоровий статус-бейдж */}
+                    {/* Рядок над назвою стадії: Дата з умовами та чорним контуром + статус з ЧОРНИМ текстом */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                      {((st as any).reviewDate || st.endDate) && (
-                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#007aff', backgroundColor: '#eef5ff', padding: '2px 6px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          📅 {formatDateShort((st as any).reviewDate || st.endDate)}
+                      {deadlineDateStr && (
+                        <div style={getDateBoxStyle(deadlineDateStr)}>
+                          📅 {formatDateShort(deadlineDateStr)}
                         </div>
                       )}
 
@@ -955,13 +987,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           fontSize: '11px', 
                           fontWeight: 600,
                           backgroundColor: currentStatusObj?.color || '#8e8e93',
-                          color: '#fff',
+                          color: '#000000',
                           cursor: 'pointer',
                           outline: 'none'
                         }}
                       >
                         {statuses.map(s => (
-                          <option key={s.id} value={s.label} style={{ backgroundColor: '#fff', color: '#1c1c1e' }}>
+                          <option key={s.id} value={s.label} style={{ backgroundColor: '#fff', color: '#000000' }}>
                             {s.label}
                           </option>
                         ))}
@@ -1030,9 +1062,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
                     {editingTimeStageId === st.id && (
                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '8px', padding: '6px', backgroundColor: '#f2f2f7', borderRadius: '6px', fontSize: '12px' }}>
-                        <span>Hours:</span>
+                        <span>Годин:</span>
                         <input type="number" value={manualHours} onChange={(e) => setManualHours(e.target.value)} style={{ ...cardInputStyle, width: '50px', padding: '2px 4px', height: '28px', boxSizing: 'border-box' }} />
-                        <span>Min:</span>
+                        <span>Хвил:</span>
                         <input type="number" value={manualMinutes} onChange={(e) => setManualMinutes(e.target.value)} style={{ ...cardInputStyle, width: '50px', padding: '2px 4px', height: '28px', boxSizing: 'border-box' }} />
                         <button onClick={() => handleSaveManualTime(st.id)} style={{ ...btnStyle, backgroundColor: '#34c759', color: '#fff', padding: '2px 6px', fontSize: '11px' }}>✓</button>
                       </div>
@@ -1043,7 +1075,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                         
                         {enableTeamRoles && (
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
-                            <span>time</span>
+                            <span>облік часу</span>
                             <div style={{ width: '38px', display: 'flex', justifyContent: 'center', transform: 'translateX(1px)' }}>
                               <div
                                 onClick={() => handleToggleStageTrackTime(st.id)}
@@ -1090,7 +1122,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                           onClick={() => handleMoveSubStage(st.id, idx, 'up')}
                                           disabled={idx === 0}
                                           style={{ background: 'none', border: 'none', cursor: idx === 0 ? 'default' : 'pointer', fontSize: '8px', padding: 0, color: idx === 0 ? '#d1d1d6' : '#007aff', lineHeight: 1 }}
-                                          title="Move Up"
                                         >
                                           ▲
                                         </button>
@@ -1098,7 +1129,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                           onClick={() => handleMoveSubStage(st.id, idx, 'down')}
                                           disabled={idx === st.subStages.length - 1}
                                           style={{ background: 'none', border: 'none', cursor: idx === st.subStages.length - 1 ? 'default' : 'pointer', fontSize: '8px', padding: 0, color: idx === st.subStages.length - 1 ? '#d1d1d6' : '#007aff', lineHeight: 1 }}
-                                          title="Move Down"
                                         >
                                           ▼
                                         </button>
@@ -1143,7 +1173,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                           handleAddNestedItem(st.id, sub.id);
                                         }} 
                                         style={{ ...compactPlusBtnStyle, width: '24px', height: '24px', fontSize: '14px' }}
-                                        title="Add tag"
                                       >
                                         +
                                       </button>
@@ -1166,7 +1195,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                                 onClick={() => handleMoveNestedItem(st.id, sub.id, itemIdx, 'up')}
                                                 disabled={itemIdx === 0}
                                                 style={{ background: 'none', border: 'none', cursor: itemIdx === 0 ? 'default' : 'pointer', fontSize: '8px', padding: 0, color: itemIdx === 0 ? '#d1d1d6' : '#636366', lineHeight: 1 }}
-                                                title="Move Up"
                                               >
                                                 ▲
                                               </button>
@@ -1174,7 +1202,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                                 onClick={() => handleMoveNestedItem(st.id, sub.id, itemIdx, 'down')}
                                                 disabled={itemIdx === nestedItems.length - 1}
                                                 style={{ background: 'none', border: 'none', cursor: itemIdx === nestedItems.length - 1 ? 'default' : 'pointer', fontSize: '8px', padding: 0, color: itemIdx === nestedItems.length - 1 ? '#d1d1d6' : '#636366', lineHeight: 1 }}
-                                                title="Move Down"
                                               >
                                                 ▼
                                               </button>
@@ -1223,7 +1250,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           <div style={{ display: 'flex', gap: '6px', marginTop: '8px', alignItems: 'center' }}>
                             <input
                               type="text"
-                              placeholder="Add task/subtask"
+                              placeholder="Додати підзадачу"
                               value={newSubStageTitle[st.id] || ''}
                               onChange={(e) => setNewSubStageTitle({ ...newSubStageTitle, [st.id]: e.target.value })}
                               style={{ ...cardInputStyle, padding: '2px 8px', fontSize: '12px', height: '28px', boxSizing: 'border-box', flex: 1 }}
@@ -1238,18 +1265,18 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           
                           {showDates && isSuperAdmin && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                              <span style={{ fontSize: '11px', fontWeight: 600, color: '#636366' }}>Planned terms (Start / Deadline):</span>
+                              <span style={{ fontSize: '11px', fontWeight: 600, color: '#636366' }}>Терміни (Старт / Дедлайн):</span>
                               <div style={{ display: 'flex', gap: '6px', fontSize: '11px' }}>
                                 <input
                                   type="date"
-                                  title="Start Date"
+                                  title="Дата початку"
                                   value={st.startDate || ''}
                                   onChange={(e) => handleUpdateStageDates(st.id, 'startDate', e.target.value)}
                                   style={{ ...cardInputStyle, flex: 1, padding: '4px', fontSize: '11px', height: '30px', boxSizing: 'border-box' }}
                                 />
                                 <input
                                   type="date"
-                                  title="Deadline Date"
+                                  title="Дедлайн"
                                   value={(st as any).reviewDate || st.endDate || ''}
                                   onChange={(e) => handleUpdateStageDates(st.id, 'endDate', e.target.value)}
                                   style={{ ...cardInputStyle, flex: 1, padding: '4px', fontSize: '11px', height: '30px', boxSizing: 'border-box' }}
@@ -1266,10 +1293,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                   defaultValue=""
                                   style={{ ...cardInputStyle, fontSize: '12px', height: '28px', padding: '2px 8px', boxSizing: 'border-box', flex: 1 }}
                                 >
-                                  <option value="">Select contractor / assignee...</option>
+                                  <option value="">Виберіть виконавця...</option>
                                   {projectTeam.map(pt => {
                                     const member = teamDatabase.find(m => m.id === pt.memberId);
-                                    const nameStr = `${member?.fullName || 'Member'} (${pt.role})`;
+                                    const nameStr = `${member?.fullName || 'Учасник'} (${pt.role})`;
                                     return (
                                       <option key={pt.id} value={member?.fullName || ''}>
                                         {nameStr}
@@ -1287,7 +1314,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                     }
                                   }}
                                   style={{ ...compactPlusBtnStyle, width: '28px', height: '28px', boxSizing: 'border-box' }}
-                                  title="Add contractor"
                                 >
                                   +
                                 </button>
@@ -1332,7 +1358,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: isTeamOpen ? '10px' : 0 }}
           >
             <span style={{ fontSize: '12px', color: '#8e8e93' }}>{isTeamOpen ? '▲' : '▼'}</span>
-            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>Team</h3>
+            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>Команда</h3>
           </div>
 
           {isTeamOpen && (
@@ -1343,7 +1369,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   onChange={(e) => setSelectedMemberId(e.target.value)}
                   style={{ ...cardInputStyle, flex: 1, fontSize: '12px', height: '28px', padding: '2px 8px', boxSizing: 'border-box' }}
                 >
-                  {teamDatabase.length === 0 && <option value="">No members in DB</option>}
+                  {teamDatabase.length === 0 && <option value="">Немає учасників в базі</option>}
                   {teamDatabase.map((m) => (
                     <option key={m.id} value={m.id}>{m.fullName}</option>
                   ))}
@@ -1372,7 +1398,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   const member = teamDatabase.find(m => m.id === pt.memberId);
                   return (
                     <div key={pt.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', backgroundColor: '#ffffff', borderRadius: '8px', fontSize: '13px', border: '1px solid #e5e5ea' }}>
-                      <span><strong>{member?.fullName || 'Member'}</strong> ({pt.role})</span>
+                      <span><strong>{member?.fullName || 'Учасник'}</strong> ({pt.role})</span>
                       <div style={{ width: '38px', display: 'flex', justifyContent: 'center', transform: 'translateX(1px)' }}>
                         <button onClick={() => handleRemoveProjectMember(pt.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}>🗑️</button>
                       </div>
@@ -1393,13 +1419,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             checked={saveAsTemplate}
             onChange={(e) => setSaveAsTemplate(e.target.checked)}
           />
-          Save as a new template
+          Зберегти як новий шаблон
         </label>
 
         {saveAsTemplate && (
           <input
             type="text"
-            placeholder="Template Name"
+            placeholder="Назва шаблону"
             value={templateNameInput}
             onChange={(e) => setTemplateNameInput(e.target.value)}
             style={{ ...cardInputStyle, height: '28px', padding: '2px 8px', boxSizing: 'border-box' }}
@@ -1410,7 +1436,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           onClick={handleFinalSave}
           style={{ width: '100%', padding: '14px', backgroundColor: '#007aff', color: '#ffffff', border: 'none', borderRadius: '10px', fontWeight: 700, fontSize: '15px', cursor: 'pointer' }}
         >
-          Save Changes
+          Зберегти зміни
         </button>
       </div>
     </div>
