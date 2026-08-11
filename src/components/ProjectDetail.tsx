@@ -171,7 +171,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, updatedStatuses);
   };
 
-  // Зміна кольору активного тегу за допомогою верхнього глобального кругового пікера
   const handleGlobalPickerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const color = e.target.value;
     setGlobalPickerColor(color);
@@ -681,7 +680,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         </div>
       )}
 
-      {/* Глобальний блок "Tags" (усі теги разом з кружечком кольору та кнопкою + в одному рядку вгорі) */}
+      {/* Глобальний блок "Tags" (теги переносяться окремо, а кружечок і плюс фіксовані в кінці потоку) */}
       {isSuperAdmin && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
           <div 
@@ -756,34 +755,35 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 );
               })}
 
-              {/* Кругла кнопка глобального вибору кольору для зміни кольору обраного тегу в одному ряду */}
-              <label 
-                style={{ 
-                  width: '28px', 
-                  height: '28px', 
-                  borderRadius: '50%', 
-                  backgroundColor: globalPickerColor, 
-                  border: '1px solid #d1d1d6', 
-                  cursor: 'pointer', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  flexShrink: 0,
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}
-                title="Choose color to apply to active tag"
-              >
-                <input
-                  type="color"
-                  value={globalPickerColor}
-                  onChange={handleGlobalPickerChange}
-                  style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer', top: 0, left: 0 }}
-                />
-              </label>
+              {/* Блок із глобальним вибором кольору та кнопкою + (знаходяться в тому ж загальному потоці) */}
+              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                <label 
+                  style={{ 
+                    width: '28px', 
+                    height: '28px', 
+                    borderRadius: '50%', 
+                    backgroundColor: globalPickerColor, 
+                    border: '1px solid #d1d1d6', 
+                    cursor: 'pointer', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    flexShrink: 0,
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
+                  title="Choose color to apply to active tag"
+                >
+                  <input
+                    type="color"
+                    value={globalPickerColor}
+                    onChange={handleGlobalPickerChange}
+                    style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer', top: 0, left: 0 }}
+                  />
+                </label>
 
-              {/* Кнопка створення нового тегу в одному ряду */}
-              <button onClick={handleAddStatus} style={{ ...compactPlusBtnStyle, height: '28px', width: '28px' }} title="Add tag">+</button>
+                <button onClick={handleAddStatus} style={{ ...compactPlusBtnStyle, height: '28px', width: '28px' }} title="Add tag">+</button>
+              </div>
             </div>
           )}
         </div>
