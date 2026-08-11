@@ -171,21 +171,15 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, updatedStatuses);
   };
 
-  const handleUpdateSingleTagColor = (statusId: string, newColor: string) => {
-    const updatedStatuses = statuses.map(s => s.id === statusId ? { ...s, color: newColor } : s);
-    setStatuses(updatedStatuses);
-    setSelectedTagId(statusId);
-    setGlobalPickerColor(newColor);
-    handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, updatedStatuses);
-  };
-
-  const handleAddStatusWithGlobalColor = () => {
-    if (!isSuperAdmin) return;
-    const newStatus: ProjectStatus = { id: Date.now().toString(), label: 'New tag', color: globalPickerColor };
-    const updatedStatuses = [...statuses, newStatus];
-    setStatuses(updatedStatuses);
-    setSelectedTagId(newStatus.id);
-    handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, updatedStatuses);
+  // Зміна кольору активного тегу за допомогою верхнього глобального кругового пікера
+  const handleGlobalPickerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const color = e.target.value;
+    setGlobalPickerColor(color);
+    if (selectedTagId) {
+      const updatedStatuses = statuses.map(s => s.id === selectedTagId ? { ...s, color } : s);
+      setStatuses(updatedStatuses);
+      handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, updatedStatuses);
+    }
   };
 
   const handleUpdateStageStatus = (stageId: string, statusLabel: string) => {
@@ -536,7 +530,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const displayedStages = stages.filter(st => {
     if (!enableTeamRoles) return true;
     if (!showOnlyAssignedStages || isSuperAdmin) return true;
-    const stageContractors: string[] = (st as any).contractors || (st.contractor ? [s.contractor] : []);
+    const stageContractors: string[] = (st as any).contractors || (st.contractor ? [st.contractor] : []);
     return stageContractors.some(c => c.toLowerCase().includes(currentUserRole.toLowerCase()));
   });
 
@@ -687,7 +681,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         </div>
       )}
 
-      {/* Глобальний блок "Tags" (усі теги разом з кружечком кольору та кнопкою + в одному рядку з можливістю перенесення) */}
+      {/* Глобальний блок "Tags" (усі теги разом з кружечком кольору та кнопкою + в одному рядку вгорі) */}
       {isSuperAdmin && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
           <div 
@@ -718,8 +712,12 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       fontWeight: 600
                     }}
                   >
-                    {/* Кружечок кольору для цього тегу */}
-                    <label 
+                    {/* Кружечок кольору для вибору активного тегу */}
+                    <div 
+                      onClick={() => {
+                        setSelectedTagId(s.id);
+                        setGlobalPickerColor(s.color);
+                      }}
                       style={{ 
                         width: '20px', 
                         height: '20px', 
@@ -729,26 +727,17 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                         display: 'flex', 
                         alignItems: 'center', 
                         justifyContent: 'center', 
-                        flexShrink: 0,
-                        position: 'relative',
-                        overflow: 'hidden'
+                        flexShrink: 0
                       }}
-                      title="Click to change tag color"
+                      title="Click to select this tag"
                     >
-                      <input
-                        type="color"
-                        value={s.color}
-                        onChange={(e) => handleUpdateSingleTagColor(s.id, e.target.value)}
-                        style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer', top: 0, left: 0 }}
-                      />
                       {isSelected && <span style={{ color: '#fff', fontSize: '10px', fontWeight: 700, lineHeight: 1 }}>✓</span>}
-                    </label>
+                    </div>
 
                     {/* Текст назви тегу (тільки редагування назви) */}
                     <input
                       type="text"
                       value={s.label}
-                      onClick={() => setSelectedTagId(s.id)}
                       onChange={(e) => handleUpdateStatusLabel(s.id, e.target.value)}
                       style={{ border: 'none', background: 'transparent', color: '#1c1c1e', fontSize: '11px', fontWeight: 600, outline: 'none', width: `${Math.max(s.label.length, 4) * 7}px` }}
                     />
@@ -767,7 +756,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 );
               })}
 
-              {/* Кругла кнопка/індикатор для вибору дефолтного кольору майбутнього тегу */}
+              {/* Кругла кнопка глобального вибору кольору для зміни кольору обраного тегу в одному ряду */}
               <label 
                 style={{ 
                   width: '28px', 
@@ -783,18 +772,18 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   position: 'relative',
                   overflow: 'hidden'
                 }}
-                title="Choose color for next new tag"
+                title="Choose color to apply to active tag"
               >
                 <input
                   type="color"
                   value={globalPickerColor}
-                  onChange={(e) => setGlobalPickerColor(e.target.value)}
+                  onChange={handleGlobalPickerChange}
                   style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer', top: 0, left: 0 }}
                 />
               </label>
 
-              {/* Кнопка створення нового тегу */}
-              <button onClick={handleAddStatusWithGlobalColor} style={{ ...compactPlusBtnStyle, height: '28px', width: '28px' }} title="Add tag">+</button>
+              {/* Кнопка створення нового тегу в одному ряду */}
+              <button onClick={handleAddStatus} style={{ ...compactPlusBtnStyle, height: '28px', width: '28px' }} title="Add tag">+</button>
             </div>
           )}
         </div>
