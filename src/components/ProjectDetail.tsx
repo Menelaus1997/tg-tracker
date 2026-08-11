@@ -51,7 +51,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [name, setName] = useState(project.name);
   const [projectId, setProjectId] = useState(project.id);
   
-  // Новий стан для вмикання/вимикання ролей / особистого проєкту
+  // Стан для вмикання/вимикання ролей / особистого проєкту
   const [disableTeamRoles, setDisableTeamRoles] = useState<boolean>(
     (project as any).disableTeamRoles ?? false
   );
@@ -353,7 +353,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   };
 
   const displayedStages = stages.filter(st => {
-    if (disableTeamRoles) return true; // Якщо увімкнено особистий режим, показуємо всі стадії
+    if (disableTeamRoles) return true;
     if (!showOnlyAssignedStages || isSuperAdmin) return true;
     const stageContractors: string[] = (st as any).contractors || (st.contractor ? [st.contractor] : []);
     return stageContractors.some(c => c.toLowerCase().includes(currentUserRole.toLowerCase()));
@@ -406,40 +406,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 }}
                 style={cardInputStyle}
               />
-            </div>
-
-            {/* Повзунок вмикання та вимикання ролей / командного режиму */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '6px', borderTop: '1px solid #d1d1d6' }}>
-              <span style={{ fontSize: '12px', fontWeight: 600, color: '#3a3a3c' }}>Вмикання та вимикання ролей</span>
-              <div
-                onClick={() => {
-                  const nextVal = !disableTeamRoles;
-                  setDisableTeamRoles(nextVal);
-                  handleAutoSaveBasicInfo(undefined, undefined, undefined, nextVal);
-                }}
-                style={{
-                  width: '34px',
-                  height: '20px',
-                  borderRadius: '10px',
-                  backgroundColor: disableTeamRoles ? '#34c759' : '#e5e5ea',
-                  position: 'relative',
-                  cursor: 'pointer',
-                  transition: 'background-color 0.2s'
-                }}
-              >
-                <div
-                  style={{
-                    width: '16px',
-                    height: '16px',
-                    borderRadius: '50%',
-                    backgroundColor: '#fff',
-                    position: 'absolute',
-                    top: '2px',
-                    left: disableTeamRoles ? '16px' : '2px',
-                    transition: 'left 0.2s'
-                  }}
-                />
-              </div>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
@@ -544,6 +510,42 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           </div>
         )}
       </div>
+
+      {/* Повзунок Вмикання та вимикання ролей (розміщено зверху над блоком Structure) */}
+      {isSuperAdmin && (
+        <div style={{ backgroundColor: '#f2f2f7', padding: '12px 14px', borderRadius: '12px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
+          <span style={{ fontSize: '13px', fontWeight: 600, color: '#1c1c1e' }}>Вмикання та вимикання ролей</span>
+          <div
+            onClick={() => {
+              const nextVal = !disableTeamRoles;
+              setDisableTeamRoles(nextVal);
+              handleAutoSaveBasicInfo(undefined, undefined, undefined, nextVal);
+            }}
+            style={{
+              width: '34px',
+              height: '20px',
+              borderRadius: '10px',
+              backgroundColor: disableTeamRoles ? '#34c759' : '#e5e5ea',
+              position: 'relative',
+              cursor: 'pointer',
+              transition: 'background-color 0.2s'
+            }}
+          >
+            <div
+              style={{
+                width: '16px',
+                height: '16px',
+                borderRadius: '50%',
+                backgroundColor: '#fff',
+                position: 'absolute',
+                top: '2px',
+                left: disableTeamRoles ? '16px' : '2px',
+                transition: 'left 0.2s'
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* 3. Structure Block */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '20px' }}>
@@ -748,7 +750,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           </div>
                         )}
 
-                        {/* Низ стадії: Дати та Учасники (приховуються, якщо увімкнено особистий режим) */}
+                        {/* Низ стадії: Дати та Учасники (приховуються при активованому перемикачі ролей) */}
                         <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #d1d1d6', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                           
                           {showDates && isSuperAdmin && (
@@ -846,7 +848,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* 4. Team Block (повністю ховається, якщо увімкнено особистий режим) */}
+      {/* 4. Team Block (повністю ховається, якщо увімкнено вимикач ролей) */}
       {isSuperAdmin && !disableTeamRoles && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '20px' }}>
           <div 
