@@ -174,6 +174,17 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     setNewStageTitle('');
   };
 
+  const handleMoveStage = (index: number, direction: 'up' | 'down') => {
+    if (!isSuperAdmin) return;
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= stages.length) return;
+
+    const updated = [...stages];
+    const [moved] = updated.splice(index, 1);
+    updated.splice(targetIndex, 0, moved);
+    setStages(updated);
+  };
+
   const handleUpdateStageTitle = (stageId: string, newTitle: string) => {
     if (!isSuperAdmin) return;
     setStages(stages.map(s => s.id === stageId ? { ...s, title: newTitle } : s));
@@ -469,7 +480,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* Повзунок Roles (розміщено над вкладкою Data) з англійською назвою */}
+      {/* Повзунок Roles */}
       {isSuperAdmin && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '12px 14px', borderRadius: '12px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
           <span style={{ fontSize: '13px', fontWeight: 600, color: '#1c1c1e' }}>Roles</span>
@@ -505,7 +516,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         </div>
       )}
 
-      {/* 2. Data Block (повністю приховується, коли ввімкнено режим Roles) */}
+      {/* 2. Data Block */}
       {!disableTeamRoles && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
           <div 
@@ -576,7 +587,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {displayedStages.map((st) => {
+              {displayedStages.map((st, stageIndex) => {
                 const isCollapsed = collapsedStages[st.id];
                 const isTrackTimeOn = st.trackTime !== false;
                 const stageContractors: string[] = (st as any).contractors || (st.contractor ? [st.contractor] : []);
@@ -593,7 +604,29 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                        {/* Трикутник розгортання з лівого боку біля назви стадії */}
+                        
+                        {/* Кнопки переміщення стадії (▲ / ▼) */}
+                        {isSuperAdmin && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                            <button 
+                              onClick={() => handleMoveStage(stageIndex, 'up')}
+                              disabled={stageIndex === 0}
+                              style={{ background: 'none', border: 'none', cursor: stageIndex === 0 ? 'default' : 'pointer', fontSize: '9px', padding: 0, color: stageIndex === 0 ? '#d1d1d6' : '#007aff', lineHeight: 1 }}
+                              title="Move Up"
+                            >
+                              ▲
+                            </button>
+                            <button 
+                              onClick={() => handleMoveStage(stageIndex, 'down')}
+                              disabled={stageIndex === displayedStages.length - 1}
+                              style={{ background: 'none', border: 'none', cursor: stageIndex === displayedStages.length - 1 ? 'default' : 'pointer', fontSize: '9px', padding: 0, color: stageIndex === displayedStages.length - 1 ? '#d1d1d6' : '#007aff', lineHeight: 1 }}
+                              title="Move Down"
+                            >
+                              ▼
+                            </button>
+                          </div>
+                        )}
+
                         <span 
                           onClick={() => setCollapsedStages({ ...collapsedStages, [st.id]: !isCollapsed })}
                           style={{ cursor: 'pointer', fontSize: '12px', color: '#8e8e93', userSelect: 'none' }}
@@ -695,6 +728,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           </div>
                         </div>
 
+                        {/* Підстадії з маркуванням у форматі 1.1, 1.2 тощо */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
                           {st.subStages.map((sub, idx) => (
                             <div 
@@ -711,7 +745,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                   checked={sub.completed}
                                   onChange={() => handleToggleSubStage(st.id, sub.id)}
                                 />
-                                <span style={{ fontWeight: 600, color: '#8e8e93', userSelect: 'none', minWidth: '16px' }}>{idx + 1}.</span>
+                                <span style={{ fontWeight: 600, color: '#8e8e93', userSelect: 'none', minWidth: '26px' }}>{stageIndex + 1}.{idx + 1}</span>
 
                                 <input
                                   type="text"
@@ -751,7 +785,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           </div>
                         )}
 
-                        {/* Низ стадії: Дати та Учасники (приховуються при ввімкненому режимі Roles) */}
                         <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #d1d1d6', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                           
                           {showDates && isSuperAdmin && (
@@ -849,7 +882,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* 4. Team Block (повністю приховується, якщо ввімкнено режим Roles) */}
+      {/* 4. Team Block */}
       {isSuperAdmin && !disableTeamRoles && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '20px' }}>
           <div 
