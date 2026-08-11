@@ -51,8 +51,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [name, setName] = useState(project.name);
   const [projectId, setProjectId] = useState(project.id);
   
-  const [disableTeamRoles, setDisableTeamRoles] = useState<boolean>(
-    (project as any).disableTeamRoles ?? false
+  // Змінена логіка: тепер за вимкненого повзунка ролі вимкнені (false), при ввімкненому — активні (true)
+  const [enableTeamRoles, setEnableTeamRoles] = useState<boolean>(
+    (project as any).enableTeamRoles ?? false
   );
 
   const [colors, setColors] = useState<string[]>(() => {
@@ -78,8 +79,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     contractors: (s as any).contractors || (s.contractor ? [s.contractor] : [])
   })));
   const [collapsedStages, setCollapsedStages] = useState<{ [key: string]: boolean }>({});
-  
-  // Стан для згортання/розгортання тегів підстадії
   const [collapsedSubStages, setCollapsedSubStages] = useState<{ [key: string]: boolean }>({});
 
   const [newStageTitle, setNewStageTitle] = useState('');
@@ -101,11 +100,11 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
   const [draggedDataIndex, setDraggedDataIndex] = useState<number | null>(null);
 
-  const handleAutoSaveBasicInfo = (updatedName?: string, updatedId?: string, updatedColorIndex?: number, updatedDisableTeam?: boolean) => {
+  const handleAutoSaveBasicInfo = (updatedName?: string, updatedId?: string, updatedColorIndex?: number, updatedEnableTeam?: boolean) => {
     const nextName = updatedName !== undefined ? updatedName : name;
     const nextId = updatedId !== undefined ? updatedId : projectId;
     const nextColor = colors[updatedColorIndex !== undefined ? updatedColorIndex : selectedColorIndex];
-    const nextDisableTeam = updatedDisableTeam !== undefined ? updatedDisableTeam : disableTeamRoles;
+    const nextEnableTeam = updatedEnableTeam !== undefined ? updatedEnableTeam : enableTeamRoles;
 
     onUpdateProject({
       ...project,
@@ -115,7 +114,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       passportRows: generalRows,
       stages,
       projectTeam,
-      disableTeamRoles: nextDisableTeam
+      enableTeamRoles: nextEnableTeam
     } as any);
   };
 
@@ -229,7 +228,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     setEditingTimeStageId(null);
   };
 
-  const handleUpdateStageDates = (stageId: string, field: 'startDate' | 'reviewDate' | 'correctionDate' | 'endDate', val: string) => {
+  const handleUpdateStageDates = (stageId: string, field: 'startDate' | 'endDate', val: string) => {
     if (!isSuperAdmin) return;
     if (val) {
       const dateObj = new Date(val);
@@ -311,7 +310,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     }));
   };
 
-  // Дії для вкладених тегів (пунктів) під підстадією
   const handleAddNestedItem = (stageId: string, subStageId: string) => {
     if (!canManageSubtasks) return;
 
@@ -440,7 +438,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       passportRows: generalRows,
       stages,
       projectTeam,
-      disableTeamRoles: disableTeamRoles
+      enableTeamRoles: enableTeamRoles
     } as any;
 
     onUpdateProject(updatedProject);
@@ -460,9 +458,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   };
 
   const displayedStages = stages.filter(st => {
-    if (disableTeamRoles) return true;
+    if (!enableTeamRoles) return true; // Якщо ролі вимкнені, показуємо всі стадії
     if (!showOnlyAssignedStages || isSuperAdmin) return true;
-    const stageContractors: string[] = (st as any).contractors || (st.contractor ? [st.contractor] : []);
+    const stageContractors: string[] = (st as any).contractors || (st.contractor ? [s.contractor] : []);
     return stageContractors.some(c => c.toLowerCase().includes(currentUserRole.toLowerCase()));
   });
 
@@ -577,21 +575,21 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* Повзунок Roles */}
+      {/* Повзунок Roles (пряма логіка: вимкнено за замовчуванням, при ввімкненні активує ролі) */}
       {isSuperAdmin && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '12px 14px', borderRadius: '12px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
           <span style={{ fontSize: '13px', fontWeight: 600, color: '#1c1c1e' }}>Roles</span>
           <div
             onClick={() => {
-              const nextVal = !disableTeamRoles;
-              setDisableTeamRoles(nextVal);
+              const nextVal = !enableTeamRoles;
+              setEnableTeamRoles(nextVal);
               handleAutoSaveBasicInfo(undefined, undefined, undefined, nextVal);
             }}
             style={{
               width: '34px',
               height: '20px',
               borderRadius: '10px',
-              backgroundColor: disableTeamRoles ? '#34c759' : '#e5e5ea',
+              backgroundColor: enableTeamRoles ? '#34c759' : '#e5e5ea',
               position: 'relative',
               cursor: 'pointer',
               transition: 'background-color 0.2s'
@@ -605,7 +603,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 backgroundColor: '#fff',
                 position: 'absolute',
                 top: '2px',
-                left: disableTeamRoles ? '16px' : '2px',
+                left: enableTeamRoles ? '16px' : '2px',
                 transition: 'left 0.2s'
               }}
             />
@@ -613,8 +611,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         </div>
       )}
 
-      {/* 2. Data Block */}
-      {!disableTeamRoles && (
+      {/* 2. Data Block (відображається лише якщо ввімкнено ролі) */}
+      {enableTeamRoles && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
           <div 
             onClick={() => setIsGeneralDataOpen(!isGeneralDataOpen)}
@@ -721,7 +719,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       </div>
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        {isTrackTimeOn && (
+                        {/* Повзунок Time відображається лише тоді, коли ввімкнено ролі */}
+                        {enableTeamRoles && isTrackTimeOn && (
                           <>
                             <button
                               onClick={() => handleToggleStageTimer(st.id)}
@@ -772,35 +771,38 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     {!isCollapsed && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #e5e5ea' }}>
                         
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
-                          <span>time</span>
-                          <div style={{ width: '38px', display: 'flex', justifyContent: 'center', transform: 'translateX(1px)' }}>
-                            <div
-                              onClick={() => handleToggleStageTrackTime(st.id)}
-                              style={{
-                                width: '34px',
-                                height: '20px',
-                                borderRadius: '10px',
-                                backgroundColor: isTrackTimeOn ? '#34c759' : '#e5e5ea',
-                                position: 'relative',
-                                cursor: 'pointer'
-                              }}
-                            >
+                        {/* Рядок Time (відображається лише коли ролі ввімкнені) */}
+                        {enableTeamRoles && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
+                            <span>time</span>
+                            <div style={{ width: '38px', display: 'flex', justifyContent: 'center', transform: 'translateX(1px)' }}>
                               <div
+                                onClick={() => handleToggleStageTrackTime(st.id)}
                                 style={{
-                                  width: '16px',
-                                  height: '16px',
-                                  borderRadius: '50%',
-                                  backgroundColor: '#fff',
-                                  position: 'absolute',
-                                  top: '2px',
-                                  left: isTrackTimeOn ? '16px' : '2px',
-                                  transition: 'left 0.2s'
+                                  width: '34px',
+                                  height: '20px',
+                                  borderRadius: '10px',
+                                  backgroundColor: isTrackTimeOn ? '#34c759' : '#e5e5ea',
+                                  position: 'relative',
+                                  cursor: 'pointer'
                                 }}
-                              />
+                              >
+                                <div
+                                  style={{
+                                    width: '16px',
+                                    height: '16px',
+                                    borderRadius: '50%',
+                                    backgroundColor: '#fff',
+                                    position: 'absolute',
+                                    top: '2px',
+                                    left: isTrackTimeOn ? '16px' : '2px',
+                                    transition: 'left 0.2s'
+                                  }}
+                                />
+                              </div>
                             </div>
                           </div>
-                        </div>
+                        )}
 
                         {/* Підстадії */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
@@ -814,7 +816,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
                                     
-                                    {/* Спадане меню для приховування/показу тегів біля стрілочок переміщення */}
                                     {canManageSubtasks && (
                                       <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', marginRight: '2px' }}>
                                         <button 
@@ -836,7 +837,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                       </div>
                                     )}
 
-                                    {/* Кнопка розгортання/згортання тегів */}
                                     <span 
                                       onClick={() => setCollapsedSubStages({ ...collapsedSubStages, [sub.id]: !isSubCollapsed })}
                                       style={{ cursor: 'pointer', fontSize: '10px', color: '#8e8e93', userSelect: 'none', width: '12px', textAlign: 'center' }}
@@ -886,14 +886,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                   )}
                                 </div>
 
-                                {/* Вкладені теги (темно-сірий колір тексту, повний функціонал з ідентичним вирівнюванням кошиків) */}
+                                {/* Вкладені теги */}
                                 {!isSubCollapsed && nestedItems.length > 0 && (
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '28px', marginTop: '4px' }}>
                                     {nestedItems.map((item: any, itemIdx: number) => (
                                       <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
                                           
-                                          {/* Стрілочки для переміщення тегів */}
                                           {canManageSubtasks && (
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', marginRight: '2px' }}>
                                               <button 
@@ -931,14 +930,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                               ...inlineTitleInputStyle,
                                               fontSize: '12px',
                                               textDecoration: item.completed ? 'line-through' : 'none',
-                                              color: item.completed ? '#8e8e93' : '#3a3a3c' // Темно-сірий колір
+                                              color: item.completed ? '#8e8e93' : '#3a3a3c'
                                             }}
                                           />
                                         </div>
 
                                         {canManageSubtasks && (
                                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                            {/* Пустий контейнер для симетрії з кнопкою "+" у підстадії, щоб кошики були на одній осі */}
                                             <div style={{ width: '24px' }} />
                                             <div style={{ width: '28px', display: 'flex', justifyContent: 'center' }}>
                                               <button onClick={() => handleDeleteNestedItem(st.id, sub.id, item.id)} style={{ ...iconBtnStyle, color: '#ff3b30' }}>🗑️</button>
@@ -971,36 +969,30 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
                         <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #d1d1d6', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                           
+                          {/* Змінено заголовок термінів на англійську та залишено рівно 2 дати (Початок / Здача) */}
                           {showDates && isSuperAdmin && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                              <span style={{ fontSize: '11px', fontWeight: 600, color: '#636366' }}>Планові терміни (Початок / Здача / Коригування):</span>
-                              <div style={{ display: 'flex', gap: '4px', fontSize: '11px' }}>
+                              <span style={{ fontSize: '11px', fontWeight: 600, color: '#636366' }}>Planned terms (Start / Deadline):</span>
+                              <div style={{ display: 'flex', gap: '6px', fontSize: '11px' }}>
                                 <input
                                   type="date"
-                                  title="Дата початку"
+                                  title="Start Date"
                                   value={st.startDate || ''}
                                   onChange={(e) => handleUpdateStageDates(st.id, 'startDate', e.target.value)}
-                                  style={{ ...cardInputStyle, flex: 1, padding: '2px', fontSize: '10px', height: '26px', boxSizing: 'border-box' }}
+                                  style={{ ...cardInputStyle, flex: 1, padding: '4px', fontSize: '11px', height: '30px', boxSizing: 'border-box' }}
                                 />
                                 <input
                                   type="date"
-                                  title="Дата здачі на перевірку"
+                                  title="Deadline Date"
                                   value={(st as any).reviewDate || st.endDate || ''}
-                                  onChange={(e) => handleUpdateStageDates(st.id, 'reviewDate', e.target.value)}
-                                  style={{ ...cardInputStyle, flex: 1, padding: '2px', fontSize: '10px', height: '26px', boxSizing: 'border-box' }}
-                                />
-                                <input
-                                  type="date"
-                                  title="Дата кінцевого внесення змін"
-                                  value={(st as any).correctionDate || ''}
-                                  onChange={(e) => handleUpdateStageDates(st.id, 'correctionDate', e.target.value)}
-                                  style={{ ...cardInputStyle, flex: 1, padding: '2px', fontSize: '10px', height: '26px', boxSizing: 'border-box' }}
+                                  onChange={(e) => handleUpdateStageDates(st.id, 'endDate', e.target.value)}
+                                  style={{ ...cardInputStyle, flex: 1, padding: '4px', fontSize: '11px', height: '30px', boxSizing: 'border-box' }}
                                 />
                               </div>
                             </div>
                           )}
 
-                          {isSuperAdmin && !disableTeamRoles && (
+                          {isSuperAdmin && enableTeamRoles && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                               <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                                 <select
@@ -1066,8 +1058,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* 4. Team Block */}
-      {isSuperAdmin && !disableTeamRoles && (
+      {/* 4. Team Block (відображається лише за ввімкнених ролей) */}
+      {isSuperAdmin && enableTeamRoles && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '20px' }}>
           <div 
             onClick={() => setIsTeamOpen(!isTeamOpen)}
