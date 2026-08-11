@@ -80,6 +80,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [collapsedStages, setCollapsedStages] = useState<{ [key: string]: boolean }>({});
   const [newStageTitle, setNewStageTitle] = useState('');
   const [newSubStageTitle, setNewSubStageTitle] = useState<{ [key: string]: string }>({});
+  const [newNestedItemTitle, setNewNestedItemTitle] = useState<{ [key: string]: string }>({});
 
   const [editingTimeStageId, setEditingTimeStageId] = useState<string | null>(null);
   const [manualHours, setManualHours] = useState('0');
@@ -96,7 +97,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [templateNameInput, setTemplateNameInput] = useState(project.name);
 
   const [draggedDataIndex, setDraggedDataIndex] = useState<number | null>(null);
-  const [draggedSubStage, setDraggedSubStage] = useState<{ stageId: string; index: number } | null>(null);
 
   const handleAutoSaveBasicInfo = (updatedName?: string, updatedId?: string, updatedColorIndex?: number, updatedDisableTeam?: boolean) => {
     const nextName = updatedName !== undefined ? updatedName : name;
@@ -248,8 +248,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         const newSub: SubStage = {
           id: Date.now().toString(),
           title: title.trim(),
-          completed: false
-        };
+          completed: false,
+          nestedItems: [] // Додаткові позиції під підстадією
+        } as any;
         return { ...s, subStages: [...s.subStages, newSub] };
       }
       return s;
@@ -297,31 +298,101 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     }));
   };
 
-  const handleSubStageDragStart = (stageId: string, index: number) => {
-    if (!canManageSubtasks) return;
-    setDraggedSubStage({ stageId, index });
-  };
-
-  const handleSubStageDrop = (stageId: string, targetIndex: number) => {
-    if (!canManageSubtasks || !draggedSubStage || draggedSubStage.stageId !== stageId || draggedSubStage.index === targetIndex) return;
-
-    setStages(stages.map(s => {
-      if (s.id === stageId) {
-        const list = [...s.subStages];
-        const [movedItem] = list.splice(draggedSubStage.index, 1);
-        list.splice(targetIndex, 0, movedItem);
-        return { ...s, subStages: list };
-      }
-      return s;
-    }));
-    setDraggedSubStage(null);
-  };
-
   const handleDeleteSubStage = (stageId: string, subStageId: string) => {
     if (!canManageSubtasks) return;
     setStages(stages.map(s => {
       if (s.id === stageId) {
         return { ...s, subStages: s.subStages.filter(sub => sub.id !== subStageId) };
+      }
+      return s;
+    }));
+  };
+
+  // Функції для вкладених пунктів під підстадією (1.1, 1.2 тощо)
+  const handleAddNestedItem = (stageId: string, subStageId: string) => {
+    const key = `${stageId}-${subStageId}`;
+    const title = newNestedItemTitle[key];
+    if (!title || !title.trim()) return;
+
+    setStages(stages.map(s => {
+      if (s.id === stageId) {
+        return {
+          ...s,
+          subStages: s.subStages.map(sub => {
+            if (sub.id === subStageId) {
+              const nested = (sub as any).nestedItems || [];
+              const newItem = { id: Date.now().toString(), title: title.trim(), completed: false };
+              return { ...sub, nestedItems: [...nested, newItem] };
+            }
+            return sub;
+          })
+        };
+      }
+      return s;
+    }));
+
+    setNewNestedItemTitle({ ...newNestedItemTitle, [key]: '' });
+  };
+
+  const handleUpdateNestedItemTitle = (stageId: string, subStageId: string, itemId: string, newTitle: string) => {
+    setStages(stages.map(s => {
+      if (s.id === stageId) {
+        return {
+          ...s,
+          subStages: s.subStages.map(sub => {
+            if (sub.id === subStageId) {
+              const nested = (sub as any).nestedItems || [];
+              return {
+                ...sub,
+                nestedItems: nested.map((item: any) => item.id === itemId ? { ...item, title: newTitle } : item)
+              };
+            }
+            return sub;
+          })
+        };
+      }
+      return s;
+    }));
+  };
+
+  const handleToggleNestedItem = (stageId: string, subStageId: string, itemId: string) => {
+    setStages(stages.map(s => {
+      if (s.id === stageId) {
+        return {
+          ...s,
+          subStages: s.subStages.map(sub => {
+            if (sub.id === subStageId) {
+              const nested = (sub as any).nestedItems || [];
+              return {
+                ...sub,
+                nestedItems: nested.map((item: any) => item.id === itemId ? { ...item, completed: !item.completed } : item)
+              };
+            }
+            return sub;
+          })
+        };
+      }
+      return s;
+    }));
+  };
+
+  const handleDeleteNestedItem = (stageId: string, subStageId: string, itemId: string) => {
+    if (!canManageSubtasks) return;
+    setStages(stages.map(s => {
+      if (s.id === stageId) {
+        return {
+          ...s,
+          subStages: s.subStages.map(sub => {
+            if (sub.id === subStageId) {
+              const nested = (sub as any).nestedItems || [];
+              return {
+                ...sub,
+                nestedItems: nested.filter((item: any) => item.id !== itemId)
+              };
+            }
+            return sub;
+          })
+        };
       }
       return s;
     }));
@@ -591,7 +662,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {displayedStages.map((st, stageIndex) => {
+              {displayedStages.map((st) => {
                 const isCollapsed = collapsedStages[st.id];
                 const isTrackTimeOn = st.trackTime !== false;
                 const stageContractors: string[] = (st as any).contractors || (st.contractor ? [st.contractor] : []);
@@ -709,73 +780,129 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           </div>
                         </div>
 
-                        {/* Підстадії зі стрілочками переміщення (▲ / ▼) та нумерацією (1.1, 1.2 тощо) */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
-                          {st.subStages.map((sub, idx) => (
-                            <div 
-                              key={sub.id} 
-                              draggable={canManageSubtasks}
-                              onDragStart={() => handleSubStageDragStart(st.id, idx)}
-                              onDragOver={(e) => e.preventDefault()}
-                              onDrop={() => handleSubStageDrop(st.id, idx)}
-                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px', cursor: canManageSubtasks ? 'grab' : 'default' }}
-                            >
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
-                                
-                                {/* Кнопки переміщення підстадії (▲ / ▼) */}
-                                {canManageSubtasks && (
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', marginRight: '2px' }}>
-                                    <button 
-                                      onClick={() => handleMoveSubStage(st.id, idx, 'up')}
-                                      disabled={idx === 0}
-                                      style={{ background: 'none', border: 'none', cursor: idx === 0 ? 'default' : 'pointer', fontSize: '8px', padding: 0, color: idx === 0 ? '#d1d1d6' : '#007aff', lineHeight: 1 }}
-                                      title="Move Up"
-                                    >
-                                      ▲
-                                    </button>
-                                    <button 
-                                      onClick={() => handleMoveSubStage(st.id, idx, 'down')}
-                                      disabled={idx === st.subStages.length - 1}
-                                      style={{ background: 'none', border: 'none', cursor: idx === st.subStages.length - 1 ? 'default' : 'pointer', fontSize: '8px', padding: 0, color: idx === st.subStages.length - 1 ? '#d1d1d6' : '#007aff', lineHeight: 1 }}
-                                      title="Move Down"
-                                    >
-                                      ▼
-                                    </button>
+                        {/* Підстадії (нумерація 1, 2, 3) + вкладені пункти під ними (нумерація 1.1, 1.2 тощо) */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+                          {st.subStages.map((sub, idx) => {
+                            const nestedItems = (sub as any).nestedItems || [];
+                            const nestedInputKey = `${st.id}-${sub.id}`;
+
+                            return (
+                              <div key={sub.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px', backgroundColor: '#f9f9fb', padding: '8px', borderRadius: '8px', border: '1px solid #e5e5ea' }}>
+                                {/* Сама підстадія */}
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
+                                    
+                                    {/* Стрілочки переміщення підстадії (▲ / ▼) */}
+                                    {canManageSubtasks && (
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', marginRight: '2px' }}>
+                                        <button 
+                                          onClick={() => handleMoveSubStage(st.id, idx, 'up')}
+                                          disabled={idx === 0}
+                                          style={{ background: 'none', border: 'none', cursor: idx === 0 ? 'default' : 'pointer', fontSize: '8px', padding: 0, color: idx === 0 ? '#d1d1d6' : '#007aff', lineHeight: 1 }}
+                                          title="Move Up"
+                                        >
+                                          ▲
+                                        </button>
+                                        <button 
+                                          onClick={() => handleMoveSubStage(st.id, idx, 'down')}
+                                          disabled={idx === st.subStages.length - 1}
+                                          style={{ background: 'none', border: 'none', cursor: idx === st.subStages.length - 1 ? 'default' : 'pointer', fontSize: '8px', padding: 0, color: idx === st.subStages.length - 1 ? '#d1d1d6' : '#007aff', lineHeight: 1 }}
+                                          title="Move Down"
+                                        >
+                                          ▼
+                                        </button>
+                                      </div>
+                                    )}
+
+                                    <input
+                                      type="checkbox"
+                                      checked={sub.completed}
+                                      onChange={() => handleToggleSubStage(st.id, sub.id)}
+                                    />
+                                    {/* Звична нумерація 1, 2, 3 для підстадій */}
+                                    <span style={{ fontWeight: 700, color: '#1c1c1e', userSelect: 'none', minWidth: '16px' }}>{idx + 1}.</span>
+
+                                    <input
+                                      type="text"
+                                      value={sub.title}
+                                      disabled={!canManageSubtasks}
+                                      onChange={(e) => handleUpdateSubStageTitle(st.id, sub.id, e.target.value)}
+                                      style={{
+                                        ...inlineTitleInputStyle,
+                                        fontSize: '13px',
+                                        textDecoration: sub.completed ? 'line-through' : 'none',
+                                        color: sub.completed ? '#8e8e93' : '#1c1c1e'
+                                      }}
+                                    />
+                                  </div>
+
+                                  {canManageSubtasks && (
+                                    <div style={{ width: '38px', display: 'flex', justifyContent: 'center', transform: 'translateX(1px)' }}>
+                                      <button onClick={() => handleDeleteSubStage(st.id, sub.id)} style={{ ...iconBtnStyle, color: '#ff3b30' }}>🗑️</button>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Вкладені пункти (ієрархія 1.1, 1.2 тощо) всередині підстадії */}
+                                {nestedItems.length > 0 && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '24px', marginTop: '4px' }}>
+                                    {nestedItems.map((item: any, itemIdx: number) => (
+                                      <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
+                                          <input
+                                            type="checkbox"
+                                            checked={item.completed}
+                                            onChange={() => handleToggleNestedItem(st.id, sub.id, item.id)}
+                                          />
+                                          {/* Нумерація 1.1, 1.2 тощо */}
+                                          <span style={{ fontWeight: 600, color: '#007aff', userSelect: 'none', minWidth: '24px' }}>{idx + 1}.{itemIdx + 1}</span>
+
+                                          <input
+                                            type="text"
+                                            value={item.title}
+                                            disabled={!canManageSubtasks}
+                                            onChange={(e) => handleUpdateNestedItemTitle(st.id, sub.id, item.id, e.target.value)}
+                                            style={{
+                                              ...inlineTitleInputStyle,
+                                              fontSize: '12px',
+                                              textDecoration: item.completed ? 'line-through' : 'none',
+                                              color: item.completed ? '#8e8e93' : '#1c1c1e'
+                                            }}
+                                          />
+                                        </div>
+
+                                        {canManageSubtasks && (
+                                          <div style={{ width: '38px', display: 'flex', justifyContent: 'center' }}>
+                                            <button onClick={() => handleDeleteNestedItem(st.id, sub.id, item.id)} style={{ ...iconBtnStyle, color: '#ff3b30' }}>🗑️</button>
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
                                   </div>
                                 )}
 
-                                <input
-                                  type="checkbox"
-                                  checked={sub.completed}
-                                  onChange={() => handleToggleSubStage(st.id, sub.id)}
-                                />
-                                <span style={{ fontWeight: 600, color: '#8e8e93', userSelect: 'none', minWidth: '26px' }}>{stageIndex + 1}.{idx + 1}</span>
-
-                                <input
-                                  type="text"
-                                  value={sub.title}
-                                  disabled={!canManageSubtasks}
-                                  onChange={(e) => handleUpdateSubStageTitle(st.id, sub.id, e.target.value)}
-                                  style={{
-                                    ...inlineTitleInputStyle,
-                                    fontSize: '13px',
-                                    textDecoration: sub.completed ? 'line-through' : 'none',
-                                    color: sub.completed ? '#8e8e93' : '#1c1c1e'
-                                  }}
-                                />
+                                {/* Інпут для додавання вкладеного пункту під підстадією */}
+                                {canManageSubtasks && (
+                                  <div style={{ display: 'flex', gap: '6px', marginTop: '4px', paddingLeft: '24px', alignItems: 'center' }}>
+                                    <input
+                                      type="text"
+                                      placeholder="Add sub-item (e.g. 1.1)..."
+                                      value={newNestedItemTitle[nestedInputKey] || ''}
+                                      onChange={(e) => setNewNestedItemTitle({ ...newNestedItemTitle, [nestedInputKey]: e.target.value })}
+                                      style={{ ...cardInputStyle, padding: '2px 8px', fontSize: '11px', height: '26px', boxSizing: 'border-box', flex: 1, backgroundColor: '#ffffff' }}
+                                    />
+                                    <button onClick={() => handleAddNestedItem(st.id, sub.id)} style={{ ...compactPlusBtnStyle, width: '26px', height: '26px', boxSizing: 'border-box', fontSize: '14px' }}>
+                                      +
+                                    </button>
+                                  </div>
+                                )}
                               </div>
-
-                              {canManageSubtasks && (
-                                <div style={{ width: '38px', display: 'flex', justifyContent: 'center', transform: 'translateX(1px)' }}>
-                                  <button onClick={() => handleDeleteSubStage(st.id, sub.id)} style={{ ...iconBtnStyle, color: '#ff3b30' }}>🗑️</button>
-                                </div>
-                              )}
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
 
                         {canManageSubtasks && (
-                          <div style={{ display: 'flex', gap: '6px', marginTop: '4px', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', gap: '6px', marginTop: '8px', alignItems: 'center' }}>
                             <input
                               type="text"
                               placeholder="Add task/subtask"
