@@ -539,9 +539,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     return `${d}.${m}`;
   };
 
-  // Функція для визначення стилю дати (годинника) залежно від умов
+  // Стандартний сірий фон для дати з однаковою висотою та чорним контуром
   const getDateBoxStyle = (dateStr?: string) => {
-    let bg = '#ffffff';
+    let bg = '#e5e5ea';
     let color = '#1c1c1e';
 
     if (dateStr) {
@@ -554,27 +554,28 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
       if (diffDays < 0) {
-        // Пройшло не вчасно -> червоний
         bg = '#ff3b30';
         color = '#ffffff';
       } else if (diffDays <= 7) {
-        // Залишився 1 тиждень або менше -> жовтий
         bg = '#ffcc00';
         color = '#1c1c1e';
       }
     }
 
     return {
-      fontSize: '12px',
+      height: '24px',
+      boxSizing: 'border-box' as const,
+      fontSize: '11px',
       fontWeight: 600,
       color: color,
       backgroundColor: bg,
       border: '1px solid #000000',
-      padding: '3px 8px',
-      borderRadius: '8px',
+      padding: '0 8px',
+      borderRadius: '12px',
       display: 'inline-flex',
       alignItems: 'center',
-      gap: '4px'
+      gap: '4px',
+      lineHeight: 1
     };
   };
 
@@ -722,7 +723,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         </div>
       )}
 
-      {/* Глобальний блок "Tags" із чорним контуром для тегів */}
+      {/* Глобальний блок "Tags" з однаковою висотою та чорним контуром */}
       {isSuperAdmin && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
           <div 
@@ -735,24 +736,25 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
           {isTagsOpen && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {/* Перший рядок: Кнопка +, вибір кольору та найновіший тег */}
+              {/* Перший рядок */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
-                <button onClick={handleAddStatus} style={{ ...compactPlusBtnStyle, height: '28px', width: '28px' }} title="Додати тег">+</button>
+                <button onClick={handleAddStatus} style={{ ...compactPlusBtnStyle, height: '24px', width: '24px', borderRadius: '12px' }} title="Додати тег">+</button>
 
                 <label 
                   style={{ 
-                    width: '28px', 
-                    height: '28px', 
+                    width: '24px', 
+                    height: '24px', 
                     borderRadius: '50%', 
                     backgroundColor: globalPickerColor, 
-                    border: '1px solid #d1d1d6', 
+                    border: '1px solid #000000', 
                     cursor: 'pointer', 
                     display: 'flex', 
                     alignItems: 'center', 
                     justifyContent: 'center', 
-                    flexShrink: '0',
+                    flexShrink: 0,
                     position: 'relative',
-                    overflow: 'hidden'
+                    overflow: 'hidden',
+                    boxSizing: 'border-box'
                   }}
                   title="Обрати колір"
                 >
@@ -768,11 +770,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   <div 
                     key={firstTag.id} 
                     style={{ 
+                      height: '24px',
+                      boxSizing: 'border-box',
                       display: 'flex', 
                       alignItems: 'center', 
                       gap: '4px', 
-                      padding: '3px 8px 3px 3px', 
-                      borderRadius: '16px', 
+                      padding: '0 8px 0 2px', 
+                      borderRadius: '12px', 
                       backgroundColor: '#e5e5ea', 
                       border: '1px solid #000000',
                       color: '#1c1c1e', 
@@ -786,8 +790,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                         setGlobalPickerColor(firstTag.color);
                       }}
                       style={{ 
-                        width: '20px', 
-                        height: '20px', 
+                        width: '16px', 
+                        height: '16px', 
                         borderRadius: '50%', 
                         backgroundColor: firstTag.color, 
                         cursor: 'pointer', 
@@ -797,14 +801,14 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                         flexShrink: 0
                       }}
                     >
-                      {selectedTagId === firstTag.id && <span style={{ color: '#fff', fontSize: '10px', fontWeight: 700, lineHeight: 1 }}>✓</span>}
+                      {selectedTagId === firstTag.id && <span style={{ color: '#fff', fontSize: '9px', fontWeight: 700, lineHeight: 1 }}>✓</span>}
                     </div>
 
                     <input
                       type="text"
                       value={firstTag.label}
                       onChange={(e) => handleUpdateStatusLabel(firstTag.id, e.target.value)}
-                      style={{ border: 'none', background: 'transparent', color: '#1c1c1e', fontSize: '11px', fontWeight: 600, outline: 'none', width: `${Math.max(firstTag.label.length, 4) * 7}px` }}
+                      style={{ border: 'none', background: 'transparent', color: '#1c1c1e', fontSize: '11px', fontWeight: 600, outline: 'none', width: `${Math.max(firstTag.label.length, 4) * 7}px`, height: '100%', lineHeight: '22px' }}
                     />
 
                     {statuses.length > 1 && (
@@ -819,7 +823,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 )}
               </div>
 
-              {/* Другий рядок: решта тегів з чорним контуром */}
+              {/* Другий рядок */}
               {remainingTags.length > 0 && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
                   {remainingTags.map(s => {
@@ -828,11 +832,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       <div 
                         key={s.id} 
                         style={{ 
+                          height: '24px',
+                          boxSizing: 'border-box',
                           display: 'flex', 
                           alignItems: 'center', 
                           gap: '4px', 
-                          padding: '3px 8px 3px 3px', 
-                          borderRadius: '16px', 
+                          padding: '0 8px 0 2px', 
+                          borderRadius: '12px', 
                           backgroundColor: '#e5e5ea', 
                           border: '1px solid #000000',
                           color: '#1c1c1e', 
@@ -846,8 +852,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                             setGlobalPickerColor(s.color);
                           }}
                           style={{ 
-                            width: '20px', 
-                            height: '20px', 
+                            width: '16px', 
+                            height: '16px', 
                             borderRadius: '50%', 
                             backgroundColor: s.color, 
                             cursor: 'pointer', 
@@ -857,14 +863,14 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                             flexShrink: 0
                           }}
                         >
-                          {isSelected && <span style={{ color: '#fff', fontSize: '10px', fontWeight: 700, lineHeight: 1 }}>✓</span>}
+                          {isSelected && <span style={{ color: '#fff', fontSize: '9px', fontWeight: 700, lineHeight: 1 }}>✓</span>}
                         </div>
 
                         <input
                           type="text"
                           value={s.label}
                           onChange={(e) => handleUpdateStatusLabel(s.id, e.target.value)}
-                          style={{ border: 'none', background: 'transparent', color: '#1c1c1e', fontSize: '11px', fontWeight: 600, outline: 'none', width: `${Math.max(s.label.length, 4) * 7}px` }}
+                          style={{ border: 'none', background: 'transparent', color: '#1c1c1e', fontSize: '11px', fontWeight: 600, outline: 'none', width: `${Math.max(s.label.length, 4) * 7}px`, height: '100%', lineHeight: '22px' }}
                         />
 
                         {statuses.length > 1 && (
@@ -969,7 +975,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 return (
                   <div key={st.id} style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '10px', border: '1px solid #e5e5ea' }}>
                     
-                    {/* Рядок над назвою стадії: Дата з умовами та чорним контуром + статус з ЧОРНИМ текстом */}
+                    {/* Рядок над назвою стадії */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                       {deadlineDateStr && (
                         <div style={getDateBoxStyle(deadlineDateStr)}>
@@ -981,15 +987,18 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                         value={currentStageStatusLabel}
                         onChange={(e) => handleUpdateStageStatus(st.id, e.target.value)}
                         style={{ 
-                          border: 'none', 
+                          height: '24px',
+                          boxSizing: 'border-box',
+                          border: '1px solid #000000', 
                           borderRadius: '12px', 
-                          padding: '3px 10px', 
+                          padding: '0 10px', 
                           fontSize: '11px', 
                           fontWeight: 600,
                           backgroundColor: currentStatusObj?.color || '#8e8e93',
                           color: '#000000',
                           cursor: 'pointer',
-                          outline: 'none'
+                          outline: 'none',
+                          lineHeight: 1
                         }}
                       >
                         {statuses.map(s => (
