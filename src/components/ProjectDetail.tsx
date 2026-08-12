@@ -64,9 +64,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [name, setName] = useState(project.name);
   const [projectId, setProjectId] = useState(project.id);
   
-  const [enableTeamRoles, setEnableTeamRoles] = useState<boolean>(
-    (project as any).enableTeamRoles ?? false
+  // Перемикачі для блоків
+  const [enableRoles, setEnableRoles] = useState<boolean>(
+    (project as any).enableRoles ?? (project as any).enableTeamRoles ?? true
   );
+  const [enableTags, setEnableTags] = useState<boolean>((project as any).enableTags ?? true);
+  const [enableData, setEnableData] = useState<boolean>((project as any).enableData ?? true);
+  const [enableStructure, setEnableStructure] = useState<boolean>((project as any).enableStructure ?? true);
 
   const [statuses, setStatuses] = useState<ProjectStatus[]>(
     (project.customStatuses || DEFAULT_STATUSES).map((s: any) => ({
@@ -123,11 +127,23 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
   const [draggedDataIndex, setDraggedDataIndex] = useState<number | null>(null);
 
-  const handleAutoSaveBasicInfo = (updatedName?: string, updatedId?: string, updatedColorIndex?: number, updatedEnableTeam?: boolean, updatedStatuses?: ProjectStatus[]) => {
+  const handleAutoSaveBasicInfo = (
+    updatedName?: string, 
+    updatedId?: string, 
+    updatedColorIndex?: number, 
+    updRoles?: boolean, 
+    updTags?: boolean, 
+    updData?: boolean, 
+    updStruct?: boolean, 
+    updatedStatuses?: ProjectStatus[]
+  ) => {
     const nextName = updatedName !== undefined ? updatedName : name;
     const nextId = updatedId !== undefined ? updatedId : projectId;
     const nextColor = colors[updatedColorIndex !== undefined ? updatedColorIndex : selectedColorIndex];
-    const nextEnableTeam = updatedEnableTeam !== undefined ? updatedEnableTeam : enableTeamRoles;
+    const nextRoles = updRoles !== undefined ? updRoles : enableRoles;
+    const nextTags = updTags !== undefined ? updTags : enableTags;
+    const nextData = updData !== undefined ? updData : enableData;
+    const nextStruct = updStruct !== undefined ? updStruct : enableStructure;
     const nextStatuses = updatedStatuses !== undefined ? updatedStatuses : statuses;
 
     onUpdateProject({
@@ -138,7 +154,11 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       passportRows: generalRows,
       stages,
       projectTeam,
-      enableTeamRoles: nextEnableTeam,
+      enableRoles: nextRoles,
+      enableTeamRoles: nextRoles,
+      enableTags: nextTags,
+      enableData: nextData,
+      enableStructure: nextStruct,
       customStatuses: nextStatuses
     } as any);
   };
@@ -149,7 +169,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     const updatedStatuses = [newStatus, ...statuses];
     setStatuses(updatedStatuses);
     setSelectedTagId(newStatus.id);
-    handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, updatedStatuses);
+    handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, undefined, undefined, undefined, updatedStatuses);
   };
 
   const handleDeleteStatus = (id: string, e: React.MouseEvent) => {
@@ -162,13 +182,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       setSelectedTagId(nextActive.id);
       setGlobalPickerColor(nextActive.color);
     }
-    handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, updatedStatuses);
+    handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, undefined, undefined, undefined, updatedStatuses);
   };
 
   const handleUpdateStatusLabel = (statusId: string, newLabel: string) => {
     const updatedStatuses = statuses.map(s => s.id === statusId ? { ...s, label: newLabel } : s);
     setStatuses(updatedStatuses);
-    handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, updatedStatuses);
+    handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, undefined, undefined, undefined, updatedStatuses);
   };
 
   const handleGlobalPickerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -177,7 +197,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     if (selectedTagId) {
       const updatedStatuses = statuses.map(s => s.id === selectedTagId ? { ...s, color } : s);
       setStatuses(updatedStatuses);
-      handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, updatedStatuses);
+      handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, undefined, undefined, undefined, updatedStatuses);
     }
   };
 
@@ -190,7 +210,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     const updated = [...colors];
     updated[selectedColorIndex] = newColor;
     setColors(updated);
-    handleAutoSaveBasicInfo(undefined, undefined, selectedColorIndex, undefined, undefined);
+    handleAutoSaveBasicInfo(undefined, undefined, selectedColorIndex, undefined, undefined, undefined, undefined, undefined);
   };
 
   const handleAddRowAfter = (index: number) => {
@@ -506,7 +526,11 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       passportRows: generalRows,
       stages,
       projectTeam,
-      enableTeamRoles: enableTeamRoles,
+      enableRoles: enableRoles,
+      enableTeamRoles: enableRoles,
+      enableTags: enableTags,
+      enableData: enableData,
+      enableStructure: enableStructure,
       customStatuses: statuses
     } as any;
 
@@ -520,7 +544,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     onBack();
   };
 
-  // Змінено формат годинника з h/min на г/хв
   const formatTime = (sec: number = 0) => {
     const h = Math.floor(sec / 3600);
     const m = Math.floor((sec % 3600) / 60);
@@ -528,7 +551,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   };
 
   const displayedStages = stages.filter(st => {
-    if (!enableTeamRoles) return true;
+    if (!enableRoles) return true;
     if (!showOnlyAssignedStages || isSuperAdmin) return true;
     const stageContractors: string[] = (st as any).contractors || (st.contractor ? [st.contractor] : []);
     return stageContractors.some(c => c.toLowerCase().includes(currentUserRole.toLowerCase()));
@@ -561,7 +584,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
   return (
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e', paddingBottom: '80px' }}>
-      {/* Кнопка "Назад" із жирною стрілкою та чорним текстом */}
       <button 
         onClick={onBack} 
         style={{ background: 'none', border: 'none', fontSize: '14px', color: '#000000', cursor: 'pointer', marginBottom: '16px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}
@@ -587,7 +609,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 value={name}
                 onChange={(e) => {
                   setName(e.target.value);
-                  handleAutoSaveBasicInfo(e.target.value, undefined, undefined, undefined, undefined);
+                  handleAutoSaveBasicInfo(e.target.value, undefined, undefined, undefined, undefined, undefined, undefined, undefined);
                 }}
                 style={cardInputStyle}
               />
@@ -600,7 +622,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 value={projectId}
                 onChange={(e) => {
                   setProjectId(e.target.value);
-                  handleAutoSaveBasicInfo(undefined, e.target.value, undefined, undefined, undefined);
+                  handleAutoSaveBasicInfo(undefined, e.target.value, undefined, undefined, undefined, undefined, undefined, undefined);
                 }}
                 style={cardInputStyle}
               />
@@ -614,7 +636,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     key={idx}
                     onClick={() => {
                       setSelectedColorIndex(idx);
-                      handleAutoSaveBasicInfo(undefined, undefined, idx, undefined, undefined);
+                      handleAutoSaveBasicInfo(undefined, undefined, idx, undefined, undefined, undefined, undefined, undefined);
                     }}
                     style={{
                       width: '28px',
@@ -668,21 +690,21 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* Повзунок Roles */}
+      {/* Окремий вимикач блоку "Теги" */}
       {isSuperAdmin && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '12px 14px', borderRadius: '12px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
-          <span style={{ fontSize: '13px', fontWeight: 600, color: '#1c1c1e' }}>Ролі</span>
+          <span style={{ fontSize: '13px', fontWeight: 600, color: '#1c1c1e' }}>Увімкнути Теги</span>
           <div
             onClick={() => {
-              const nextVal = !enableTeamRoles;
-              setEnableTeamRoles(nextVal);
-              handleAutoSaveBasicInfo(undefined, undefined, undefined, nextVal, undefined);
+              const nextVal = !enableTags;
+              setEnableTags(nextVal);
+              handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, nextVal, undefined, undefined, undefined);
             }}
             style={{
               width: '34px',
               height: '20px',
               borderRadius: '10px',
-              backgroundColor: enableTeamRoles ? '#34c759' : '#e5e5ea',
+              backgroundColor: enableTags ? '#34c759' : '#e5e5ea',
               position: 'relative',
               cursor: 'pointer',
               transition: 'background-color 0.2s'
@@ -696,7 +718,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 backgroundColor: '#fff',
                 position: 'absolute',
                 top: '2px',
-                left: enableTeamRoles ? '16px' : '2px',
+                left: enableTags ? '16px' : '2px',
                 transition: 'left 0.2s'
               }}
             />
@@ -704,8 +726,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         </div>
       )}
 
-      {/* Глобальний блок "Теги" */}
-      {isSuperAdmin && (
+      {/* Блок "Теги" */}
+      {isSuperAdmin && enableTags && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
           <div 
             onClick={() => setIsTagsOpen(!isTagsOpen)}
@@ -717,7 +739,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
           {isTagsOpen && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {/* Перший рядок */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
                 <button onClick={handleAddStatus} style={{ ...compactPlusBtnStyle, height: '24px', width: '24px', borderRadius: '12px' }} title="Додати тег">+</button>
 
@@ -804,7 +825,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 )}
               </div>
 
-              {/* Другий рядок */}
               {remainingTags.length > 0 && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
                   {remainingTags.map(s => {
@@ -872,8 +892,44 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         </div>
       )}
 
-      {/* 2. Data Block */}
-      {enableTeamRoles && (
+      {/* Окремий вимикач блоку "Дані" */}
+      {isSuperAdmin && (
+        <div style={{ backgroundColor: '#f2f2f7', padding: '12px 14px', borderRadius: '12px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
+          <span style={{ fontSize: '13px', fontWeight: 600, color: '#1c1c1e' }}>Увімкнути Дані</span>
+          <div
+            onClick={() => {
+              const nextVal = !enableData;
+              setEnableData(nextVal);
+              handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, undefined, nextVal, undefined, undefined);
+            }}
+            style={{
+              width: '34px',
+              height: '20px',
+              borderRadius: '10px',
+              backgroundColor: enableData ? '#34c759' : '#e5e5ea',
+              position: 'relative',
+              cursor: 'pointer',
+              transition: 'background-color 0.2s'
+            }}
+          >
+            <div
+              style={{
+                width: '16px',
+                height: '16px',
+                borderRadius: '50%',
+                backgroundColor: '#fff',
+                position: 'absolute',
+                top: '2px',
+                left: enableData ? '16px' : '2px',
+                transition: 'left 0.2s'
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Блок "Дані" */}
+      {isSuperAdmin && enableData && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
           <div 
             onClick={() => setIsGeneralDataOpen(!isGeneralDataOpen)}
@@ -915,434 +971,472 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         </div>
       )}
 
-      {/* 3. Structure Block */}
-      <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '20px' }}>
-        <div 
-          onClick={() => setIsStructureOpen(!isStructureOpen)}
-          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}
-        >
-          <span style={{ fontSize: '12px', color: '#8e8e93' }}>{isStructureOpen ? '▲' : '▼'}</span>
-          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>Структура</h3>
+      {/* Окремий вимикач блоку "Структура" */}
+      {isSuperAdmin && (
+        <div style={{ backgroundColor: '#f2f2f7', padding: '12px 14px', borderRadius: '12px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
+          <span style={{ fontSize: '13px', fontWeight: 600, color: '#1c1c1e' }}>Увімкнути Структуру</span>
+          <div
+            onClick={() => {
+              const nextVal = !enableStructure;
+              setEnableStructure(nextVal);
+              handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, undefined, undefined, nextVal, undefined);
+            }}
+            style={{
+              width: '34px',
+              height: '20px',
+              borderRadius: '10px',
+              backgroundColor: enableStructure ? '#34c759' : '#e5e5ea',
+              position: 'relative',
+              cursor: 'pointer',
+              transition: 'background-color 0.2s'
+            }}
+          >
+            <div
+              style={{
+                width: '16px',
+                height: '16px',
+                borderRadius: '50%',
+                backgroundColor: '#fff',
+                position: 'absolute',
+                top: '2px',
+                left: enableStructure ? '16px' : '2px',
+                transition: 'left 0.2s'
+              }}
+            />
+          </div>
         </div>
+      )}
 
-        {isStructureOpen && (
-          <>
-            {isSuperAdmin && (
-              <form onSubmit={handleAddStage} style={{ display: 'flex', gap: '6px', marginBottom: '14px', alignItems: 'center' }}>
-                <input
-                  type="text"
-                  placeholder="створіть власну структуру"
-                  value={newStageTitle}
-                  onChange={(e) => setNewStageTitle(e.target.value)}
-                  style={{ ...cardInputStyle, flex: 1, height: '28px', padding: '2px 8px', boxSizing: 'border-box' }}
-                />
-                <button type="submit" style={compactPlusBtnStyle}>
-                  +
-                </button>
-              </form>
-            )}
+      {/* Блок "Структура" */}
+      {enableStructure && (
+        <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '20px' }}>
+          <div 
+            onClick={() => setIsStructureOpen(!isStructureOpen)}
+            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}
+          >
+            <span style={{ fontSize: '12px', color: '#8e8e93' }}>{isStructureOpen ? '▲' : '▼'}</span>
+            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>Структура</h3>
+          </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {displayedStages.map((st) => {
-                const isCollapsed = collapsedStages[st.id];
-                const isTrackTimeOn = st.trackTime !== false;
-                const stageContractors: string[] = (st as any).contractors || (st.contractor ? [st.contractor] : []);
-                
-                const currentStageStatusLabel = (st as any).currentStatus || statuses[0]?.label || 'В процесі';
-                const currentStatusObj = statuses.find(s => s.label === currentStageStatusLabel) || statuses[0];
+          {isStructureOpen && (
+            <>
+              {isSuperAdmin && (
+                <form onSubmit={handleAddStage} style={{ display: 'flex', gap: '6px', marginBottom: '14px', alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    placeholder="створіть власну структуру"
+                    value={newStageTitle}
+                    onChange={(e) => setNewStageTitle(e.target.value)}
+                    style={{ ...cardInputStyle, flex: 1, height: '28px', padding: '2px 8px', boxSizing: 'border-box' }}
+                  />
+                  <button type="submit" style={compactPlusBtnStyle}>
+                    +
+                  </button>
+                </form>
+              )}
 
-                const deadlineDateStr = (st as any).reviewDate || st.endDate;
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {displayedStages.map((st) => {
+                  const isCollapsed = collapsedStages[st.id];
+                  const isTrackTimeOn = st.trackTime !== false;
+                  const stageContractors: string[] = (st as any).contractors || (st.contractor ? [st.contractor] : []);
+                  
+                  const currentStageStatusLabel = (st as any).currentStatus || statuses[0]?.label || 'В процесі';
+                  const currentStatusObj = statuses.find(s => s.label === currentStageStatusLabel) || statuses[0];
 
-                return (
-                  <div key={st.id} style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '10px', border: '1px solid #e5e5ea' }}>
-                    
-                    {/* Рядок над назвою стадії */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                      {deadlineDateStr && (
-                        <div style={dateBoxStyle}>
-                          📅 {formatDateShort(deadlineDateStr)}
+                  const deadlineDateStr = (st as any).reviewDate || st.endDate;
+
+                  return (
+                    <div key={st.id} style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '10px', border: '1px solid #e5e5ea' }}>
+                      
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                        {deadlineDateStr && (
+                          <div style={dateBoxStyle}>
+                            📅 {formatDateShort(deadlineDateStr)}
+                          </div>
+                        )}
+
+                        <select 
+                          value={currentStageStatusLabel}
+                          onChange={(e) => handleUpdateStageStatus(st.id, e.target.value)}
+                          style={{ 
+                            height: '24px',
+                            boxSizing: 'border-box',
+                            border: 'none', 
+                            borderRadius: '12px', 
+                            padding: '0 10px', 
+                            fontSize: '11px', 
+                            fontWeight: 600,
+                            backgroundColor: currentStatusObj?.color || '#8e8e93',
+                            color: '#000000',
+                            cursor: 'pointer',
+                            outline: 'none',
+                            lineHeight: 1
+                          }}
+                        >
+                          {statuses.map(s => (
+                            <option key={s.id} value={s.label} style={{ backgroundColor: '#fff', color: '#000000' }}>
+                              {s.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                          <span 
+                            onClick={() => setCollapsedStages({ ...collapsedStages, [st.id]: !isCollapsed })}
+                            style={{ cursor: 'pointer', fontSize: '12px', color: '#8e8e93', userSelect: 'none' }}
+                          >
+                            {isCollapsed ? '▼' : '▲'}
+                          </span>
+
+                          {isSuperAdmin ? (
+                            <input
+                              type="text"
+                              value={st.title}
+                              onChange={(e) => handleUpdateStageTitle(st.id, e.target.value)}
+                              style={inlineTitleInputStyle}
+                            />
+                          ) : (
+                            <span style={{ fontSize: '14px', fontWeight: 700, color: '#1c1c1e' }}>{st.title}</span>
+                          )}
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          {/* Облік часу / таймер керується перемикачем "Ролі" */}
+                          {enableRoles && isTrackTimeOn && (
+                            <>
+                              <button
+                                onClick={() => handleToggleStageTimer(st.id)}
+                                style={{
+                                  ...btnStyle,
+                                  backgroundColor: st.isTimerRunning ? '#ff3b30' : '#34c759',
+                                  color: '#fff',
+                                  fontSize: '11px',
+                                  padding: '4px 8px'
+                                }}
+                              >
+                                {st.isTimerRunning ? `⏸ [ ${formatTime(st.loggedSeconds)} ]` : `▶ [ ${formatTime(st.loggedSeconds)} ]`}
+                              </button>
+
+                              <button
+                                onClick={() => {
+                                  setEditingTimeStageId(editingTimeStageId === st.id ? null : st.id);
+                                  setManualHours(Math.floor((st.loggedSeconds || 0) / 3600).toString());
+                                  setManualMinutes(Math.floor(((st.loggedSeconds || 0) % 3600) / 60).toString());
+                                }}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}
+                              >
+                                ⏱️
+                              </button>
+                            </>
+                          )}
+
+                          {isSuperAdmin && (
+                            <div style={{ width: '38px', display: 'flex', justifyContent: 'center', transform: 'translateX(1px)' }}>
+                              <button onClick={() => handleDeleteStage(st.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}>
+                                🗑️
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {editingTimeStageId === st.id && (
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '8px', padding: '6px', backgroundColor: '#f2f2f7', borderRadius: '6px', fontSize: '12px' }}>
+                          <span>Годин:</span>
+                          <input type="number" value={manualHours} onChange={(e) => setManualHours(e.target.value)} style={{ ...cardInputStyle, width: '50px', padding: '2px 4px', height: '28px', boxSizing: 'border-box' }} />
+                          <span>Хвил:</span>
+                          <input type="number" value={manualMinutes} onChange={(e) => setManualMinutes(e.target.value)} style={{ ...cardInputStyle, width: '50px', padding: '2px 4px', height: '28px', boxSizing: 'border-box' }} />
+                          <button onClick={() => handleSaveManualTime(st.id)} style={{ ...btnStyle, backgroundColor: '#34c759', color: '#fff', padding: '2px 6px', fontSize: '11px' }}>✓</button>
                         </div>
                       )}
 
-                      <select 
-                        value={currentStageStatusLabel}
-                        onChange={(e) => handleUpdateStageStatus(st.id, e.target.value)}
-                        style={{ 
-                          height: '24px',
-                          boxSizing: 'border-box',
-                          border: 'none', 
-                          borderRadius: '12px', 
-                          padding: '0 10px', 
-                          fontSize: '11px', 
-                          fontWeight: 600,
-                          backgroundColor: currentStatusObj?.color || '#8e8e93',
-                          color: '#000000',
-                          cursor: 'pointer',
-                          outline: 'none',
-                          lineHeight: 1
-                        }}
-                      >
-                        {statuses.map(s => (
-                          <option key={s.id} value={s.label} style={{ backgroundColor: '#fff', color: '#000000' }}>
-                            {s.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                        <span 
-                          onClick={() => setCollapsedStages({ ...collapsedStages, [st.id]: !isCollapsed })}
-                          style={{ cursor: 'pointer', fontSize: '12px', color: '#8e8e93', userSelect: 'none' }}
-                        >
-                          {isCollapsed ? '▼' : '▲'}
-                        </span>
-
-                        {isSuperAdmin ? (
-                          <input
-                            type="text"
-                            value={st.title}
-                            onChange={(e) => handleUpdateStageTitle(st.id, e.target.value)}
-                            style={inlineTitleInputStyle}
-                          />
-                        ) : (
-                          <span style={{ fontSize: '14px', fontWeight: 700, color: '#1c1c1e' }}>{st.title}</span>
-                        )}
-                      </div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        {enableTeamRoles && isTrackTimeOn && (
-                          <>
-                            <button
-                              onClick={() => handleToggleStageTimer(st.id)}
-                              style={{
-                                ...btnStyle,
-                                backgroundColor: st.isTimerRunning ? '#ff3b30' : '#34c759',
-                                color: '#fff',
-                                fontSize: '11px',
-                                padding: '4px 8px'
-                              }}
-                            >
-                              {st.isTimerRunning ? `⏸ [ ${formatTime(st.loggedSeconds)} ]` : `▶ [ ${formatTime(st.loggedSeconds)} ]`}
-                            </button>
-
-                            <button
-                              onClick={() => {
-                                setEditingTimeStageId(editingTimeStageId === st.id ? null : st.id);
-                                setManualHours(Math.floor((st.loggedSeconds || 0) / 3600).toString());
-                                setManualMinutes(Math.floor(((st.loggedSeconds || 0) % 3600) / 60).toString());
-                              }}
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}
-                            >
-                              ⏱️
-                            </button>
-                          </>
-                        )}
-
-                        {isSuperAdmin && (
-                          <div style={{ width: '38px', display: 'flex', justifyContent: 'center', transform: 'translateX(1px)' }}>
-                            <button onClick={() => handleDeleteStage(st.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}>
-                              🗑️
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {editingTimeStageId === st.id && (
-                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '8px', padding: '6px', backgroundColor: '#f2f2f7', borderRadius: '6px', fontSize: '12px' }}>
-                        <span>Годин:</span>
-                        <input type="number" value={manualHours} onChange={(e) => setManualHours(e.target.value)} style={{ ...cardInputStyle, width: '50px', padding: '2px 4px', height: '28px', boxSizing: 'border-box' }} />
-                        <span>Хвил:</span>
-                        <input type="number" value={manualMinutes} onChange={(e) => setManualMinutes(e.target.value)} style={{ ...cardInputStyle, width: '50px', padding: '2px 4px', height: '28px', boxSizing: 'border-box' }} />
-                        <button onClick={() => handleSaveManualTime(st.id)} style={{ ...btnStyle, backgroundColor: '#34c759', color: '#fff', padding: '2px 6px', fontSize: '11px' }}>✓</button>
-                      </div>
-                    )}
-
-                    {!isCollapsed && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #e5e5ea' }}>
-                        
-                        {enableTeamRoles && (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
-                            {/* Змінено "облік часу" на з великої букви "Облік часу" */}
-                            <span>Облік часу</span>
-                            <div style={{ width: '38px', display: 'flex', justifyContent: 'center', transform: 'translateX(1px)' }}>
-                              <div
-                                onClick={() => handleToggleStageTrackTime(st.id)}
-                                style={{
-                                  width: '34px',
-                                  height: '20px',
-                                  borderRadius: '10px',
-                                  backgroundColor: isTrackTimeOn ? '#34c759' : '#e5e5ea',
-                                  position: 'relative',
-                                  cursor: 'pointer'
-                                }}
-                              >
+                      {!isCollapsed && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #e5e5ea' }}>
+                          
+                          {enableRoles && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
+                              <span>Облік часу</span>
+                              <div style={{ width: '38px', display: 'flex', justifyContent: 'center', transform: 'translateX(1px)' }}>
                                 <div
+                                  onClick={() => handleToggleStageTrackTime(st.id)}
                                   style={{
-                                    width: '16px',
-                                    height: '16px',
-                                    borderRadius: '50%',
-                                    backgroundColor: '#fff',
-                                    position: 'absolute',
-                                    top: '2px',
-                                    left: isTrackTimeOn ? '16px' : '2px',
-                                    transition: 'left 0.2s'
+                                    width: '34px',
+                                    height: '20px',
+                                    borderRadius: '10px',
+                                    backgroundColor: isTrackTimeOn ? '#34c759' : '#e5e5ea',
+                                    position: 'relative',
+                                    cursor: 'pointer'
                                   }}
-                                />
+                                >
+                                  <div
+                                    style={{
+                                      width: '16px',
+                                      height: '16px',
+                                      borderRadius: '50%',
+                                      backgroundColor: '#fff',
+                                      position: 'absolute',
+                                      top: '2px',
+                                      left: isTrackTimeOn ? '16px' : '2px',
+                                      transition: 'left 0.2s'
+                                    }}
+                                  />
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        )}
+                          )}
 
-                        {/* Підстадії */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
-                          {st.subStages.map((sub, idx) => {
-                            const nestedItems = (sub as any).nestedItems || [];
-                            const isSubCollapsed = collapsedSubStages[sub.id];
+                          {/* Підстадії */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+                            {st.subStages.map((sub, idx) => {
+                              const nestedItems = (sub as any).nestedItems || [];
+                              const isSubCollapsed = collapsedSubStages[sub.id];
 
-                            return (
-                              <div key={sub.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px', backgroundColor: '#f9f9fb', padding: '8px', borderRadius: '8px', border: '1px solid #e5e5ea' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
-                                    
+                              return (
+                                <div key={sub.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px', backgroundColor: '#f9f9fb', padding: '8px', borderRadius: '8px', border: '1px solid #e5e5ea' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
+                                      
+                                      {canManageSubtasks && (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', marginRight: '2px' }}>
+                                          <button 
+                                            onClick={() => handleMoveSubStage(st.id, idx, 'up')}
+                                            disabled={idx === 0}
+                                            style={{ background: 'none', border: 'none', cursor: idx === 0 ? 'default' : 'pointer', fontSize: '8px', padding: 0, color: idx === 0 ? '#d1d1d6' : '#007aff', lineHeight: 1 }}
+                                          >
+                                            ▲
+                                          </button>
+                                          <button 
+                                            onClick={() => handleMoveSubStage(st.id, idx, 'down')}
+                                            disabled={idx === st.subStages.length - 1}
+                                            style={{ background: 'none', border: 'none', cursor: idx === st.subStages.length - 1 ? 'default' : 'pointer', fontSize: '8px', padding: 0, color: idx === st.subStages.length - 1 ? '#d1d1d6' : '#007aff', lineHeight: 1 }}
+                                          >
+                                            ▼
+                                          </button>
+                                        </div>
+                                      )}
+
+                                      <span 
+                                        onClick={() => setCollapsedSubStages({ ...collapsedSubStages, [sub.id]: !isSubCollapsed })}
+                                        style={{ cursor: 'pointer', fontSize: '10px', color: '#8e8e93', userSelect: 'none', width: '12px', textAlign: 'center' }}
+                                      >
+                                        {isSubCollapsed ? '▶' : '▼'}
+                                      </span>
+
+                                      <input
+                                        type="checkbox"
+                                        checked={sub.completed}
+                                        onChange={() => handleToggleSubStage(st.id, sub.id)}
+                                      />
+                                      <span style={{ fontWeight: 700, color: '#1c1c1e', userSelect: 'none', minWidth: '16px' }}>{idx + 1}.</span>
+
+                                      <input
+                                        type="text"
+                                        value={sub.title}
+                                        disabled={!canManageSubtasks}
+                                        onChange={(e) => handleUpdateSubStageTitle(st.id, sub.id, e.target.value)}
+                                        style={{
+                                          ...inlineTitleInputStyle,
+                                          fontSize: '13px',
+                                          textDecoration: sub.completed ? 'line-through' : 'none',
+                                          color: sub.completed ? '#8e8e93' : '#1c1c1e'
+                                        }}
+                                      />
+                                    </div>
+
                                     {canManageSubtasks && (
-                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', marginRight: '2px' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                         <button 
-                                          onClick={() => handleMoveSubStage(st.id, idx, 'up')}
-                                          disabled={idx === 0}
-                                          style={{ background: 'none', border: 'none', cursor: idx === 0 ? 'default' : 'pointer', fontSize: '8px', padding: 0, color: idx === 0 ? '#d1d1d6' : '#007aff', lineHeight: 1 }}
+                                          onClick={() => {
+                                            if (isSubCollapsed) {
+                                              setCollapsedSubStages({ ...collapsedSubStages, [sub.id]: false });
+                                            }
+                                            handleAddNestedItem(st.id, sub.id);
+                                          }} 
+                                          style={{ ...compactPlusBtnStyle, width: '24px', height: '24px', fontSize: '14px' }}
                                         >
-                                          ▲
+                                          +
                                         </button>
-                                        <button 
-                                          onClick={() => handleMoveSubStage(st.id, idx, 'down')}
-                                          disabled={idx === st.subStages.length - 1}
-                                          style={{ background: 'none', border: 'none', cursor: idx === st.subStages.length - 1 ? 'default' : 'pointer', fontSize: '8px', padding: 0, color: idx === st.subStages.length - 1 ? '#d1d1d6' : '#007aff', lineHeight: 1 }}
-                                        >
-                                          ▼
-                                        </button>
+                                        <div style={{ width: '28px', display: 'flex', justifyContent: 'center' }}>
+                                          <button onClick={() => handleDeleteSubStage(st.id, sub.id)} style={{ ...iconBtnStyle, color: '#ff3b30' }}>🗑️</button>
+                                        </div>
                                       </div>
                                     )}
-
-                                    <span 
-                                      onClick={() => setCollapsedSubStages({ ...collapsedSubStages, [sub.id]: !isSubCollapsed })}
-                                      style={{ cursor: 'pointer', fontSize: '10px', color: '#8e8e93', userSelect: 'none', width: '12px', textAlign: 'center' }}
-                                    >
-                                      {isSubCollapsed ? '▶' : '▼'}
-                                    </span>
-
-                                    <input
-                                      type="checkbox"
-                                      checked={sub.completed}
-                                      onChange={() => handleToggleSubStage(st.id, sub.id)}
-                                    />
-                                    <span style={{ fontWeight: 700, color: '#1c1c1e', userSelect: 'none', minWidth: '16px' }}>{idx + 1}.</span>
-
-                                    <input
-                                      type="text"
-                                      value={sub.title}
-                                      disabled={!canManageSubtasks}
-                                      onChange={(e) => handleUpdateSubStageTitle(st.id, sub.id, e.target.value)}
-                                      style={{
-                                        ...inlineTitleInputStyle,
-                                        fontSize: '13px',
-                                        textDecoration: sub.completed ? 'line-through' : 'none',
-                                        color: sub.completed ? '#8e8e93' : '#1c1c1e'
-                                      }}
-                                    />
                                   </div>
 
-                                  {canManageSubtasks && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                      <button 
-                                        onClick={() => {
-                                          if (isSubCollapsed) {
-                                            setCollapsedSubStages({ ...collapsedSubStages, [sub.id]: false });
-                                          }
-                                          handleAddNestedItem(st.id, sub.id);
-                                        }} 
-                                        style={{ ...compactPlusBtnStyle, width: '24px', height: '24px', fontSize: '14px' }}
-                                      >
-                                        +
-                                      </button>
-                                      <div style={{ width: '28px', display: 'flex', justifyContent: 'center' }}>
-                                        <button onClick={() => handleDeleteSubStage(st.id, sub.id)} style={{ ...iconBtnStyle, color: '#ff3b30' }}>🗑️</button>
-                                      </div>
+                                  {!isSubCollapsed && nestedItems.length > 0 && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '28px', marginTop: '4px' }}>
+                                      {nestedItems.map((item: any, itemIdx: number) => (
+                                        <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px' }}>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
+                                            
+                                            {canManageSubtasks && (
+                                              <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', marginRight: '2px' }}>
+                                                <button 
+                                                  onClick={() => handleMoveNestedItem(st.id, sub.id, itemIdx, 'up')}
+                                                  disabled={itemIdx === 0}
+                                                  style={{ background: 'none', border: 'none', cursor: itemIdx === 0 ? 'default' : 'pointer', fontSize: '8px', padding: 0, color: itemIdx === 0 ? '#d1d1d6' : '#636366', lineHeight: 1 }}
+                                                >
+                                                  ▲
+                                                </button>
+                                                <button 
+                                                  onClick={() => handleMoveNestedItem(st.id, sub.id, itemIdx, 'down')}
+                                                  disabled={itemIdx === nestedItems.length - 1}
+                                                  style={{ background: 'none', border: 'none', cursor: itemIdx === nestedItems.length - 1 ? 'default' : 'pointer', fontSize: '8px', padding: 0, color: itemIdx === nestedItems.length - 1 ? '#d1d1d6' : '#636366', lineHeight: 1 }}
+                                                >
+                                                  ▼
+                                                </button>
+                                              </div>
+                                            )}
+
+                                            <input
+                                              type="checkbox"
+                                              checked={item.completed}
+                                              onChange={() => handleToggleNestedItem(st.id, sub.id, item.id)}
+                                            />
+                                            <span style={{ fontWeight: 600, color: '#636366', userSelect: 'none', minWidth: '24px' }}>{idx + 1}.{itemIdx + 1}</span>
+
+                                            <input
+                                              type="text"
+                                              value={item.title}
+                                              disabled={!canManageSubtasks}
+                                              onChange={(e) => handleUpdateNestedItemTitle(st.id, sub.id, item.id, e.target.value)}
+                                              style={{
+                                                ...inlineTitleInputStyle,
+                                                fontSize: '12px',
+                                                textDecoration: item.completed ? 'line-through' : 'none',
+                                                color: item.completed ? '#8e8e93' : '#3a3a3c'
+                                              }}
+                                            />
+                                          </div>
+
+                                          {canManageSubtasks && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                              <div style={{ width: '24px' }} />
+                                              <div style={{ width: '28px', display: 'flex', justifyContent: 'center' }}>
+                                                <button onClick={() => handleDeleteNestedItem(st.id, sub.id, item.id)} style={{ ...iconBtnStyle, color: '#ff3b30' }}>🗑️</button>
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      ))}
                                     </div>
                                   )}
                                 </div>
+                              );
+                            })}
+                          </div>
 
-                                {!isSubCollapsed && nestedItems.length > 0 && (
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '28px', marginTop: '4px' }}>
-                                    {nestedItems.map((item: any, itemIdx: number) => (
-                                      <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
-                                          
-                                          {canManageSubtasks && (
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', marginRight: '2px' }}>
-                                              <button 
-                                                onClick={() => handleMoveNestedItem(st.id, sub.id, itemIdx, 'up')}
-                                                disabled={itemIdx === 0}
-                                                style={{ background: 'none', border: 'none', cursor: itemIdx === 0 ? 'default' : 'pointer', fontSize: '8px', padding: 0, color: itemIdx === 0 ? '#d1d1d6' : '#636366', lineHeight: 1 }}
-                                              >
-                                                ▲
-                                              </button>
-                                              <button 
-                                                onClick={() => handleMoveNestedItem(st.id, sub.id, itemIdx, 'down')}
-                                                disabled={itemIdx === nestedItems.length - 1}
-                                                style={{ background: 'none', border: 'none', cursor: itemIdx === nestedItems.length - 1 ? 'default' : 'pointer', fontSize: '8px', padding: 0, color: itemIdx === nestedItems.length - 1 ? '#d1d1d6' : '#636366', lineHeight: 1 }}
-                                              >
-                                                ▼
-                                              </button>
-                                            </div>
-                                          )}
+                          {canManageSubtasks && (
+                            <div style={{ display: 'flex', gap: '6px', marginTop: '8px', alignItems: 'center' }}>
+                              <input
+                                type="text"
+                                placeholder="Додати підзадачу"
+                                value={newSubStageTitle[st.id] || ''}
+                                onChange={(e) => setNewSubStageTitle({ ...newSubStageTitle, [st.id]: e.target.value })}
+                                style={{ ...cardInputStyle, padding: '2px 8px', fontSize: '12px', height: '28px', boxSizing: 'border-box', flex: 1 }}
+                              />
+                              <button onClick={() => handleAddSubStage(st.id)} style={{ ...compactPlusBtnStyle, width: '28px', height: '28px', boxSizing: 'border-box' }}>
+                                +
+                              </button>
+                            </div>
+                          )}
 
-                                          <input
-                                            type="checkbox"
-                                            checked={item.completed}
-                                            onChange={() => handleToggleNestedItem(st.id, sub.id, item.id)}
-                                          />
-                                          <span style={{ fontWeight: 600, color: '#636366', userSelect: 'none', minWidth: '24px' }}>{idx + 1}.{itemIdx + 1}</span>
+                          <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #d1d1d6', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            
+                            {showDates && isSuperAdmin && (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <span style={{ fontSize: '11px', fontWeight: 600, color: '#636366' }}>Терміни (Старт / Дедлайн):</span>
+                                <div style={{ display: 'flex', gap: '6px', fontSize: '11px' }}>
+                                  <input
+                                    type="date"
+                                    title="Дата початку"
+                                    value={st.startDate || ''}
+                                    onChange={(e) => handleUpdateStageDates(st.id, 'startDate', e.target.value)}
+                                    style={{ ...cardInputStyle, flex: 1, padding: '4px', fontSize: '11px', height: '30px', boxSizing: 'border-box' }}
+                                  />
+                                  <input
+                                    type="date"
+                                    title="Дедлайн"
+                                    value={(st as any).reviewDate || st.endDate || ''}
+                                    onChange={(e) => handleUpdateStageDates(st.id, 'endDate', e.target.value)}
+                                    style={{ ...cardInputStyle, flex: 1, padding: '4px', fontSize: '11px', height: '30px', boxSizing: 'border-box' }}
+                                  />
+                                </div>
+                              </div>
+                            )}
 
-                                          <input
-                                            type="text"
-                                            value={item.title}
-                                            disabled={!canManageSubtasks}
-                                            onChange={(e) => handleUpdateNestedItemTitle(st.id, sub.id, item.id, e.target.value)}
-                                            style={{
-                                              ...inlineTitleInputStyle,
-                                              fontSize: '12px',
-                                              textDecoration: item.completed ? 'line-through' : 'none',
-                                              color: item.completed ? '#8e8e93' : '#3a3a3c'
-                                            }}
-                                          />
-                                        </div>
+                            {/* Призначення виконавців у стадії (керується перемикачем "Ролі") */}
+                            {isSuperAdmin && enableRoles && (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px' }}>
+                                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                  <select
+                                    id={`select-contractor-${st.id}`}
+                                    defaultValue=""
+                                    style={{ ...cardInputStyle, fontSize: '12px', height: '28px', padding: '2px 8px', boxSizing: 'border-box', flex: 1 }}
+                                  >
+                                    <option value="">Виберіть виконавця...</option>
+                                    {projectTeam.map(pt => {
+                                      const member = teamDatabase.find(m => m.id === pt.memberId);
+                                      const nameStr = `${member?.fullName || 'Учасник'} (${pt.role})`;
+                                      return (
+                                        <option key={pt.id} value={member?.fullName || ''}>
+                                          {nameStr}
+                                        </option>
+                                      );
+                                    })}
+                                  </select>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const selectEl = document.getElementById(`select-contractor-${st.id}`) as HTMLSelectElement;
+                                      if (selectEl && selectEl.value) {
+                                        handleAddStageContractor(st.id, selectEl.value);
+                                        selectEl.value = '';
+                                      }
+                                    }}
+                                    style={{ ...compactPlusBtnStyle, width: '28px', height: '28px', boxSizing: 'border-box' }}
+                                  >
+                                    +
+                                  </button>
+                                </div>
 
-                                        {canManageSubtasks && (
-                                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                            <div style={{ width: '24px' }} />
-                                            <div style={{ width: '28px', display: 'flex', justifyContent: 'center' }}>
-                                              <button onClick={() => handleDeleteNestedItem(st.id, sub.id, item.id)} style={{ ...iconBtnStyle, color: '#ff3b30' }}>🗑️</button>
-                                            </div>
-                                          </div>
-                                        )}
+                                {stageContractors.length > 0 && (
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '2px' }}>
+                                    {stageContractors.map((cName, cIdx) => (
+                                      <div key={cIdx} style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#e5e5ea', padding: '4px 8px', borderRadius: '6px', fontSize: '12px' }}>
+                                        <span>{cName}</span>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRemoveStageContractor(st.id, cName)}
+                                          style={{ background: 'none', border: 'none', color: '#ff3b30', cursor: 'pointer', fontSize: '11px', padding: 0, fontWeight: 700 }}
+                                        >
+                                          ✕
+                                        </button>
                                       </div>
                                     ))}
                                   </div>
                                 )}
                               </div>
-                            );
-                          })}
-                        </div>
+                            )}
 
-                        {canManageSubtasks && (
-                          <div style={{ display: 'flex', gap: '6px', marginTop: '8px', alignItems: 'center' }}>
-                            <input
-                              type="text"
-                              placeholder="Додати підзадачу"
-                              value={newSubStageTitle[st.id] || ''}
-                              onChange={(e) => setNewSubStageTitle({ ...newSubStageTitle, [st.id]: e.target.value })}
-                              style={{ ...cardInputStyle, padding: '2px 8px', fontSize: '12px', height: '28px', boxSizing: 'border-box', flex: 1 }}
-                            />
-                            <button onClick={() => handleAddSubStage(st.id)} style={{ ...compactPlusBtnStyle, width: '28px', height: '28px', boxSizing: 'border-box' }}>
-                              +
-                            </button>
                           </div>
-                        )}
-
-                        <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #d1d1d6', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          
-                          {showDates && isSuperAdmin && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                              <span style={{ fontSize: '11px', fontWeight: 600, color: '#636366' }}>Терміни (Старт / Дедлайн):</span>
-                              <div style={{ display: 'flex', gap: '6px', fontSize: '11px' }}>
-                                <input
-                                  type="date"
-                                  title="Дата початку"
-                                  value={st.startDate || ''}
-                                  onChange={(e) => handleUpdateStageDates(st.id, 'startDate', e.target.value)}
-                                  style={{ ...cardInputStyle, flex: 1, padding: '4px', fontSize: '11px', height: '30px', boxSizing: 'border-box' }}
-                                />
-                                <input
-                                  type="date"
-                                  title="Дедлайн"
-                                  value={(st as any).reviewDate || st.endDate || ''}
-                                  onChange={(e) => handleUpdateStageDates(st.id, 'endDate', e.target.value)}
-                                  style={{ ...cardInputStyle, flex: 1, padding: '4px', fontSize: '11px', height: '30px', boxSizing: 'border-box' }}
-                                />
-                              </div>
-                            </div>
-                          )}
-
-                          {isSuperAdmin && enableTeamRoles && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px' }}>
-                              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                                <select
-                                  id={`select-contractor-${st.id}`}
-                                  defaultValue=""
-                                  style={{ ...cardInputStyle, fontSize: '12px', height: '28px', padding: '2px 8px', boxSizing: 'border-box', flex: 1 }}
-                                >
-                                  <option value="">Виберіть виконавця...</option>
-                                  {projectTeam.map(pt => {
-                                    const member = teamDatabase.find(m => m.id === pt.memberId);
-                                    const nameStr = `${member?.fullName || 'Учасник'} (${pt.role})`;
-                                    return (
-                                      <option key={pt.id} value={member?.fullName || ''}>
-                                        {nameStr}
-                                      </option>
-                                    );
-                                  })}
-                                </select>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const selectEl = document.getElementById(`select-contractor-${st.id}`) as HTMLSelectElement;
-                                    if (selectEl && selectEl.value) {
-                                      handleAddStageContractor(st.id, selectEl.value);
-                                      selectEl.value = '';
-                                    }
-                                  }}
-                                  style={{ ...compactPlusBtnStyle, width: '28px', height: '28px', boxSizing: 'border-box' }}
-                                >
-                                  +
-                                </button>
-                              </div>
-
-                              {stageContractors.length > 0 && (
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '2px' }}>
-                                  {stageContractors.map((cName, cIdx) => (
-                                    <div key={cIdx} style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#e5e5ea', padding: '4px 8px', borderRadius: '6px', fontSize: '12px' }}>
-                                      <span>{cName}</span>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleRemoveStageContractor(st.id, cName)}
-                                        style={{ background: 'none', border: 'none', color: '#ff3b30', cursor: 'pointer', fontSize: '11px', padding: 0, fontWeight: 700 }}
-                                      >
-                                        ✕
-                                      </button>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          )}
 
                         </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* 4. Team Block */}
-      {isSuperAdmin && enableTeamRoles && (
+      {/* Блок "Команда" (з'являється тільки якщо увімкнено перемикач "Ролі") */}
+      {isSuperAdmin && enableRoles && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '20px' }}>
           <div 
             onClick={() => setIsTeamOpen(!isTeamOpen)}
@@ -1399,6 +1493,42 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {/* Перемикач "Ролі" перенесено в самий низ перед блоком збереження */}
+      {isSuperAdmin && (
+        <div style={{ backgroundColor: '#f2f2f7', padding: '12px 14px', borderRadius: '12px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
+          <span style={{ fontSize: '13px', fontWeight: 600, color: '#1c1c1e' }}>Ролі</span>
+          <div
+            onClick={() => {
+              const nextVal = !enableRoles;
+              setEnableRoles(nextVal);
+              handleAutoSaveBasicInfo(undefined, undefined, undefined, nextVal, undefined, undefined, undefined, undefined);
+            }}
+            style={{
+              width: '34px',
+              height: '20px',
+              borderRadius: '10px',
+              backgroundColor: enableRoles ? '#34c759' : '#e5e5ea',
+              position: 'relative',
+              cursor: 'pointer',
+              transition: 'background-color 0.2s'
+            }}
+          >
+            <div
+              style={{
+                width: '16px',
+                height: '16px',
+                borderRadius: '50%',
+                backgroundColor: '#fff',
+                position: 'absolute',
+                top: '2px',
+                left: enableRoles ? '16px' : '2px',
+                transition: 'left 0.2s'
+              }}
+            />
+          </div>
         </div>
       )}
 
