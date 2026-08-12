@@ -12,18 +12,25 @@ type MetricType = 'count' | 'time';
 
 const CHART_COLORS = ['#007aff', '#34c759', '#ff9500', '#af52de', '#ff2d55', '#5856d6'];
 
+const MONTHS_LIST = [
+  'Січень 2026', 'Лютий 2026', 'Березень 2026', 'Квітень 2026',
+  'Травень 2026', 'Червень 2026', 'Липень 2026', 'Серпень 2026',
+  'Вересень 2026', 'Жовтень 2026', 'Листопад 2026', 'Грудень 2026'
+];
+
+const YEARS_LIST = ['2025', '2026', '2027'];
+
 export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
   const [period, setPeriod] = useState<FilterPeriod>('month');
   const [metric, setMetric] = useState<MetricType>('count');
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Додаткові стани для вибору конкретного місяця та року під кнопками
-  const [selectedMonth, setSelectedMonth] = useState('08.2026');
-  const [selectedYear, setSelectedYear] = useState('2026');
+  // Індекси для «барабана» прокрутки
+  const [monthIndex, setMonthIndex] = useState(7); // Серпень за замовчуванням
+  const [yearIndex, setYearIndex] = useState(1);   // 2026 за замовчуванням
   
   const [collapsedProjects, setCollapsedProjects] = useState<{ [key: string]: boolean }>({});
   
-  // Детальний час вшито в код назавжди (завжди true)
   const showWorkload = true;
 
   const toggleProject = (id: string) => {
@@ -32,6 +39,23 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+
+  // Функції прокрутки барабана
+  const handlePrevMonth = () => {
+    setMonthIndex(prev => (prev > 0 ? prev - 1 : MONTHS_LIST.length - 1));
+  };
+
+  const handleNextMonth = () => {
+    setMonthIndex(prev => (prev < MONTHS_LIST.length - 1 ? prev + 1 : 0));
+  };
+
+  const handlePrevYear = () => {
+    setYearIndex(prev => (prev > 0 ? prev - 1 : YEARS_LIST.length - 1));
+  };
+
+  const handleNextYear = () => {
+    setYearIndex(prev => (prev < YEARS_LIST.length - 1 ? prev + 1 : 0));
+  };
 
   // 1. Фільтрація проєктів та підзадач за текстовим запитом
   const filteredProjects = projects.map(proj => {
@@ -122,41 +146,45 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
           ))}
         </div>
 
-        {/* Додатковий селектор конкретного місяця або року під кнопками (з'являється відповідно до вибраного періоду) */}
+        {/* «Барабан» прокрутки місяців з підкресленням і текстом по центру */}
         {period === 'month' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              style={{ padding: '6px 8px', borderRadius: '8px', border: '1px solid #c7c7cc', fontSize: '12px', background: '#fff', fontWeight: 600 }}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '4px 0' }}>
+            <button 
+              onClick={handlePrevMonth}
+              style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#007aff', fontWeight: 700 }}
             >
-              <option value="01.2026">Січень 2026</option>
-              <option value="02.2026">Лютий 2026</option>
-              <option value="03.2026">Березень 2026</option>
-              <option value="04.2026">Квітень 2026</option>
-              <option value="05.2026">Травень 2026</option>
-              <option value="06.2026">Червень 2026</option>
-              <option value="07.2026">Липень 2026</option>
-              <option value="08.2026">Серпень 2026</option>
-              <option value="09.2026">Вересень 2026</option>
-              <option value="10.2026">Жовтень 2026</option>
-              <option value="11.2026">Листопад 2026</option>
-              <option value="12.2026">Грудень 2026</option>
-            </select>
+              ◀
+            </button>
+            <div style={{ textAlign: 'center', fontSize: '14px', fontWeight: 700, color: '#1c1c1e', borderBottom: '2px solid #007aff', paddingBottom: '2px', minWidth: '130px' }}>
+              {MONTHS_LIST[monthIndex]}
+            </div>
+            <button 
+              onClick={handleNextMonth}
+              style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#007aff', fontWeight: 700 }}
+            >
+              ▶
+            </button>
           </div>
         )}
 
+        {/* «Барабан» прокрутки років з підкресленням і текстом по центру */}
         {period === 'year' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              style={{ padding: '6px 8px', borderRadius: '8px', border: '1px solid #c7c7cc', fontSize: '12px', background: '#fff', fontWeight: 600 }}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '4px 0' }}>
+            <button 
+              onClick={handlePrevYear}
+              style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#007aff', fontWeight: 700 }}
             >
-              <option value="2025">2025 рік</option>
-              <option value="2026">2026 рік</option>
-              <option value="2027">2027 рік</option>
-            </select>
+              ◀
+            </button>
+            <div style={{ textAlign: 'center', fontSize: '14px', fontWeight: 700, color: '#1c1c1e', borderBottom: '2px solid #007aff', paddingBottom: '2px', minWidth: '90px' }}>
+              {YEARS_LIST[yearIndex]} рік
+            </div>
+            <button 
+              onClick={handleNextYear}
+              style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#007aff', fontWeight: 700 }}
+            >
+              ▶
+            </button>
           </div>
         )}
 
