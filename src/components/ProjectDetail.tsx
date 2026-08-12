@@ -61,7 +61,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const canManageSubtasks = permissions.canManageSubtasks ?? true;
   const showOnlyAssignedStages = permissions.showOnlyAssignedStages ?? false;
 
-  const [isHeaderOpen, setIsHeaderOpen] = useState(false);
+  const [isHeaderOpen, setIsHeaderOpen] = useState(true);
   const [name, setName] = useState(project.name);
   const [projectId, setProjectId] = useState(project.id);
   
@@ -606,13 +606,16 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
         <div 
           onClick={() => setIsHeaderOpen(!isHeaderOpen)} 
-          style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+          style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isHeaderOpen ? '12px' : 0 }}
         >
-          <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>{name || 'Без назви'}</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '12px', color: '#8e8e93' }}>{isHeaderOpen ? '▲' : '▼'}</span>
+            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>{name || 'Без назви'}</h3>
+          </div>
         </div>
 
         {isHeaderOpen && isSuperAdmin && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }} onClick={(e) => e.stopPropagation()}>
             <div>
               <label style={labelStyle}>Назва проекту</label>
               <input
@@ -632,8 +635,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 type="text"
                 value={projectId}
                 onChange={(e) => {
-                  setProjectId(e.target.value);
-                  handleAutoSaveBasicInfo(undefined, e.target.value, undefined, undefined, undefined, undefined, undefined);
+                  const newId = e.target.value;
+                  setProjectId(newId);
+                  // ОНОВЛЕНИЙ ВИКЛИК: передаємо новий ID туди, щоб він коректно зберігався
+                  handleAutoSaveBasicInfo(undefined, newId, undefined, undefined, undefined, undefined, undefined);
                 }}
                 style={cardInputStyle}
               />
@@ -867,7 +872,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         </div>
       )}
 
-      {/* Блок "Дані" (галочка керує наявністю правого поля зі значенням) */}
+      {/* Блок "Дані" */}
       {isSuperAdmin && enableData && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
           <div 
@@ -914,7 +919,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     }}
                   />
 
-                  {/* Праве поле зі значенням з'являється лише коли увімкнена галочка */}
                   {r.enableSecondRow && (
                     <input
                       type="text"
@@ -935,7 +939,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     />
                   )}
 
-                  {/* Чекбокс для вмикання/вимикання правого поля */}
                   <input
                     type="checkbox"
                     checked={r.enableSecondRow ?? true}
