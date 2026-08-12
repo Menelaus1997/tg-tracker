@@ -96,7 +96,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
   const [isGeneralDataOpen, setIsGeneralDataOpen] = useState(true);
   const [generalRows, setGeneralRows] = useState<GeneralDataRow[]>(() => project.passportRows || [
-    { id: '1', type: 'single', label: '', value: '', enableSecondRow: false }
+    { id: '1', type: 'single', label: '', value: '', enableSecondRow: true }
   ]);
 
   const [isStructureOpen, setIsStructureOpen] = useState(true);
@@ -211,7 +211,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   };
 
   const handleAddRowAfter = (index: number) => {
-    const newRow: GeneralDataRow = { id: Date.now().toString(), type: 'single', label: '', value: '', enableSecondRow: false };
+    const newRow: GeneralDataRow = { id: Date.now().toString(), type: 'single', label: '', value: '', enableSecondRow: true };
     const updated = [...generalRows];
     updated.splice(index + 1, 0, newRow);
     setGeneralRows(updated);
@@ -867,7 +867,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         </div>
       )}
 
-      {/* Блок "Дані" (галочка керує наявністю другого поля / рядка знизу) */}
+      {/* Блок "Дані" (галочка керує наявністю правого поля зі значенням) */}
       {isSuperAdmin && enableData && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
           <div 
@@ -887,34 +887,35 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   onDragStart={() => handleDataDragStart(index)}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={() => handleDataDrop(index)}
-                  style={{ display: 'flex', flexDirection: 'column', gap: '6px', backgroundColor: '#ffffff', padding: '8px', borderRadius: '8px', border: '1px solid #e5e5ea', cursor: isSuperAdmin ? 'grab' : 'default' }}
+                  style={{ display: 'flex', gap: '8px', alignItems: 'center', cursor: isSuperAdmin ? 'grab' : 'default' }}
                 >
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <textarea
-                      placeholder="Назва рядка"
-                      value={r.label || ''}
-                      onChange={(e) => handleUpdateGeneralRow(r.id, 'label', e.target.value)}
-                      disabled={!isSuperAdmin}
-                      rows={1}
-                      onInput={(e) => {
-                        const target = e.target as HTMLTextAreaElement;
-                        target.style.height = 'auto';
-                        target.style.height = `${target.scrollHeight}px`;
-                      }}
-                      style={{ 
-                        ...cardInputStyle, 
-                        flex: 1, 
-                        minHeight: '28px', 
-                        height: '28px',
-                        padding: '5px 8px', 
-                        boxSizing: 'border-box',
-                        resize: 'none',
-                        overflow: 'hidden',
-                        lineHeight: '1.4',
-                        fontFamily: 'inherit'
-                      }}
-                    />
+                  <textarea
+                    placeholder="Назва рядка"
+                    value={r.label || ''}
+                    onChange={(e) => handleUpdateGeneralRow(r.id, 'label', e.target.value)}
+                    disabled={!isSuperAdmin}
+                    rows={1}
+                    onInput={(e) => {
+                      const target = e.target as HTMLTextAreaElement;
+                      target.style.height = 'auto';
+                      target.style.height = `${target.scrollHeight}px`;
+                    }}
+                    style={{ 
+                      ...cardInputStyle, 
+                      flex: 1, 
+                      minHeight: '28px', 
+                      height: '28px',
+                      padding: '5px 8px', 
+                      boxSizing: 'border-box',
+                      resize: 'none',
+                      overflow: 'hidden',
+                      lineHeight: '1.4',
+                      fontFamily: 'inherit'
+                    }}
+                  />
 
+                  {/* Праве поле зі значенням з'являється лише коли увімкнена галочка */}
+                  {r.enableSecondRow && (
                     <input
                       type="text"
                       placeholder="Значення"
@@ -932,52 +933,21 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                         textAlign: 'center' 
                       }}
                     />
+                  )}
 
-                    {/* Чекбокс для відкриття / закриття другого рядка */}
-                    <input
-                      type="checkbox"
-                      checked={r.enableSecondRow || false}
-                      onChange={(e) => handleUpdateGeneralRow(r.id, 'enableSecondRow', e.target.checked)}
-                      title="Відкрити другий рядок"
-                      style={{ cursor: 'pointer', width: '16px', height: '16px' }}
-                    />
+                  {/* Чекбокс для вмикання/вимикання правого поля */}
+                  <input
+                    type="checkbox"
+                    checked={r.enableSecondRow ?? true}
+                    onChange={(e) => handleUpdateGeneralRow(r.id, 'enableSecondRow', e.target.checked)}
+                    title="Увімкнути значення"
+                    style={{ cursor: 'pointer', width: '16px', height: '16px', flexShrink: 0 }}
+                  />
 
-                    {isSuperAdmin && (
-                      <div style={{ display: 'flex', gap: '4px', alignItems: 'center', width: '70px', justifyContent: 'center' }}>
-                        <button onClick={() => handleAddRowAfter(index)} style={compactPlusBtnStyle}>+</button>
-                        <button onClick={() => handleDeleteGeneralRow(r.id)} style={{ ...compactPlusBtnStyle, color: '#ff3b30' }}>🗑️</button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Другий рядок відкривається під першим при увімкненій галочці */}
-                  {r.enableSecondRow && (
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <textarea
-                        placeholder="Додатковий опис / рядок"
-                        value={r.value || ''}
-                        onChange={(e) => handleUpdateGeneralRow(r.id, 'value', e.target.value)}
-                        disabled={!isSuperAdmin}
-                        rows={1}
-                        onInput={(e) => {
-                          const target = e.target as HTMLTextAreaElement;
-                          target.style.height = 'auto';
-                          target.style.height = `${target.scrollHeight}px`;
-                        }}
-                        style={{ 
-                          ...cardInputStyle, 
-                          flex: 1, 
-                          minHeight: '28px', 
-                          height: '28px',
-                          padding: '5px 8px', 
-                          boxSizing: 'border-box',
-                          resize: 'none',
-                          overflow: 'hidden',
-                          lineHeight: '1.4',
-                          fontFamily: 'inherit',
-                          backgroundColor: '#f2f2f7'
-                        }}
-                      />
+                  {isSuperAdmin && (
+                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center', width: '70px', justifyContent: 'center' }}>
+                      <button onClick={() => handleAddRowAfter(index)} style={compactPlusBtnStyle}>+</button>
+                      <button onClick={() => handleDeleteGeneralRow(r.id)} style={{ ...compactPlusBtnStyle, color: '#ff3b30' }}>🗑️</button>
                     </div>
                   )}
                 </div>
