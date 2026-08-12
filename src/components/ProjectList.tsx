@@ -23,7 +23,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
     const matchesFilter = (p.status || 'active') === filter;
     const matchesSearch =
       p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.id.toLowerCase().includes(searchTerm.toLowerCase());
+      (p.id || '').toLowerCase().includes(searchTerm.toLowerCase());
     return matchesFilter && matchesSearch;
   });
 
@@ -83,9 +83,9 @@ export const ProjectList: React.FC<ProjectListProps> = ({
             No projects found.
           </div>
         ) : (
-          filteredProjects.map((p) => (
+          filteredProjects.map((p, idx) => (
             <div
-              key={p.id}
+              key={p.id || idx}
               onClick={() => onSelectProject(p.id)}
               style={{
                 display: 'flex',
@@ -108,8 +108,8 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                   }}
                 />
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: '15px' }}>{p.name}</div>
-                  <div style={{ fontSize: '12px', color: '#8e8e93' }}>ID: {p.id}</div>
+                  <div style={{ fontWeight: 700, fontSize: '15px' }}>{p.name || 'Без назви'}</div>
+                  <div style={{ fontSize: '12px', color: '#8e8e93' }}>ID: {p.id || 'не вказано'}</div>
                 </div>
               </div>
 
