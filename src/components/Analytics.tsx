@@ -17,6 +17,10 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
   const [metric, setMetric] = useState<MetricType>('count');
   const [searchTerm, setSearchTerm] = useState('');
   
+  // Додаткові стани для вибору конкретного місяця та року під кнопками
+  const [selectedMonth, setSelectedMonth] = useState('08.2026');
+  const [selectedYear, setSelectedYear] = useState('2026');
+  
   const [collapsedProjects, setCollapsedProjects] = useState<{ [key: string]: boolean }>({});
   
   // Детальний час вшито в код назавжди (завжди true)
@@ -92,7 +96,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
   return (
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e', paddingBottom: '80px' }}>
       
-      {/* ПАНЕЛЬ ФІЛЬТРІВ ТА ПЕРІОДУ (без повзунка детального часу) */}
+      {/* ПАНЕЛЬ ФІЛЬТРІВ ТА ПЕРІОДУ */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px', backgroundColor: '#f9f9fb', padding: '12px', borderRadius: '12px', border: '1px solid #e5e5ea' }}>
         
         {/* Вибір періоду */}
@@ -117,6 +121,44 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
             </button>
           ))}
         </div>
+
+        {/* Додатковий селектор конкретного місяця або року під кнопками (з'являється відповідно до вибраного періоду) */}
+        {period === 'month' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              style={{ padding: '6px 8px', borderRadius: '8px', border: '1px solid #c7c7cc', fontSize: '12px', background: '#fff', fontWeight: 600 }}
+            >
+              <option value="01.2026">Січень 2026</option>
+              <option value="02.2026">Лютий 2026</option>
+              <option value="03.2026">Березень 2026</option>
+              <option value="04.2026">Квітень 2026</option>
+              <option value="05.2026">Травень 2026</option>
+              <option value="06.2026">Червень 2026</option>
+              <option value="07.2026">Липень 2026</option>
+              <option value="08.2026">Серпень 2026</option>
+              <option value="09.2026">Вересень 2026</option>
+              <option value="10.2026">Жовтень 2026</option>
+              <option value="11.2026">Листопад 2026</option>
+              <option value="12.2026">Грудень 2026</option>
+            </select>
+          </div>
+        )}
+
+        {period === 'year' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              style={{ padding: '6px 8px', borderRadius: '8px', border: '1px solid #c7c7cc', fontSize: '12px', background: '#fff', fontWeight: 600 }}
+            >
+              <option value="2025">2025 рік</option>
+              <option value="2026">2026 рік</option>
+              <option value="2027">2027 рік</option>
+            </select>
+          </div>
+        )}
 
         {/* Метрика та Текстовий пошук */}
         <div style={{ display: 'flex', gap: '8px' }}>
