@@ -95,7 +95,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
   const [isGeneralDataOpen, setIsGeneralDataOpen] = useState(true);
   const [generalRows, setGeneralRows] = useState<GeneralDataRow[]>(() => project.passportRows || [
-    { id: '1', type: 'single', value: '' }
+    { id: '1', type: 'single', label: '', value: '' }
   ]);
 
   const [isStructureOpen, setIsStructureOpen] = useState(true);
@@ -210,18 +210,29 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   };
 
   const handleAddRowAfter = (index: number) => {
-    const newRow: GeneralDataRow = { id: Date.now().toString(), type: 'single', value: '' };
+    const newRow: GeneralDataRow = { id: Date.now().toString(), type: 'single', label: '', value: '' };
     const updated = [...generalRows];
     updated.splice(index + 1, 0, newRow);
     setGeneralRows(updated);
   };
 
   const handleUpdateGeneralRow = (id: string, field: 'label' | 'value', text: string) => {
-    setGeneralRows(generalRows.map(r => r.id === id ? { ...r, [field]: text } : r));
+    const updated = generalRows.map(r => r.id === id ? { ...r, [field]: text } : r);
+    setGeneralRows(updated);
+    // Автоматично оновлюємо проект при зміні даних
+    onUpdateProject({
+      ...project,
+      passportRows: updated
+    } as any);
   };
 
   const handleDeleteGeneralRow = (id: string) => {
-    setGeneralRows(generalRows.filter(r => r.id !== id));
+    const updated = generalRows.filter(r => r.id !== id);
+    setGeneralRows(updated);
+    onUpdateProject({
+      ...project,
+      passportRows: updated
+    } as any);
   };
 
   const handleDataDragStart = (index: number) => {
@@ -235,6 +246,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     updated.splice(targetIndex, 0, movedItem);
     setGeneralRows(updated);
     setDraggedDataIndex(null);
+    onUpdateProject({
+      ...project,
+      passportRows: updated
+    } as any);
   };
 
   const handleAddStage = (e: React.FormEvent) => {
@@ -760,7 +775,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                         display: 'flex', 
                         alignItems: 'center', 
                         justifyContent: 'center', 
-                        flexShrink: 0
+                        flexShrink: 0 
                       }}
                     >
                       {selectedTagId === firstTag.id && <span style={{ color: '#fff', fontSize: '9px', fontWeight: 700, lineHeight: 1 }}>✓</span>}
@@ -821,7 +836,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                             display: 'flex', 
                             alignItems: 'center', 
                             justifyContent: 'center', 
-                            flexShrink: 0
+                            flexShrink: 0 
                           }}
                         >
                           {isSelected && <span style={{ color: '#fff', fontSize: '9px', fontWeight: 700, lineHeight: 1 }}>✓</span>}
@@ -852,7 +867,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         </div>
       )}
 
-      {/* Блок "Дані" */}
+      {/* Блок "Дані" (тепер з назвою рядка та значенням) */}
       {isSuperAdmin && enableData && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
           <div 
@@ -874,12 +889,24 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   onDrop={() => handleDataDrop(index)}
                   style={{ display: 'flex', gap: '8px', alignItems: 'center', cursor: isSuperAdmin ? 'grab' : 'default' }}
                 >
+                  {/* Поле для введення назви рядка (Заголовок, наприклад: Загальна площа) */}
                   <input
                     type="text"
+                    placeholder="Назва рядка (напр. Загальна площа)"
+                    value={r.label || ''}
+                    onChange={(e) => handleUpdateGeneralRow(r.id, 'label', e.target.value)}
+                    disabled={!isSuperAdmin}
+                    style={{ ...cardInputStyle, flex: 1.2, height: '28px', padding: '2px 8px', boxSizing: 'border-box' }}
+                  />
+
+                  {/* Поле для введення значення */}
+                  <input
+                    type="text"
+                    placeholder="Значення"
                     value={r.value}
                     onChange={(e) => handleUpdateGeneralRow(r.id, 'value', e.target.value)}
                     disabled={!isSuperAdmin}
-                    style={{ ...cardInputStyle, flex: 1, height: '28px', padding: '2px 8px', boxSizing: 'border-box' }}
+                    style={{ ...cardInputStyle, flex: 0.8, height: '28px', padding: '2px 8px', boxSizing: 'border-box' }}
                   />
 
                   {isSuperAdmin && (
@@ -895,7 +922,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         </div>
       )}
 
-      {/* Блок "Структура" (Вирівняно шрифти та відступи під однакову висоту заголовка з Командою) */}
+      {/* Блок "Структура" */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
         <div 
           onClick={() => setIsStructureOpen(!isStructureOpen)}
@@ -1581,7 +1608,7 @@ const compactPlusBtnStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  flexShrink: 0,
+  flexShrink: '0',
   boxSizing: 'border-box'
 };
 
