@@ -126,38 +126,26 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
   const [draggedDataIndex, setDraggedDataIndex] = useState<number | null>(null);
 
-  const handleAutoSaveBasicInfo = (
-    updatedName?: string, 
-    updatedId?: string, 
-    updatedColorIndex?: number, 
-    updRoles?: boolean, 
-    updTags?: boolean, 
-    updData?: boolean, 
-    updatedStatuses?: ProjectStatus[]
-  ) => {
-    const nextName = updatedName !== undefined ? updatedName : name;
-    const nextId = updatedId !== undefined ? updatedId : projectId;
-    const nextColor = colors[updatedColorIndex !== undefined ? updatedColorIndex : selectedColorIndex];
-    const nextRoles = updRoles !== undefined ? updRoles : enableRoles;
-    const nextTags = updTags !== undefined ? updTags : enableTags;
-    const nextData = updData !== undefined ? updData : enableData;
-    const nextStatuses = updatedStatuses !== undefined ? updatedStatuses : statuses;
-
-    onUpdateProject({
+  // Універсальна функція для миттєвого автозбереження будь-яких змін
+  const triggerAutoSave = (overrides: Partial<Project> = {}) => {
+    const updatedProject: Project = {
       ...project,
-      id: nextId.trim(),
-      name: nextName.trim(),
-      color: nextColor,
+      id: projectId.trim(),
+      name: name.trim(),
+      color: colors[selectedColorIndex],
       passportRows: generalRows,
       stages,
       projectTeam,
-      enableRoles: nextRoles,
-      enableTeamRoles: nextRoles,
-      enableTags: nextTags,
-      enableData: nextData,
+      enableRoles,
+      enableTeamRoles: enableRoles,
+      enableTags,
+      enableData,
       enableStructure: true,
-      customStatuses: nextStatuses
-    } as any);
+      customStatuses: statuses,
+      ...overrides
+    } as any;
+
+    onUpdateProject(updatedProject);
   };
 
   const handleAddStatus = () => {
@@ -166,7 +154,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     const updatedStatuses = [newStatus, ...statuses];
     setStatuses(updatedStatuses);
     setSelectedTagId(newStatus.id);
-    handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, undefined, undefined, updatedStatuses);
+    triggerAutoSave({ customStatuses: updatedStatuses });
   };
 
   const handleDeleteStatus = (id: string, e: React.MouseEvent) => {
@@ -179,13 +167,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       setSelectedTagId(nextActive.id);
       setGlobalPickerColor(nextActive.color);
     }
-    handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, undefined, undefined, updatedStatuses);
+    triggerAutoSave({ customStatuses: updatedStatuses });
   };
 
   const handleUpdateStatusLabel = (statusId: string, newLabel: string) => {
     const updatedStatuses = statuses.map(s => s.id === statusId ? { ...s, label: newLabel } : s);
     setStatuses(updatedStatuses);
-    handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, undefined, undefined, updatedStatuses);
+    triggerAutoSave({ customStatuses: updatedStatuses });
   };
 
   const handleGlobalPickerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -194,12 +182,14 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     if (selectedTagId) {
       const updatedStatuses = statuses.map(s => s.id === selectedTagId ? { ...s, color } : s);
       setStatuses(updatedStatuses);
-      handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, undefined, undefined, updatedStatuses);
+      triggerAutoSave({ customStatuses: updatedStatuses });
     }
   };
 
   const handleUpdateStageStatus = (stageId: string, statusLabel: string) => {
-    setStages(stages.map(s => s.id === stageId ? { ...s, currentStatus: statusLabel } : s));
+    const updatedStages = stages.map(s => s.id === stageId ? { ...s, currentStatus: statusLabel } : s);
+    setStages(updatedStages);
+    triggerAutoSave({ stages: updatedStages });
   };
 
   const handleCustomColorPicker = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -207,7 +197,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     const updated = [...colors];
     updated[selectedColorIndex] = newColor;
     setColors(updated);
-    handleAutoSaveBasicInfo(undefined, undefined, selectedColorIndex, undefined, undefined, undefined, undefined);
+    triggerAutoSave();
   };
 
   const handleAddRowAfter = (index: number) => {
@@ -215,24 +205,19 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     const updated = [...generalRows];
     updated.splice(index + 1, 0, newRow);
     setGeneralRows(updated);
+    triggerAutoSave({ passportRows: updated });
   };
 
   const handleUpdateGeneralRow = (id: string, field: 'label' | 'value' | 'enableSecondRow', text: any) => {
     const updated = generalRows.map(r => r.id === id ? { ...r, [field]: text } : r);
     setGeneralRows(updated);
-    onUpdateProject({
-      ...project,
-      passportRows: updated
-    } as any);
+    triggerAutoSave({ passportRows: updated });
   };
 
   const handleDeleteGeneralRow = (id: string) => {
     const updated = generalRows.filter(r => r.id !== id);
     setGeneralRows(updated);
-    onUpdateProject({
-      ...project,
-      passportRows: updated
-    } as any);
+    triggerAutoSave({ passportRows: updated });
   };
 
   const handleDataDragStart = (index: number) => {
@@ -246,10 +231,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     updated.splice(targetIndex, 0, movedItem);
     setGeneralRows(updated);
     setDraggedDataIndex(null);
-    onUpdateProject({
-      ...project,
-      passportRows: updated
-    } as any);
+    triggerAutoSave({ passportRows: updated });
   };
 
   const handleAddStage = (e: React.FormEvent) => {
@@ -271,18 +253,22 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       currentStatus: statuses[0]?.label || 'В процесі'
     } as any;
 
-    setStages([...stages, newStage]);
+    const updatedStages = [...stages, newStage];
+    setStages(updatedStages);
     setNewStageTitle('');
+    triggerAutoSave({ stages: updatedStages });
   };
 
   const handleUpdateStageTitle = (stageId: string, newTitle: string) => {
     if (!isSuperAdmin) return;
-    setStages(stages.map(s => s.id === stageId ? { ...s, title: newTitle } : s));
+    const updatedStages = stages.map(s => s.id === stageId ? { ...s, title: newTitle } : s);
+    setStages(updatedStages);
+    triggerAutoSave({ stages: updatedStages });
   };
 
   const handleAddStageContractor = (stageId: string, contractorName: string) => {
     if (!contractorName) return;
-    setStages(stages.map(s => {
+    const updatedStages = stages.map(s => {
       if (s.id === stageId) {
         const currentList = (s as any).contractors || (s.contractor ? [s.contractor] : []);
         if (!currentList.includes(contractorName)) {
@@ -290,41 +276,53 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         }
       }
       return s;
-    }));
+    });
+    setStages(updatedStages);
+    triggerAutoSave({ stages: updatedStages });
   };
 
   const handleRemoveStageContractor = (stageId: string, contractorName: string) => {
-    setStages(stages.map(s => {
+    const updatedStages = stages.map(s => {
       if (s.id === stageId) {
         const currentList = (s as any).contractors || (s.contractor ? [s.contractor] : []);
         return { ...s, contractors: currentList.filter((c: string) => c !== contractorName) };
       }
       return s;
-    }));
+    });
+    setStages(updatedStages);
+    triggerAutoSave({ stages: updatedStages });
   };
 
   const handleDeleteStage = (id: string) => {
     if (!isSuperAdmin) return;
-    setStages(stages.filter(s => s.id !== id));
+    const updatedStages = stages.filter(s => s.id !== id);
+    setStages(updatedStages);
+    triggerAutoSave({ stages: updatedStages });
   };
 
   const handleToggleStageTrackTime = (stageId: string) => {
-    setStages(stages.map(s => s.id === stageId ? { ...s, trackTime: s.trackTime === false } : s));
+    const updatedStages = stages.map(s => s.id === stageId ? { ...s, trackTime: s.trackTime === false } : s);
+    setStages(updatedStages);
+    triggerAutoSave({ stages: updatedStages });
   };
 
   const handleToggleStageTimer = (stageId: string) => {
-    setStages(stages.map(s => {
+    const updatedStages = stages.map(s => {
       if (s.id === stageId) {
         return { ...s, isTimerRunning: !s.isTimerRunning };
       }
       return s;
-    }));
+    });
+    setStages(updatedStages);
+    triggerAutoSave({ stages: updatedStages });
   };
 
   const handleSaveManualTime = (stageId: string) => {
     const sec = (parseInt(manualHours) || 0) * 3600 + (parseInt(manualMinutes) || 0) * 60;
-    setStages(stages.map(s => s.id === stageId ? { ...s, loggedSeconds: sec } : s));
+    const updatedStages = stages.map(s => s.id === stageId ? { ...s, loggedSeconds: sec } : s);
+    setStages(updatedStages);
     setEditingTimeStageId(null);
+    triggerAutoSave({ stages: updatedStages });
   };
 
   const handleUpdateStageDates = (stageId: string, field: 'startDate' | 'endDate', val: string) => {
@@ -337,14 +335,16 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         return;
       }
     }
-    setStages(stages.map(s => s.id === stageId ? { ...s, [field]: val } : s));
+    const updatedStages = stages.map(s => s.id === stageId ? { ...s, [field]: val } : s);
+    setStages(updatedStages);
+    triggerAutoSave({ stages: updatedStages });
   };
 
   const handleAddSubStage = (stageId: string) => {
     const title = newSubStageTitle[stageId];
     if (!title || !title.trim()) return;
 
-    setStages(stages.map(s => {
+    const updatedStages = stages.map(s => {
       if (s.id === stageId) {
         const newSub: SubStage = {
           id: Date.now().toString(),
@@ -355,14 +355,16 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         return { ...s, subStages: [...s.subStages, newSub] };
       }
       return s;
-    }));
+    });
 
+    setStages(updatedStages);
     setNewSubStageTitle({ ...newSubStageTitle, [stageId]: '' });
+    triggerAutoSave({ stages: updatedStages });
   };
 
   const handleMoveSubStage = (stageId: string, index: number, direction: 'up' | 'down') => {
     if (!canManageSubtasks) return;
-    setStages(stages.map(s => {
+    const updatedStages = stages.map(s => {
       if (s.id === stageId) {
         const targetIndex = direction === 'up' ? index - 1 : index + 1;
         const subList = [...s.subStages];
@@ -372,11 +374,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         return { ...s, subStages: subList };
       }
       return s;
-    }));
+    });
+    setStages(updatedStages);
+    triggerAutoSave({ stages: updatedStages });
   };
 
   const handleUpdateSubStageTitle = (stageId: string, subStageId: string, newTitle: string) => {
-    setStages(stages.map(s => {
+    const updatedStages = stages.map(s => {
       if (s.id === stageId) {
         return {
           ...s,
@@ -384,11 +388,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         };
       }
       return s;
-    }));
+    });
+    setStages(updatedStages);
+    triggerAutoSave({ stages: updatedStages });
   };
 
   const handleToggleSubStage = (stageId: string, subStageId: string) => {
-    setStages(stages.map(s => {
+    const updatedStages = stages.map(s => {
       if (s.id === stageId) {
         return {
           ...s,
@@ -396,23 +402,27 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         };
       }
       return s;
-    }));
+    });
+    setStages(updatedStages);
+    triggerAutoSave({ stages: updatedStages });
   };
 
   const handleDeleteSubStage = (stageId: string, subStageId: string) => {
     if (!canManageSubtasks) return;
-    setStages(stages.map(s => {
+    const updatedStages = stages.map(s => {
       if (s.id === stageId) {
         return { ...s, subStages: s.subStages.filter(sub => sub.id !== subStageId) };
       }
       return s;
-    }));
+    });
+    setStages(updatedStages);
+    triggerAutoSave({ stages: updatedStages });
   };
 
   const handleAddNestedItem = (stageId: string, subStageId: string) => {
     if (!canManageSubtasks) return;
 
-    setStages(stages.map(s => {
+    const updatedStages = stages.map(s => {
       if (s.id === stageId) {
         return {
           ...s,
@@ -427,12 +437,14 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         };
       }
       return s;
-    }));
+    });
+    setStages(updatedStages);
+    triggerAutoSave({ stages: updatedStages });
   };
 
   const handleMoveNestedItem = (stageId: string, subStageId: string, index: number, direction: 'up' | 'down') => {
     if (!canManageSubtasks) return;
-    setStages(stages.map(s => {
+    const updatedStages = stages.map(s => {
       if (s.id === stageId) {
         return {
           ...s,
@@ -450,11 +462,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         };
       }
       return s;
-    }));
+    });
+    setStages(updatedStages);
+    triggerAutoSave({ stages: updatedStages });
   };
 
   const handleUpdateNestedItemTitle = (stageId: string, subStageId: string, itemId: string, newTitle: string) => {
-    setStages(stages.map(s => {
+    const updatedStages = stages.map(s => {
       if (s.id === stageId) {
         return {
           ...s,
@@ -471,11 +485,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         };
       }
       return s;
-    }));
+    });
+    setStages(updatedStages);
+    triggerAutoSave({ stages: updatedStages });
   };
 
   const handleToggleNestedItem = (stageId: string, subStageId: string, itemId: string) => {
-    setStages(stages.map(s => {
+    const updatedStages = stages.map(s => {
       if (s.id === stageId) {
         return {
           ...s,
@@ -492,12 +508,14 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         };
       }
       return s;
-    }));
+    });
+    setStages(updatedStages);
+    triggerAutoSave({ stages: updatedStages });
   };
 
   const handleDeleteNestedItem = (stageId: string, subStageId: string, itemId: string) => {
     if (!canManageSubtasks) return;
-    setStages(stages.map(s => {
+    const updatedStages = stages.map(s => {
       if (s.id === stageId) {
         return {
           ...s,
@@ -514,18 +532,24 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         };
       }
       return s;
-    }));
+    });
+    setStages(updatedStages);
+    triggerAutoSave({ stages: updatedStages });
   };
 
   const handleAddProjectMember = () => {
     if (!selectedMemberId || !isSuperAdmin) return;
     const newEntry = { id: Date.now().toString(), memberId: selectedMemberId, role: selectedProjectRole };
-    setProjectTeam([...projectTeam, newEntry]);
+    const updatedTeam = [...projectTeam, newEntry];
+    setProjectTeam(updatedTeam);
+    triggerAutoSave({ projectTeam: updatedTeam });
   };
 
   const handleRemoveProjectMember = (id: string) => {
     if (!isSuperAdmin) return;
-    setProjectTeam(projectTeam.filter(m => m.id !== id));
+    const updatedTeam = projectTeam.filter(m => m.id !== id);
+    setProjectTeam(updatedTeam);
+    triggerAutoSave({ projectTeam: updatedTeam });
   };
 
   const handleFinalSave = () => {
@@ -537,10 +561,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       passportRows: generalRows,
       stages,
       projectTeam,
-      enableRoles: enableRoles,
+      enableRoles,
       enableTeamRoles: enableRoles,
-      enableTags: enableTags,
-      enableData: enableData,
+      enableTags,
+      enableData,
       enableStructure: true,
       customStatuses: statuses
     } as any;
@@ -623,7 +647,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 value={name}
                 onChange={(e) => {
                   setName(e.target.value);
-                  handleAutoSaveBasicInfo(e.target.value, undefined, undefined, undefined, undefined, undefined, undefined);
+                  triggerAutoSave({ name: e.target.value.trim() });
                 }}
                 style={cardInputStyle}
               />
@@ -637,8 +661,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 onChange={(e) => {
                   const newId = e.target.value;
                   setProjectId(newId);
-                  // ОНОВЛЕНИЙ ВИКЛИК: передаємо новий ID туди, щоб він коректно зберігався
-                  handleAutoSaveBasicInfo(undefined, newId, undefined, undefined, undefined, undefined, undefined);
+                  triggerAutoSave({ id: newId.trim() });
                 }}
                 style={cardInputStyle}
               />
@@ -652,7 +675,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     key={idx}
                     onClick={() => {
                       setSelectedColorIndex(idx);
-                      handleAutoSaveBasicInfo(undefined, undefined, idx, undefined, undefined, undefined, undefined);
+                      triggerAutoSave();
                     }}
                     style={{
                       width: '28px',
@@ -1455,7 +1478,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               onClick={() => {
                 const nextVal = !enableRoles;
                 setEnableRoles(nextVal);
-                handleAutoSaveBasicInfo(undefined, undefined, undefined, nextVal, undefined, undefined, undefined);
+                triggerAutoSave({ enableRoles: nextVal, enableTeamRoles: nextVal });
               }}
               style={{
                 width: '34px',
@@ -1488,7 +1511,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               onClick={() => {
                 const nextVal = !enableTags;
                 setEnableTags(nextVal);
-                handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, nextVal, undefined, undefined);
+                triggerAutoSave({ enableTags: nextVal });
               }}
               style={{
                 width: '34px',
@@ -1521,7 +1544,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               onClick={() => {
                 const nextVal = !enableData;
                 setEnableData(nextVal);
-                handleAutoSaveBasicInfo(undefined, undefined, undefined, undefined, undefined, nextVal, undefined);
+                triggerAutoSave({ enableData: nextVal });
               }}
               style={{
                 width: '34px',
