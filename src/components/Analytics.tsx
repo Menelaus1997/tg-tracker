@@ -29,7 +29,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
   const [selectedItem, setSelectedItem] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   
-  // Стан для модального вікна / підказки зі знаком питання
   const [showHelp, setShowHelp] = useState<boolean>(false);
 
   const handlePrevYear = () => setYearIndex(prev => (prev > 0 ? prev - 1 : YEARS_LIST.length - 1));
@@ -43,10 +42,11 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
   const currentRealYear = today.getFullYear();
   const currentRealMonth = today.getMonth();
 
-  // ПРАВИЛО АРХІВУ: Активні беремо завжди. Архівні беремо лише для минулих періодів. Кошик ігноруємо.
-  const isPastPeriod = currentYear < currentRealRealYear || (currentYear === currentRealYear && monthIndex < currentRealMonth);
+  // Перевірка на минулий період (для підключення архівних проєктів)
+  const isPastPeriod = currentYear < currentRealYear || (currentYear === currentRealYear && monthIndex < currentRealMonth);
   
-  const targetProjects = projects.filter(p => {
+  const safeProjects = projects || [];
+  const targetProjects = safeProjects.filter(p => {
     const status = p.status || 'active';
     if (status === 'trash') return false;
     if (status === 'active') return true;
@@ -54,7 +54,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
     return false;
   });
 
-  // Збираємо опції для другого випадаючого списку
   const availableDataFields = Array.from(
     new Set(
       targetProjects.flatMap(p => (p.passportRows || []).map(r => r.label).filter(Boolean))
@@ -69,18 +68,15 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
 
   const currentOptions = sourceType === 'data' ? availableDataFields : availableStructureStages;
 
-  // Аналіз операторів у пошуковому рядку (?, #, %, &, @ тощо)
   const queryText = searchQuery.trim();
   const isTimeOp = queryText.includes('#') || queryText.toLowerCase().includes('⏱');
   const isPercentOp = queryText.includes('%');
   const isAverageOp = queryText.includes('&');
   const cleanQuery = queryText.replace(/[#%&]/g, '').trim().toLowerCase();
 
-  // Розрахунок даних для діаграми
   const chartData = targetProjects.map((proj, index) => {
     let resultValue = 0;
     let matchCount = 0;
-    let totalItems = 0;
 
     if (sourceType === 'data') {
       (proj.passportRows || []).forEach(r => {
@@ -94,18 +90,13 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
         if (matchItem && matchQuery) {
           matchCount++;
           if (isPercentOp) {
-            // Для відсотків рахуємо умовно заповнені/числові значення
             resultValue += numVal > 0 ? 100 : 0;
-          } else if (isTimeOp) {
-            resultValue += numVal; // якщо в даних вказано дні/години
           } else {
-            resultValue += numVal; // загальна сума (наприклад, м.кв)
+            resultValue += numVal;
           }
         }
-        totalItems++;
       });
     } else {
-      // Структура (стадії)
       (proj.stages || []).forEach(st => {
         const title = (st.title || '').toLowerCase();
         const currentStatus = (st.currentStatus || '').toLowerCase();
@@ -120,10 +111,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
 
         if (matchItem && matchQuery) {
           matchCount++;
-          totalItems++;
 
           if (isPercentOp) {
-            // Рахуємо % закритих підзадач у стадії або статус завершено
             const subStages = st.subStages || [];
             if (subStages.length > 0) {
               const completedSubs = subStages.filter((sub: any) => sub.completed).length;
@@ -132,7 +121,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
               resultValue += currentStatus.includes('завершено') ? 100 : 0;
             }
           } else if (isTimeOp) {
-            // Розрахунок днів за календарем стадії
             let days = 0;
             if (st.startDate && st.endDate) {
               const [sY, sM, sD] = st.startDate.split('-').map(Number);
@@ -143,14 +131,12 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
             }
             resultValue += days > 0 ? days : 1;
           } else {
-            // Стандартний підрахунок кількості (шт)
             resultValue += 1;
           }
         }
       });
     }
 
-    // Якщо це оператор середнього арифметичного (&)
     if (isAverageOp && matchCount > 0) {
       resultValue = Number((resultValue / matchCount).toFixed(1));
     }
@@ -171,7 +157,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
   return (
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e', paddingBottom: '80px' }}>
       
-      {/* ПАНЕЛЬ ПЕРІОДУ */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px', backgroundColor: '#f9f9fb', padding: '12px', borderRadius: '12px', border: '1px solid #e5e5ea' }}>
         
         <div style={{ display: 'flex', justifyContent: 'center', gap: '6px' }}>
@@ -212,7 +197,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
           </div>
         )}
 
-        {/* УНІВЕРСАЛЬНА ПАНЕЛЬ ФІЛЬТРАЦІЇ ТА КНОПКА ПІДКАЗКИ (?) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
           <div style={{ display: 'flex', gap: '8px' }}>
             <select
@@ -239,7 +223,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
             </select>
           </div>
 
-          {/* Пошуковий рядок зі знаком питання праворуч */}
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             <input
               type="text"
@@ -271,7 +254,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
             </button>
           </div>
 
-          {/* Випадаюча підказка (інструкція) при натисканні на ? */}
           {showHelp && (
             <div style={{ backgroundColor: '#ffffff', padding: '10px 12px', borderRadius: '8px', border: '1px solid #d1d1d6', fontSize: '11px', color: '#3a3a3c', display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <div style={{ fontWeight: 700, marginBottom: '2px', color: '#007aff' }}>Швидкі символи-команди:</div>
@@ -279,13 +261,12 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
               <div><strong>%</strong> — розрахунок відсотка виконання</div>
               <div><strong>&</strong> — середнє арифметичне значення</div>
               <div><strong>@Ім'я</strong> — фільтрація за конкретним виконавцем</div>
-              <div style={{ color: '#8e8e93', marginTop: '2px' }}>Приклад: <code style={{ background: '#f2f2f7', padding: '2px 4px', borderRadius: '4px' }}># @Іван Драго</code> (покаже дні виконавця)</div>
+              <div style={{ color: '#8e8e93', marginTop: '2px' }}>Приклад: <code style={{ background: '#f2f2f7', padding: '2px 4px', borderRadius: '4px' }}># @Іван Драго</code></div>
             </div>
           )}
         </div>
       </div>
 
-      {/* РАДІАЛЬНА ДІАГРАМА */}
       {chartData.length > 0 ? (
         <div style={{ position: 'relative', height: '240px', marginBottom: '20px' }}>
           <ResponsiveContainer width="100%" height="100%">
@@ -328,7 +309,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
         </div>
       )}
 
-      {/* СПИСОК ПРОЄКТІВ */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {chartData.map((item) => (
           <div key={item.projectId || item.name} style={{ backgroundColor: '#f2f2f7', padding: '12px 16px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
