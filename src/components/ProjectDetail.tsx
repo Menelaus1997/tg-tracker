@@ -64,7 +64,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [name, setName] = useState(project.name);
   const [projectId, setProjectId] = useState(project.id);
   
-  // Стани перемикачів для блоків (Структура тепер завжди включена, тому стан для неї прибрано)
   const [enableRoles, setEnableRoles] = useState<boolean>(
     (project as any).enableRoles ?? (project as any).enableTeamRoles ?? true
   );
@@ -155,7 +154,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       enableTeamRoles: nextRoles,
       enableTags: nextTags,
       enableData: nextData,
-      enableStructure: true, // Структура тепер завжди увімкнена
+      enableStructure: true,
       customStatuses: nextStatuses
     } as any);
   };
@@ -594,7 +593,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           onClick={() => setIsHeaderOpen(!isHeaderOpen)} 
           style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
         >
-          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>{name || 'Без назви'}</h3>
+          <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>{name || 'Без назви'}</h3>
         </div>
 
         {isHeaderOpen && isSuperAdmin && (
@@ -896,14 +895,14 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         </div>
       )}
 
-      {/* Блок "Структура" (Завжди відображається) */}
-      <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '20px' }}>
+      {/* Блок "Структура" (Вирівняно шрифти та відступи під однакову висоту заголовка з Командою) */}
+      <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
         <div 
           onClick={() => setIsStructureOpen(!isStructureOpen)}
-          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}
+          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: isStructureOpen ? '12px' : 0 }}
         >
           <span style={{ fontSize: '12px', color: '#8e8e93' }}>{isStructureOpen ? '▲' : '▼'}</span>
-          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>Структура</h3>
+          <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>Структура</h3>
         </div>
 
         {isStructureOpen && (
@@ -1320,9 +1319,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* Блок "Команда" (з'являється тільки якщо увімкнено перемикач "Команда та ролі") */}
+      {/* Блок "Команда" */}
       {isSuperAdmin && enableRoles && (
-        <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '20px' }}>
+        <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
           <div 
             onClick={() => setIsTeamOpen(!isTeamOpen)}
             style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: isTeamOpen ? '10px' : 0 }}
@@ -1486,7 +1485,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
         </div>
       )}
-      {/* -------------------------------------------------------- */}
 
       {/* 5. Save Block */}
       <div style={{ backgroundColor: '#ffffff', padding: '14px', border: '1px solid #e5e5ea', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
