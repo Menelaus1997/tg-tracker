@@ -13,25 +13,65 @@ type MetricType = 'count' | 'time';
 const CHART_COLORS = ['#007aff', '#34c759', '#ff9500', '#af52de', '#ff2d55', '#5856d6'];
 
 const MONTHS_LIST = [
-  'Січень 2026', 'Лютий 2026', 'Березень 2026', 'Квітень 2026',
-  'Травень 2026', 'Червень 2026', 'Липень 2026', 'Серпень 2026',
-  'Вересень 2026', 'Жовтень 2026', 'Листопад 2026', 'Грудень 2026'
+  'Січень', 'Лютий', 'Березень', 'Квітень',
+  'Травень', 'Червень', 'Липень', 'Серпень',
+  'Вересень', 'Жовтень', 'Листопад', 'Грудень'
 ];
 
 const YEARS_LIST = ['2025', '2026', '2027'];
+
+// Допоміжна функція для генерації тижнів (Пн - Нд) для конкретного місяця і року
+interface WeekRange {
+  label: string;
+  startDate: Date;
+  endDate: Date;
+}
+
+const getWeeksForMonth = (year: number, monthIndex: number): WeekRange[] => {
+  const weeks: WeekRange[] = [];
+  const firstDayOfMonth = new Date(year, monthIndex, 1);
+  const lastDayOfMonth = new Date(year, monthIndex + 1, 0);
+
+  let current = new Date(firstDayOfMonth);
+  // Зсуваємось на понеділок поточного тижня
+  const dayOfWeek = current.getDay();
+  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  current.setDate(current.getDate() + diffToMonday);
+
+  while (current <= lastDayOfMonth || weeks.length === 0) {
+    const start = new Date(current);
+    const end = new Date(current);
+    end.setDate(end.getDate() + 6); // Неділя
+
+    weeks.push({
+      label: `${String(start.getDate()).padStart(2, '0')}.${String(start.getMonth() + 1).padStart(2, '0')} - ${String(end.getDate()).padStart(2, '0')}.${String(end.getMonth() + 1).padStart(2, '0')}`,
+      startDate: start,
+      endDate: end
+    });
+
+    current.setDate(current.getDate() + 7);
+    if (weeks.length > 5) break; // Захист від нескінченного циклу
+  }
+
+  return weeks;
+};
 
 export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
   const [period, setPeriod] = useState<FilterPeriod>('month');
   const [metric, setMetric] = useState<MetricType>('count');
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Індекси для «барабана» прокрутки
-  const [monthIndex, setMonthIndex] = useState(7); // Серпень за замовчуванням
+  // Стани для барабанів
   const [yearIndex, setYearIndex] = useState(1);   // 2026 за замовчуванням
+  const [monthIndex, setMonthIndex] = useState(7); // Серпень за замовчуванням
+  const [weekIndex, setWeekIndex] = useState(0);   // Перший тиждень місяця
   
   const [collapsedProjects, setCollapsedProjects] = useState<{ [key: string]: boolean }>({});
   
   const showWorkload = true;
+
+  const currentYear = Number(YEARS_LIST[yearIndex]);
+  const currentWeeksList = getWeeksForMonth(currentYear, monthIndex);
 
   const toggleProject = (id: string) => {
     setCollapsedProjects(prev => ({ ...prev, [id]: !prev[id] }));
@@ -40,22 +80,23 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Функції прокрутки барабана
-  const handlePrevMonth = () => {
-    setMonthIndex(prev => (prev > 0 ? prev - 1 : MONTHS_LIST.length - 1));
-  };
+  // Кнопки управління барабанами
+  const handlePrevYear = () => setYearIndex(prev => (prev > 0 ? prev - 1 : YEARS_LIST.length - 1));
+  const handleNextYear = () => setYearIndex(prev => (prev < YEARS_LIST.length - 1 ? prev + 1 : 0));
 
-  const handleNextMonth = () => {
-    setMonthIndex(prev => (prev < MONTHS_LIST.length - 1 ? prev + 1 : 0));
-  };
+  const handlePrevMonth = () => setMonthIndex(prev => {
+    const next = prev > 0 ? prev - 1 : MONTHS_LIST.length - 1;
+    setWeekIndex(0); // скидаємо на перший тиждень нового місяця
+    return next;
+  });
+  const handleNextMonth = () => setMonthIndex(prev => {
+    const next = prev < MONTHS_LIST.length - 1 ? prev + 1 : 0;
+    setWeekIndex(0);
+    return next;
+  });
 
-  const handlePrevYear = () => {
-    setYearIndex(prev => (prev > 0 ? prev - 1 : YEARS_LIST.length - 1));
-  };
-
-  const handleNextYear = () => {
-    setYearIndex(prev => (prev < YEARS_LIST.length - 1 ? prev + 1 : 0));
-  };
+  const handlePrevWeek = () => setWeekIndex(prev => (prev > 0 ? prev - 1 : currentWeeksList.length - 1));
+  const handleNextWeek = () => setWeekIndex(prev => (prev < currentWeeksList.length - 1 ? prev + 1 : 0));
 
   // 1. Фільтрація проєктів та підзадач за текстовим запитом
   const filteredProjects = projects.map(proj => {
@@ -146,50 +187,39 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
           ))}
         </div>
 
-        {/* «Барабан» прокрутки місяців з підкресленням і текстом по центру */}
-        {period === 'month' && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '4px 0' }}>
-            <button 
-              onClick={handlePrevMonth}
-              style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#007aff', fontWeight: 700 }}
-            >
-              ◀
-            </button>
-            <div style={{ textAlign: 'center', fontSize: '14px', fontWeight: 700, color: '#1c1c1e', borderBottom: '2px solid #007aff', paddingBottom: '2px', minWidth: '130px' }}>
+        {/* 1. Барабан РОКУ (завжди видимий, бо і місяць, і тиждень прив'язані до року) */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '2px 0' }}>
+          <button onClick={handlePrevYear} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#007aff', fontWeight: 700 }}>◀</button>
+          <div style={{ textAlign: 'center', fontSize: '14px', fontWeight: 700, color: '#1c1c1e', borderBottom: '2px solid #007aff', paddingBottom: '2px', minWidth: '90px' }}>
+            {YEARS_LIST[yearIndex]} рік
+          </div>
+          <button onClick={handleNextYear} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#007aff', fontWeight: 700 }}>▶</button>
+        </div>
+
+        {/* 2. Барабан МІСЯЦЯ (видимий для Місяця та Тижня) */}
+        {(period === 'month' || period === 'week') && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '2px 0' }}>
+            <button onClick={handlePrevMonth} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#007aff', fontWeight: 700 }}>◀</button>
+            <div style={{ textAlign: 'center', fontSize: '14px', fontWeight: 700, color: '#1c1c1e', borderBottom: '2px solid #007aff', paddingBottom: '2px', minWidth: '110px' }}>
               {MONTHS_LIST[monthIndex]}
             </div>
-            <button 
-              onClick={handleNextMonth}
-              style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#007aff', fontWeight: 700 }}
-            >
-              ▶
-            </button>
+            <button onClick={handleNextMonth} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#007aff', fontWeight: 700 }}>▶</button>
           </div>
         )}
 
-        {/* «Барабан» прокрутки років з підкресленням і текстом по центру */}
-        {period === 'year' && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '4px 0' }}>
-            <button 
-              onClick={handlePrevYear}
-              style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#007aff', fontWeight: 700 }}
-            >
-              ◀
-            </button>
-            <div style={{ textAlign: 'center', fontSize: '14px', fontWeight: 700, color: '#1c1c1e', borderBottom: '2px solid #007aff', paddingBottom: '2px', minWidth: '90px' }}>
-              {YEARS_LIST[yearIndex]} рік
+        {/* 3. Барабан ТИЖНЯ (видимий тільки для Тижня: показує дати Пн - Нд) */}
+        {period === 'week' && currentWeeksList.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '2px 0' }}>
+            <button onClick={handlePrevWeek} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#34c759', fontWeight: 700 }}>◀</button>
+            <div style={{ textAlign: 'center', fontSize: '13px', fontWeight: 700, color: '#1c1c1e', borderBottom: '2px solid #34c759', paddingBottom: '2px', minWidth: '130px' }}>
+              {currentWeeksList[weekIndex]?.label}
             </div>
-            <button 
-              onClick={handleNextYear}
-              style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#007aff', fontWeight: 700 }}
-            >
-              ▶
-            </button>
+            <button onClick={handleNextWeek} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#34c759', fontWeight: 700 }}>▶</button>
           </div>
         )}
 
         {/* Метрика та Текстовий пошук */}
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
           <select
             value={metric}
             onChange={(e) => setMetric(e.target.value as MetricType)}
