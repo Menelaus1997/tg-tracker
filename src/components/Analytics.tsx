@@ -26,7 +26,6 @@ interface WeekRange {
   endDate: Date;
 }
 
-// Генерація тижнів (Пн - Нд) конкретно для вибраного місяця і року
 const getWeeksForMonth = (year: number, monthIndex: number): WeekRange[] => {
   const weeks: WeekRange[] = [];
   const firstDayOfMonth = new Date(year, monthIndex, 1);
@@ -60,8 +59,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
   const [metric, setMetric] = useState<MetricType>('count');
   const [searchTerm, setSearchTerm] = useState('');
   
-  const [yearIndex, setYearIndex] = useState(1);   // 2026 за замовчуванням
-  const [monthIndex, setMonthIndex] = useState(7); // Серпень за замовчуванням
+  const [yearIndex, setYearIndex] = useState(1);   // 2026
+  const [monthIndex, setMonthIndex] = useState(7); // Серпень
   const [weekIndex, setWeekIndex] = useState(0);   
   
   const [collapsedProjects, setCollapsedProjects] = useState<{ [key: string]: boolean }>({});
@@ -83,12 +82,12 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
 
   const handlePrevMonth = () => setMonthIndex(prev => {
     const next = prev > 0 ? prev - 1 : MONTHS_LIST.length - 1;
-    setWeekIndex(0); // скидаємо на перший тиждень при зміні місяця
+    setWeekIndex(0);
     return next;
   });
   const handleNextMonth = () => setMonthIndex(prev => {
     const next = prev < MONTHS_LIST.length - 1 ? prev + 1 : 0;
-    setWeekIndex(0); // скидаємо на перший тиждень при зміні місяця
+    setWeekIndex(0);
     return next;
   });
 
@@ -184,17 +183,19 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
           ))}
         </div>
 
-        {/* РІК (відображається на вкладках "Рік", "Місяць" та "Тиждень" без слова "рік") */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '2px 0' }}>
-          <button onClick={handlePrevYear} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#007aff', fontWeight: 700 }}>◀</button>
-          <div style={{ textAlign: 'center', fontSize: '14px', fontWeight: 700, color: '#1c1c1e', borderBottom: '2px solid #007aff', paddingBottom: '2px', minWidth: '90px' }}>
-            {YEARS_LIST[yearIndex]}
+        {/* Тільки для вкладки "Рік": відображаємо вибір року */}
+        {period === 'year' && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '2px 0' }}>
+            <button onClick={handlePrevYear} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#007aff', fontWeight: 700 }}>◀</button>
+            <div style={{ textAlign: 'center', fontSize: '14px', fontWeight: 700, color: '#1c1c1e', borderBottom: '2px solid #007aff', paddingBottom: '2px', minWidth: '90px' }}>
+              {YEARS_LIST[yearIndex]}
+            </div>
+            <button onClick={handleNextYear} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#007aff', fontWeight: 700 }}>▶</button>
           </div>
-          <button onClick={handleNextYear} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#007aff', fontWeight: 700 }}>▶</button>
-        </div>
+        )}
 
-        {/* МІСЯЦЬ (відображається на вкладках "Місяць" та "Тиждень") */}
-        {(period === 'month' || period === 'week') && (
+        {/* Тільки для вкладки "Місяць": відображаємо вибір місяця (без року) */}
+        {period === 'month' && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '2px 0' }}>
             <button onClick={handlePrevMonth} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#007aff', fontWeight: 700 }}>◀</button>
             <div style={{ textAlign: 'center', fontSize: '14px', fontWeight: 700, color: '#1c1c1e', borderBottom: '2px solid #007aff', paddingBottom: '2px', minWidth: '110px' }}>
@@ -204,7 +205,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
           </div>
         )}
 
-        {/* ТИЖДЕНЬ (відображається тільки на вкладці "Тиждень", базується на вибраному місяці та році) */}
+        {/* Тільки для вкладки "Тиждень": відображаємо вибір тижня (без року та місяця) */}
         {period === 'week' && currentWeeksList.length > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '2px 0' }}>
             <button onClick={handlePrevWeek} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#34c759', fontWeight: 700 }}>◀</button>
