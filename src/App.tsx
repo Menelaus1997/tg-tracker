@@ -77,10 +77,9 @@ const INITIAL_ROLES: RoleConfig[] = [
 ];
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<number>(2);
+  const [activeTab, setActiveTab] = useState<number>(2); // 2 — Існуючі проєкти за замовчуванням
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   
-  // Для прикладу беремо поточну роль (можна буде винести в стейт або налаштування)
   const [currentRoleName, setCurrentRoleName] = useState<string>('Керівник');
 
   const [projects, setProjects] = useState<Project[]>(() => {
@@ -133,7 +132,7 @@ export const App: React.FC = () => {
 
   const handleCreateProject = (newProject: Project) => {
     setProjects([newProject, ...projects]);
-    setActiveTab(2);
+    setActiveTab(2); // Переходимо на вкладку існуючих проєктів
   };
 
   const handleSaveTemplate = (project: Project, templateName: string) => {
@@ -167,7 +166,10 @@ export const App: React.FC = () => {
       {selectedProjectId && activeProject ? (
         <ProjectDetail
           project={activeProject}
-          onUpdateProject={(updated) => setProjects(projects.map((p) => (p.id === updated.id ? updated : p)))}
+          onUpdateProject={(updated) => {
+            // Виправлено: оновлюємо проєкт коректно за поточним активним ID в стані
+            setProjects(projects.map((p) => (p.id === activeProject.id || p.id === updated.id ? updated : p)));
+          }}
           onSaveAsTemplate={handleSaveTemplate}
           onBack={() => setSelectedProjectId(null)}
           teamDatabase={teamMembers}
@@ -196,7 +198,6 @@ export const App: React.FC = () => {
           {activeTab === 3 && <VorCalculator />}
           {activeTab === 4 && <Analytics projects={projects} teamDatabase={teamMembers} />}
           
-          {/* Вкладка 5: Команда (TeamManagement) з передачею ролей */}
           {activeTab === 5 && (
             <TeamManagement
               members={teamMembers}
@@ -211,10 +212,8 @@ export const App: React.FC = () => {
             />
           )}
 
-          {/* Вкладка 6: Фінанси (Finance) */}
           {activeTab === 6 && <Finance projects={projects} />}
 
-          {/* Вкладка 7: Налаштування (Settings) */}
           {activeTab === 7 && (
             <Settings
               botToken={botToken}
@@ -230,13 +229,13 @@ export const App: React.FC = () => {
 
       {!selectedProjectId && (
         <div style={navBarStyle}>
-          <button onClick={() => setActiveTab(1)} style={navBtnStyle(activeTab === 1)}>➕</button>
-          <button onClick={() => setActiveTab(2)} style={navBtnStyle(activeTab === 2)}>📁</button>
-          <button onClick={() => setActiveTab(3)} style={navBtnStyle(activeTab === 3)}>📊</button>
-          <button onClick={() => setActiveTab(4)} style={navBtnStyle(activeTab === 4)}>📈</button>
-          <button onClick={() => setActiveTab(5)} style={navBtnStyle(activeTab === 5)}>👥</button>
-          <button onClick={() => setActiveTab(6)} style={navBtnStyle(activeTab === 6)}>💰</button>
-          <button onClick={() => setActiveTab(7)} style={navBtnStyle(activeTab === 7)}>⚙️</button>
+          <button onClick={() => setActiveTab(1)} style={navBtnStyle(activeTab === 1)} title="Створити проєкт">➕</button>
+          <button onClick={() => setActiveTab(2)} style={navBtnStyle(activeTab === 2)} title="Проєкти">📁</button>
+          <button onClick={() => setActiveTab(3)} style={navBtnStyle(activeTab === 3)} title="Калькулятор VOR">📊</button>
+          <button onClick={() => setActiveTab(4)} style={navBtnStyle(activeTab === 4)} title="Аналітика">📈</button>
+          <button onClick={() => setActiveTab(5)} style={navBtnStyle(activeTab === 5)} title="Команда">👥</button>
+          <button onClick={() => setActiveTab(6)} style={navBtnStyle(activeTab === 6)} title="Фінанси">💰</button>
+          <button onClick={() => setActiveTab(7)} style={navBtnStyle(activeTab === 7)} title="Налаштування">⚙️</button>
         </div>
       )}
     </div>
