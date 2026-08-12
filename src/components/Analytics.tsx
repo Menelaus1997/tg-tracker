@@ -183,36 +183,36 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
           ))}
         </div>
 
-        {/* Тільки для вкладки "Рік": відображаємо вибір року */}
+        {/* Тільки для вкладки "Рік" */}
         {period === 'year' && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '2px 0' }}>
-            <button onClick={handlePrevYear} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#007aff', fontWeight: 700 }}>◀</button>
-            <div style={{ textAlign: 'center', fontSize: '14px', fontWeight: 700, color: '#1c1c1e', borderBottom: '2px solid #007aff', paddingBottom: '2px', minWidth: '90px' }}>
+            <button onClick={handlePrevYear} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#1c1c1e', fontWeight: 700 }}>◀</button>
+            <div style={{ textAlign: 'center', fontSize: '14px', fontWeight: 700, color: '#1c1c1e', borderBottom: '2px solid #1c1c1e', paddingBottom: '2px', minWidth: '90px' }}>
               {YEARS_LIST[yearIndex]}
             </div>
-            <button onClick={handleNextYear} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#007aff', fontWeight: 700 }}>▶</button>
+            <button onClick={handleNextYear} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#1c1c1e', fontWeight: 700 }}>▶</button>
           </div>
         )}
 
-        {/* Тільки для вкладки "Місяць": відображаємо вибір місяця (без року) */}
+        {/* Тільки для вкладки "Місяць" */}
         {period === 'month' && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '2px 0' }}>
-            <button onClick={handlePrevMonth} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#007aff', fontWeight: 700 }}>◀</button>
-            <div style={{ textAlign: 'center', fontSize: '14px', fontWeight: 700, color: '#1c1c1e', borderBottom: '2px solid #007aff', paddingBottom: '2px', minWidth: '110px' }}>
+            <button onClick={handlePrevMonth} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#1c1c1e', fontWeight: 700 }}>◀</button>
+            <div style={{ textAlign: 'center', fontSize: '14px', fontWeight: 700, color: '#1c1c1e', borderBottom: '2px solid #1c1c1e', paddingBottom: '2px', minWidth: '110px' }}>
               {MONTHS_LIST[monthIndex]}
             </div>
-            <button onClick={handleNextMonth} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#007aff', fontWeight: 700 }}>▶</button>
+            <button onClick={handleNextMonth} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#1c1c1e', fontWeight: 700 }}>▶</button>
           </div>
         )}
 
-        {/* Тільки для вкладки "Тиждень": відображаємо вибір тижня (без року та місяця) */}
+        {/* Тільки для вкладки "Тиждень" */}
         {period === 'week' && currentWeeksList.length > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '2px 0' }}>
-            <button onClick={handlePrevWeek} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#34c759', fontWeight: 700 }}>◀</button>
-            <div style={{ textAlign: 'center', fontSize: '13px', fontWeight: 700, color: '#1c1c1e', borderBottom: '2px solid #34c759', paddingBottom: '2px', minWidth: '130px' }}>
+            <button onClick={handlePrevWeek} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#1c1c1e', fontWeight: 700 }}>◀</button>
+            <div style={{ textAlign: 'center', fontSize: '13px', fontWeight: 700, color: '#1c1c1e', borderBottom: '2px solid #1c1c1e', paddingBottom: '2px', minWidth: '130px' }}>
               {currentWeeksList[weekIndex]?.label}
             </div>
-            <button onClick={handleNextWeek} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#34c759', fontWeight: 700 }}>▶</button>
+            <button onClick={handleNextWeek} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#1c1c1e', fontWeight: 700 }}>▶</button>
           </div>
         )}
 
