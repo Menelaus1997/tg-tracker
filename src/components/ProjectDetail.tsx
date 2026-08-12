@@ -126,7 +126,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
   const [draggedDataIndex, setDraggedDataIndex] = useState<number | null>(null);
 
-  // Універсальна функція для миттєвого автозбереження будь-яких змін
   const triggerAutoSave = (overrides: Partial<Project> = {}) => {
     const updatedProject: Project = {
       ...project,
@@ -667,8 +666,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
-              {colors.map((c, idx) => {
+            {/* Вибір кольору в один компактний рядок (8 кружечків + 9й з плюсиком для вибору) */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '4px', marginTop: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
+              {colors.slice(0, 8).map((c, idx) => {
                 const isSelected = selectedColorIndex === idx;
                 return (
                   <div
@@ -678,8 +678,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       triggerAutoSave();
                     }}
                     style={{
-                      width: '28px',
-                      height: '28px',
+                      width: '26px',
+                      height: '26px',
                       borderRadius: '50%',
                       backgroundColor: c,
                       border: '1px solid #d1d1d6',
@@ -690,15 +690,16 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       flexShrink: 0
                     }}
                   >
-                    {isSelected && <span style={{ color: '#fff', fontSize: '12px', fontWeight: 700 }}>✓</span>}
+                    {isSelected && <span style={{ color: '#fff', fontSize: '11px', fontWeight: 700 }}>✓</span>}
                   </div>
                 );
               })}
 
+              {/* 9-й елемент: Кнопка з плюсиком для вибору власного кольору */}
               <label
                 style={{
-                  width: '28px',
-                  height: '28px',
+                  width: '26px',
+                  height: '26px',
                   borderRadius: '50%',
                   backgroundColor: '#e5e5ea',
                   border: '1px solid #d1d1d6',
@@ -707,7 +708,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0,
-                  fontSize: '22px',
+                  fontSize: '18px',
                   fontWeight: 700,
                   color: '#007aff',
                   position: 'relative',
@@ -715,11 +716,12 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   margin: 0,
                   boxSizing: 'border-box'
                 }}
+                title="Додати власний колір"
               >
                 <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', lineHeight: 1 }}>+</span>
                 <input
                   type="color"
-                  value={colors[selectedColorIndex]}
+                  value={colors[selectedColorIndex] || '#007aff'}
                   onChange={handleCustomColorPicker}
                   style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer', top: 0, left: 0 }}
                 />
