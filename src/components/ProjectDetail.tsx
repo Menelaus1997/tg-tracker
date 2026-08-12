@@ -17,7 +17,6 @@ interface GeneralDataRow {
   type: 'single' | 'double';
   label?: string;
   value: string;
-  secondLabel?: string;
   enableSecondRow?: boolean;
 }
 
@@ -97,7 +96,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
   const [isGeneralDataOpen, setIsGeneralDataOpen] = useState(true);
   const [generalRows, setGeneralRows] = useState<GeneralDataRow[]>(() => project.passportRows || [
-    { id: '1', type: 'single', label: '', value: '', secondLabel: '', enableSecondRow: false }
+    { id: '1', type: 'single', label: '', value: '', enableSecondRow: false }
   ]);
 
   const [isStructureOpen, setIsStructureOpen] = useState(true);
@@ -212,13 +211,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   };
 
   const handleAddRowAfter = (index: number) => {
-    const newRow: GeneralDataRow = { id: Date.now().toString(), type: 'single', label: '', value: '', secondLabel: '', enableSecondRow: false };
+    const newRow: GeneralDataRow = { id: Date.now().toString(), type: 'single', label: '', value: '', enableSecondRow: false };
     const updated = [...generalRows];
     updated.splice(index + 1, 0, newRow);
     setGeneralRows(updated);
   };
 
-  const handleUpdateGeneralRow = (id: string, field: 'label' | 'value' | 'secondLabel' | 'enableSecondRow', text: any) => {
+  const handleUpdateGeneralRow = (id: string, field: 'label' | 'value' | 'enableSecondRow', text: any) => {
     const updated = generalRows.map(r => r.id === id ? { ...r, [field]: text } : r);
     setGeneralRows(updated);
     onUpdateProject({
@@ -868,7 +867,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         </div>
       )}
 
-      {/* Блок "Дані" з підримкою включення 2-го рядка через чекбокс */}
+      {/* Блок "Дані" (галочка керує наявністю другого поля / рядка знизу) */}
       {isSuperAdmin && enableData && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
           <div 
@@ -880,7 +879,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           </div>
 
           {isGeneralDataOpen && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
               {generalRows.map((r, index) => (
                 <div 
                   key={r.id} 
@@ -934,12 +933,12 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       }}
                     />
 
-                    {/* Чекбокс для активації 2-го рядка */}
+                    {/* Чекбокс для відкриття / закриття другого рядка */}
                     <input
                       type="checkbox"
                       checked={r.enableSecondRow || false}
                       onChange={(e) => handleUpdateGeneralRow(r.id, 'enableSecondRow', e.target.checked)}
-                      title="Увімкнути другий рядок"
+                      title="Відкрити другий рядок"
                       style={{ cursor: 'pointer', width: '16px', height: '16px' }}
                     />
 
@@ -951,13 +950,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     )}
                   </div>
 
-                  {/* Другий рядок з'являється тільки якщо чекбокс активовано */}
+                  {/* Другий рядок відкривається під першим при увімкненій галочці */}
                   {r.enableSecondRow && (
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', paddingLeft: '0px' }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                       <textarea
                         placeholder="Додатковий опис / рядок"
-                        value={r.secondLabel || ''}
-                        onChange={(e) => handleUpdateGeneralRow(r.id, 'secondLabel', e.target.value)}
+                        value={r.value || ''}
+                        onChange={(e) => handleUpdateGeneralRow(r.id, 'value', e.target.value)}
                         disabled={!isSuperAdmin}
                         rows={1}
                         onInput={(e) => {
