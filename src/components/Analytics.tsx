@@ -20,7 +20,6 @@ const MONTHS_LIST = [
 
 const YEARS_LIST = ['2025', '2026', '2027'];
 
-// Допоміжна функція для генерації тижнів (Пн - Нд) для конкретного місяця і року
 interface WeekRange {
   label: string;
   startDate: Date;
@@ -33,7 +32,6 @@ const getWeeksForMonth = (year: number, monthIndex: number): WeekRange[] => {
   const lastDayOfMonth = new Date(year, monthIndex + 1, 0);
 
   let current = new Date(firstDayOfMonth);
-  // Зсуваємось на понеділок поточного тижня
   const dayOfWeek = current.getDay();
   const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
   current.setDate(current.getDate() + diffToMonday);
@@ -41,7 +39,7 @@ const getWeeksForMonth = (year: number, monthIndex: number): WeekRange[] => {
   while (current <= lastDayOfMonth || weeks.length === 0) {
     const start = new Date(current);
     const end = new Date(current);
-    end.setDate(end.getDate() + 6); // Неділя
+    end.setDate(end.getDate() + 6);
 
     weeks.push({
       label: `${String(start.getDate()).padStart(2, '0')}.${String(start.getMonth() + 1).padStart(2, '0')} - ${String(end.getDate()).padStart(2, '0')}.${String(end.getMonth() + 1).padStart(2, '0')}`,
@@ -50,7 +48,7 @@ const getWeeksForMonth = (year: number, monthIndex: number): WeekRange[] => {
     });
 
     current.setDate(current.getDate() + 7);
-    if (weeks.length > 5) break; // Захист від нескінченного циклу
+    if (weeks.length > 5) break;
   }
 
   return weeks;
@@ -61,10 +59,9 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
   const [metric, setMetric] = useState<MetricType>('count');
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Стани для барабанів
   const [yearIndex, setYearIndex] = useState(1);   // 2026 за замовчуванням
   const [monthIndex, setMonthIndex] = useState(7); // Серпень за замовчуванням
-  const [weekIndex, setWeekIndex] = useState(0);   // Перший тиждень місяця
+  const [weekIndex, setWeekIndex] = useState(0);   
   
   const [collapsedProjects, setCollapsedProjects] = useState<{ [key: string]: boolean }>({});
   
@@ -80,13 +77,12 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Кнопки управління барабанами
   const handlePrevYear = () => setYearIndex(prev => (prev > 0 ? prev - 1 : YEARS_LIST.length - 1));
   const handleNextYear = () => setYearIndex(prev => (prev < YEARS_LIST.length - 1 ? prev + 1 : 0));
 
   const handlePrevMonth = () => setMonthIndex(prev => {
     const next = prev > 0 ? prev - 1 : MONTHS_LIST.length - 1;
-    setWeekIndex(0); // скидаємо на перший тиждень нового місяця
+    setWeekIndex(0);
     return next;
   });
   const handleNextMonth = () => setMonthIndex(prev => {
@@ -187,7 +183,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
           ))}
         </div>
 
-        {/* 1. Барабан РОКУ (завжди видимий, бо і місяць, і тиждень прив'язані до року) */}
+        {/* 1. Барабан РОКУ (доступний на всіх вкладках) */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '2px 0' }}>
           <button onClick={handlePrevYear} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#007aff', fontWeight: 700 }}>◀</button>
           <div style={{ textAlign: 'center', fontSize: '14px', fontWeight: 700, color: '#1c1c1e', borderBottom: '2px solid #007aff', paddingBottom: '2px', minWidth: '90px' }}>
@@ -196,7 +192,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
           <button onClick={handleNextYear} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#007aff', fontWeight: 700 }}>▶</button>
         </div>
 
-        {/* 2. Барабан МІСЯЦЯ (видимий для Місяця та Тижня) */}
+        {/* 2. Барабан МІСЯЦЯ (з'являється тільки для Місяця та Тижня) */}
         {(period === 'month' || period === 'week') && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '2px 0' }}>
             <button onClick={handlePrevMonth} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#007aff', fontWeight: 700 }}>◀</button>
@@ -207,7 +203,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
           </div>
         )}
 
-        {/* 3. Барабан ТИЖНЯ (видимий тільки для Тижня: показує дати Пн - Нд) */}
+        {/* 3. Барабан ТИЖНЯ (з'являється тільки для Тижня) */}
         {period === 'week' && currentWeeksList.length > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '2px 0' }}>
             <button onClick={handlePrevWeek} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#34c759', fontWeight: 700 }}>◀</button>
