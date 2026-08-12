@@ -42,7 +42,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
   const currentRealYear = today.getFullYear();
   const currentRealMonth = today.getMonth();
 
-  // Перевірка на минулий період (для підключення архівних проєктів)
   const isPastPeriod = currentYear < currentRealYear || (currentYear === currentRealYear && monthIndex < currentRealMonth);
   
   const safeProjects = projects || [];
@@ -89,52 +88,67 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
 
         if (matchItem && matchQuery) {
           matchCount++;
-          if (isPercentOp) {
-            resultValue += numVal > 0 ? 100 : 0;
-          } else {
-            resultValue += numVal;
-          }
+          resultValue += numVal;
         }
       });
     } else {
-      (proj.stages || []).forEach(st => {
-        const title = (st.title || '').toLowerCase();
-        const currentStatus = (st.currentStatus || '').toLowerCase();
-        const stageContractors: string[] = (st as any).contractors || (st.contractor ? [st.contractor] : []);
-        const contractorsStr = stageContractors.join(' ').toLowerCase();
+      // Для відсотків рахуємо суму всіх галочок у проєкті або відфільтрованих стадіях
+      if (isPercentOp) {
+        let totalSubs = 0;
+        let completedSubs = 0;
 
-        const matchItem = !selectedItem || title.includes(selectedItem.toLowerCase());
-        const matchQuery = !cleanQuery || 
-          title.includes(cleanQuery) || 
-          currentStatus.includes(cleanQuery) || 
-          contractorsStr.includes(cleanQuery);
-
-        if (matchItem && matchQuery) {
-          matchCount++;
-
-          if (isPercentOp) {
+        (proj.stages || []).forEach(st => {
+          const title = (st.title || '').toLowerCase();
+          const matchItem = !selectedItem || title.includes(selectedItem.toLowerCase());
+          
+          if (matchItem) {
             const subStages = st.subStages || [];
-            if (subStages.length > 0) {
-              const completedSubs = subStages.filter((sub: any) => sub.completed).length;
-              resultValue += Math.round((completedSubs / subStages.length) * 100);
-            } else {
-              resultValue += currentStatus.includes('завершено') ? 100 : 0;
-            }
-          } else if (isTimeOp) {
-            let days = 0;
-            if (st.startDate && st.endDate) {
-              const [sY, sM, sD] = st.startDate.split('-').map(Number);
-              const [eY, eM, eD] = st.endDate.split('-').map(Number);
-              const startD = new Date(sY, sM - 1, sD);
-              const endD = new Date(eY, eM - 1, eD);
-              days = Math.ceil(Math.abs(endD.getTime() - startD.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-            }
-            resultValue += days > 0 ? days : 1;
-          } else {
-            resultValue += 1;
+            subStages.forEach((sub: any) => {
+              totalSubs++;
+              if (sub.completed) completedSubs++;
+
+              const nested = sub.nestedItems || [];
+              nested.forEach((item: any) => {
+                totalSubs++;
+                if (item.completed) completedSubs++;
+              });
+            });
           }
-        }
-      });
+        });
+
+        resultValue = totalSubs > 0 ? Math.round((completedSubs / totalSubs) * 100) : 0;
+        matchCount = totalSubs > 0 ? 1 : 0;
+      } else {
+        (proj.stages || []).forEach(st => {
+          const title = (st.title || '').toLowerCase();
+          const currentStatus = (st.currentStatus || '').toLowerCase();
+          const stageContractors: string[] = (st as any).contractors || (st.contractor ? [st.contractor] : []);
+          const contractorsStr = stageContractors.join(' ').toLowerCase();
+
+          const matchItem = !selectedItem || title.includes(selectedItem.toLowerCase());
+          const matchQuery = !cleanQuery || 
+            title.includes(cleanQuery) || 
+            currentStatus.includes(cleanQuery) || 
+            contractorsStr.includes(cleanQuery);
+
+          if (matchItem && matchQuery) {
+            matchCount++;
+            if (isTimeOp) {
+              let days = 0;
+              if (st.startDate && st.endDate) {
+                const [sY, sM, sD] = st.startDate.split('-').map(Number);
+                const [eY, eM, eD] = st.endDate.split('-').map(Number);
+                const startD = new Date(sY, sM - 1, sD);
+                const endD = new Date(eY, eM - 1, eD);
+                days = Math.ceil(Math.abs(endD.getTime() - startD.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+              }
+              resultValue += days > 0 ? days : 1;
+            } else {
+              resultValue += 1;
+            }
+          }
+        });
+      }
     }
 
     if (isAverageOp && matchCount > 0) {
@@ -148,11 +162,14 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
       value: resultValue,
       color: proj.color || CHART_COLORS[index % CHART_COLORS.length]
     };
-  }).filter(item => item.value > 0);
+  }).filter(item => item.value > 0 || isPercentOp); // Виводимо проєкти (навіть з 0%, якщо вибрано %)
 
-  const totalCenterValue = isAverageOp && chartData.length > 0 
-    ? Number((chartData.reduce((acc, curr) => acc + curr.value, 0) / chartData.length).toFixed(1))
-    : chartData.reduce((acc, curr) => acc + curr.value, 0);
+  // Для центру кола при % беремо середнє арифметичне по проєктах
+  const totalCenterValue = isPercentOp && chartData.length > 0
+    ? Math.round(chartData.reduce((acc, curr) => acc + curr.value, 0) / chartData.length)
+    : isAverageOp && chartData.length > 0 
+      ? Number((chartData.reduce((acc, curr) => acc + curr.value, 0) / chartData.length).toFixed(1))
+      : chartData.reduce((acc, curr) => acc + curr.value, 0);
 
   return (
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e', paddingBottom: '80px' }}>
@@ -258,10 +275,9 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
             <div style={{ backgroundColor: '#ffffff', padding: '10px 12px', borderRadius: '8px', border: '1px solid #d1d1d6', fontSize: '11px', color: '#3a3a3c', display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <div style={{ fontWeight: 700, marginBottom: '2px', color: '#007aff' }}>Швидкі символи-команди:</div>
               <div><strong>#</strong> — підрахунок днів / часу виконання</div>
-              <div><strong>%</strong> — розрахунок відсотка виконання</div>
+              <div><strong>%</strong> — розрахунок відсотка виконання (галочки)</div>
               <div><strong>&</strong> — середнє арифметичне значення</div>
               <div><strong>@Ім'я</strong> — фільтрація за конкретним виконавцем</div>
-              <div style={{ color: '#8e8e93', marginTop: '2px' }}>Приклад: <code style={{ background: '#f2f2f7', padding: '2px 4px', borderRadius: '4px' }}># @Іван Драго</code></div>
             </div>
           )}
         </div>
