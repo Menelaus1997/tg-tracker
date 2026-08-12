@@ -94,16 +94,22 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
   const handlePrevWeek = () => setWeekIndex(prev => (prev > 0 ? prev - 1 : currentWeeksList.length - 1));
   const handleNextWeek = () => setWeekIndex(prev => (prev < currentWeeksList.length - 1 ? prev + 1 : 0));
 
-  // 1. Фільтрація проєктів та підзадач за текстовим запитом
+  // 1. Фільтрація проєктів за текстовим запитом (включно з пошуком по полях "Дані", напр. "Загальна площа")
   const filteredProjects = projects.map(proj => {
     const stages = proj.stages || [];
+    const passportRows = (proj as any).passportRows || [];
     
     if (!searchTerm.trim()) return proj;
 
     const query = searchTerm.toLowerCase();
     const matchesProjectName = proj.name.toLowerCase().includes(query) || proj.id.toLowerCase().includes(query);
     
-    if (matchesProjectName) return proj;
+    // Перевіряємо, чи є збіг у полях "Дані" (passportRows: назва або значення)
+    const matchesPassport = passportRows.some((row: any) => 
+      (row.label || '').toLowerCase().includes(query) || (row.value || '').toLowerCase().includes(query)
+    );
+
+    if (matchesProjectName || matchesPassport) return proj;
 
     const filteredStages = stages.filter(st => 
       st.title.toLowerCase().includes(query) ||
@@ -118,36 +124,63 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
     if (!searchTerm.trim()) return true;
     const query = searchTerm.toLowerCase();
     const matchesProj = proj.name.toLowerCase().includes(query) || proj.id.toLowerCase().includes(query);
+    const passportRows = (proj as any).passportRows || [];
+    const matchesPassport = passportRows.some((row: any) => 
+      (row.label || '').toLowerCase().includes(query) || (row.value || '').toLowerCase().includes(query)
+    );
     const hasStages = (proj.stages || []).length > 0;
-    return matchesProj || hasStages;
+    return matchesProj || matchesPassport || hasStages;
   });
 
-  // 2. Формуємо дані для кругової діаграми
+  // 2. Формуємо дані для кругової діаграми (з урахуванням уточнення в пошуку по числових значеннях "Даних")
   const chartData = filteredProjects.map((proj, index) => {
     const stages = proj.stages || [];
-    let totalSec = 0;
+    const passportRows = (proj as any).passportRows || [];
+    let numericValue = 0;
 
-    stages.forEach(st => {
-      let stageCalendarDays = 0;
-      if (st.startDate && st.endDate) {
-        const [sY, sM, sD] = st.startDate.split('-').map(Number);
-        const [eY, eM, eD] = st.endDate.split('-').map(Number);
-        const startD = new Date(sY, sM - 1, sD);
-        const endD = new Date(eY, eM - 1, eD);
-        const diffTime = Math.abs(endD.getTime() - startD.getTime());
-        stageCalendarDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    if (searchTerm.trim()) {
+      const query = searchTerm.toLowerCase();
+      passportRows.forEach((row: any) => {
+        const label = (row.label || '').toLowerCase();
+        // Якщо назва рядка містить пошуковий запит (напр. "загальна площа"), беремо його числове значення
+        if (label.includes(query)) {
+          const parsed = parseFloat(row.value);
+          if (!isNaN(parsed)) {
+            numericValue += parsed;
+          }
+        }
+      });
+    }
+
+    // Якщо за пошуком по даних нічого не знайшлось, падаємо на стандартний розрахунок (кількість етапів або час)
+    if (numericValue === 0 && searchTerm.trim()) {
+      numericValue = metric === 'time' ? 0 : stages.length > 0 ? stages.length : 1;
+    } else if (!searchTerm.trim()) {
+      if (metric === 'time') {
+        let totalSec = 0;
+        stages.forEach(st => {
+          let stageCalendarDays = 0;
+          if (st.startDate && st.endDate) {
+            const [sY, sM, sD] = st.startDate.split('-').map(Number);
+            const [eY, eM, eD] = st.endDate.split('-').map(Number);
+            const startD = new Date(sY, sM - 1, sD);
+            const endD = new Date(eY, eM - 1, eD);
+            const diffTime = Math.abs(endD.getTime() - startD.getTime());
+            stageCalendarDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+          }
+          const calendarSec = stageCalendarDays * 8 * 3600;
+          const loggedSec = st.loggedSeconds || 0;
+          totalSec += Math.max(loggedSec, calendarSec);
+        });
+        numericValue = Number((totalSec / 3600).toFixed(1));
+      } else {
+        numericValue = stages.length > 0 ? stages.length : 1;
       }
-      const calendarSec = stageCalendarDays * 8 * 3600;
-      const loggedSec = st.loggedSeconds || 0;
-      totalSec += Math.max(loggedSec, calendarSec);
-    });
-
-    const hours = Number((totalSec / 3600).toFixed(1));
-    const stagesCount = stages.length;
+    }
 
     return {
       name: proj.name,
-      value: metric === 'time' ? hours : (stagesCount > 0 ? stagesCount : 1),
+      value: numericValue,
       color: proj.color || CHART_COLORS[index % CHART_COLORS.length]
     };
   });
@@ -216,7 +249,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
           </div>
         )}
 
-        {/* Метрика та Текстовий пошук */}
+        {/* Метрика та Текстовий пошук (уточнення) */}
         <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
           <select
             value={metric}
@@ -229,7 +262,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
 
           <input
             type="text"
-            placeholder="Пошук (напр., ХАЙТАК)..."
+            placeholder="Уточнення (напр., Загальна площа)..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             style={{ padding: '8px', borderRadius: '8px', border: '1px solid #c7c7cc', fontSize: '12px', flex: 1, background: '#fff' }}
@@ -259,13 +292,13 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
             fontWeight: 700,
             color: '#1c1c1e'
           }}>
-            {metric === 'time' ? `${totalCenterValue.toFixed(1)}h` : totalCenterValue}
+            {metric === 'time' && !searchTerm.trim() ? `${totalCenterValue.toFixed(1)}h` : totalCenterValue}
             <div style={{ fontSize: '11px', color: '#8e8e93', fontWeight: 400 }}>Загалом</div>
           </div>
         </div>
       )}
 
-      {/* СПИСОК ПРОЄКТІВ З ДЕТАЛЬНИМ ЧАСОМ */}
+      {/* СПИСОК ПРОЄКТІВ */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {filteredProjects.length === 0 ? (
           <div style={{ textAlign: 'center', color: '#8e8e93', fontSize: '13px', marginTop: '20px' }}>
