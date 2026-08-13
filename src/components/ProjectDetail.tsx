@@ -65,7 +65,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [name, setName] = useState(project.name);
   const [projectId, setProjectId] = useState(project.id);
   
-  // Кастомізація назв заголовків блоків
   const [tagsTitle, setTagsTitle] = useState((project as any).tagsTitle || 'Теги');
   const [dataTitle, setDataTitle] = useState((project as any).dataTitle || 'Дані');
   const [structureTitle, setStructureTitle] = useState((project as any).structureTitle || 'Структура');
@@ -77,6 +76,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [enableTags, setEnableTags] = useState<boolean>((project as any).enableTags ?? true);
   const [enableData, setEnableData] = useState<boolean>((project as any).enableData ?? true);
   const [enableTimeTracking, setEnableTimeTracking] = useState<boolean>((project as any).enableTimeTracking ?? true);
+  
+  // Нові окремі перемикачі для налаштувань підзадач
+  const [enableSubtaskMoving, setEnableSubtaskMoving] = useState<boolean>((project as any).enableSubtaskMoving ?? true);
+  const [enableNestedItems, setEnableNestedItems] = useState<boolean>((project as any).enableNestedItems ?? true);
 
   const [statuses, setStatuses] = useState<ProjectStatus[]>(
     (project.customStatuses || DEFAULT_STATUSES).map((s: any) => ({
@@ -141,6 +144,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       enableTags,
       enableData,
       enableTimeTracking,
+      enableSubtaskMoving,
+      enableNestedItems,
       enableStructure: true,
       customStatuses: statuses,
       tagsTitle,
@@ -369,7 +374,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   };
 
   const handleMoveSubStage = (stageId: string, index: number, direction: 'up' | 'down') => {
-    if (!canManageSubtasks) return;
+    if (!canManageSubtasks || !enableSubtaskMoving) return;
     const updatedStages = stages.map(s => {
       if (s.id === stageId) {
         const targetIndex = direction === 'up' ? index - 1 : index + 1;
@@ -426,7 +431,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   };
 
   const handleAddNestedItem = (stageId: string, subStageId: string) => {
-    if (!canManageSubtasks) return;
+    if (!canManageSubtasks || !enableNestedItems) return;
 
     const updatedStages = stages.map(s => {
       if (s.id === stageId) {
@@ -449,7 +454,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   };
 
   const handleMoveNestedItem = (stageId: string, subStageId: string, index: number, direction: 'up' | 'down') => {
-    if (!canManageSubtasks) return;
+    if (!canManageSubtasks || !enableSubtaskMoving) return;
     const updatedStages = stages.map(s => {
       if (s.id === stageId) {
         return {
@@ -556,6 +561,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       enableTags,
       enableData,
       enableTimeTracking,
+      enableSubtaskMoving,
+      enableNestedItems,
       enableStructure: true,
       customStatuses: statuses,
       tagsTitle,
@@ -616,7 +623,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const remainingTags = statuses.slice(1);
 
   return (
-    <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e', paddingBottom: '80px' }}>
+    <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e', paddingBottom: '80px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       <button 
         onClick={onBack} 
         style={{ background: 'none', border: 'none', fontSize: '14px', color: '#000000', cursor: 'pointer', marginBottom: '16px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}
@@ -726,9 +733,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       {/* Блок "Теги" */}
       {isSuperAdmin && enableTags && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
-          <div 
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: isTagsOpen ? '10px' : 0 }}
-          >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: isTagsOpen ? '10px' : 0 }}>
             <span 
               onClick={() => setIsTagsOpen(!isTagsOpen)} 
               style={{ fontSize: '12px', color: '#8e8e93', cursor: 'pointer', userSelect: 'none' }}
@@ -904,9 +909,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       {/* Блок "Дані" */}
       {isSuperAdmin && enableData && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
-          <div 
-            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-          >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span 
               onClick={() => setIsGeneralDataOpen(!isGeneralDataOpen)}
               style={{ fontSize: '12px', color: '#8e8e93', cursor: 'pointer', userSelect: 'none' }}
@@ -1003,9 +1006,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
       {/* Блок "Структура" */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
-        <div 
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isStructureOpen ? '12px' : 0 }}
-        >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isStructureOpen ? '12px' : 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
             <span 
               onClick={() => setIsStructureOpen(!isStructureOpen)}
@@ -1211,7 +1212,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
                                     
-                                    {canManageSubtasks && (
+                                    {/* Переміщення підстадій відображається тільки якщо увімкнено відповідний перемикач */}
+                                    {canManageSubtasks && enableSubtaskMoving && (
                                       <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', marginRight: '2px' }}>
                                         <button 
                                           onClick={() => handleMoveSubStage(st.id, idx, 'up')}
@@ -1230,12 +1232,15 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                       </div>
                                     )}
 
-                                    <span 
-                                      onClick={() => setCollapsedSubStages({ ...collapsedSubStages, [sub.id]: !isSubCollapsed })}
-                                      style={{ cursor: 'pointer', fontSize: '10px', color: '#8e8e93', userSelect: 'none', width: '12px', textAlign: 'center' }}
-                                    >
-                                      {isSubCollapsed ? '▶' : '▼'}
-                                    </span>
+                                    {/* Спадне меню/стрілочка згортання зникає, якщо вимкнено створення вкладених елементів */}
+                                    {enableNestedItems && (
+                                      <span 
+                                        onClick={() => setCollapsedSubStages({ ...collapsedSubStages, [sub.id]: !isSubCollapsed })}
+                                        style={{ cursor: 'pointer', fontSize: '10px', color: '#8e8e93', userSelect: 'none', width: '12px', textAlign: 'center' }}
+                                      >
+                                        {isSubCollapsed ? '▶' : '▼'}
+                                      </span>
+                                    )}
 
                                     <input
                                       type="checkbox"
@@ -1260,17 +1265,20 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
                                   {canManageSubtasks && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                      <button 
-                                        onClick={() => {
-                                          if (isSubCollapsed) {
-                                            setCollapsedSubStages({ ...collapsedSubStages, [sub.id]: false });
-                                          }
-                                          handleAddNestedItem(st.id, sub.id);
-                                        }} 
-                                        style={{ ...compactPlusBtnStyle, width: '24px', height: '24px', fontSize: '14px' }}
-                                      >
-                                        +
-                                      </button>
+                                      {/* Кнопка створення нових підпунктів (+) з'являється тільки за активним перемикачем */}
+                                      {enableNestedItems && (
+                                        <button 
+                                          onClick={() => {
+                                            if (isSubCollapsed) {
+                                              setCollapsedSubStages({ ...collapsedSubStages, [sub.id]: false });
+                                            }
+                                            handleAddNestedItem(st.id, sub.id);
+                                          }} 
+                                          style={{ ...compactPlusBtnStyle, width: '24px', height: '24px', fontSize: '14px' }}
+                                        >
+                                          +
+                                        </button>
+                                      )}
                                       <div style={{ width: '28px', display: 'flex', justifyContent: 'center' }}>
                                         <button onClick={() => handleDeleteSubStage(st.id, sub.id)} style={{ ...iconBtnStyle, color: '#ff3b30' }}>🗑️</button>
                                       </div>
@@ -1278,13 +1286,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                   )}
                                 </div>
 
-                                {!isSubCollapsed && nestedItems.length > 0 && (
+                                {enableNestedItems && !isSubCollapsed && nestedItems.length > 0 && (
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '28px', marginTop: '4px' }}>
                                     {nestedItems.map((item: any, itemIdx: number) => (
                                       <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
                                           
-                                          {canManageSubtasks && (
+                                          {canManageSubtasks && enableSubtaskMoving && (
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', marginRight: '2px' }}>
                                               <button 
                                                 onClick={() => handleMoveNestedItem(st.id, sub.id, itemIdx, 'up')}
@@ -1382,7 +1390,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
                           {isSuperAdmin && enableRoles && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px' }}>
-                              {/* Ідеально вирівняна сітка 50/50 під датами */}
                               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', alignItems: 'center' }}>
                                 <select
                                   id={`select-contractor-${st.id}`}
@@ -1460,12 +1467,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* --- Блок "Налаштування" (об'єднані перемикачі) --- */}
+      {/* --- Блок "Налаштування" з новими перемикачами --- */}
       {isSuperAdmin && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
-          <div 
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: isSettingsOpen ? '12px' : 0 }}
-          >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: isSettingsOpen ? '12px' : 0 }}>
             <span 
               onClick={() => setIsSettingsOpen(!isSettingsOpen)}
               style={{ fontSize: '12px', color: '#8e8e93', cursor: 'pointer', userSelect: 'none' }}
@@ -1612,6 +1617,74 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       position: 'absolute',
                       top: '2px',
                       left: enableTimeTracking ? '16px' : '2px',
+                      transition: 'left 0.2s'
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Перемикач для переміщення підстадій */}
+              <div style={{ backgroundColor: '#ffffff', padding: '10px 12px', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#1c1c1e' }}>Переміщення підстадій</span>
+                <div
+                  onClick={() => {
+                    const nextVal = !enableSubtaskMoving;
+                    setEnableSubtaskMoving(nextVal);
+                    triggerAutoSave({ enableSubtaskMoving: nextVal });
+                  }}
+                  style={{
+                    width: '34px',
+                    height: '20px',
+                    borderRadius: '10px',
+                    backgroundColor: enableSubtaskMoving ? '#34c759' : '#e5e5ea',
+                    position: 'relative',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s'
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '16px',
+                      height: '16px',
+                      borderRadius: '50%',
+                      backgroundColor: '#fff',
+                      position: 'absolute',
+                      top: '2px',
+                      left: enableSubtaskMoving ? '16px' : '2px',
+                      transition: 'left 0.2s'
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Перемикач для створення нових підпунктів */}
+              <div style={{ backgroundColor: '#ffffff', padding: '10px 12px', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#1c1c1e' }}>Створення нових підпунктів</span>
+                <div
+                  onClick={() => {
+                    const nextVal = !enableNestedItems;
+                    setEnableNestedItems(nextVal);
+                    triggerAutoSave({ enableNestedItems: nextVal });
+                  }}
+                  style={{
+                    width: '34px',
+                    height: '20px',
+                    borderRadius: '10px',
+                    backgroundColor: enableNestedItems ? '#34c759' : '#e5e5ea',
+                    position: 'relative',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s'
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '16px',
+                      height: '16px',
+                      borderRadius: '50%',
+                      backgroundColor: '#fff',
+                      position: 'absolute',
+                      top: '2px',
+                      left: enableNestedItems ? '16px' : '2px',
                       transition: 'left 0.2s'
                     }}
                   />
