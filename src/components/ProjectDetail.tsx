@@ -631,9 +631,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     <div style={{ padding: '16px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e', paddingBottom: '80px', fontFamily: "'SF Pro Condensed', -apple-system, sans-serif", fontSize: '11px', lineHeight: 1 }}>
       <button 
         onClick={onBack} 
-        style={{ background: 'none', border: 'none', fontSize: '11px', color: '#000000', cursor: 'pointer', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '4px', lineHeight: 1 }}
+        style={{ background: 'none', border: 'none', fontSize: '14px', fontWeight: 'bold', fontStyle: 'italic', color: '#000000', cursor: 'pointer', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '4px', lineHeight: 1 }}
       >
-        <span style={{ fontSize: '13px' }}>←</span> <span style={{ fontStyle: 'italic' }}>Назад</span>
+        <span>←</span> <span>НАЗАД</span>
       </button>
 
       {/* 1. Header Block */}
@@ -1259,7 +1259,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                       onChange={() => handleToggleSubStage(st.id, sub.id)}
                                       style={{ width: '12px', height: '12px' }}
                                     />
-                                    <span style={{ color: '#1c1c1e', userSelect: 'none', minWidth: '14px' }}>{idx + 1}.</span>
+                                    <span style={{ color: '#1c1c1e', userSelect: 'none', minWidth: '14px', fontStyle: 'italic' }}>{idx + 1}.</span>
 
                                     <input
                                       type="text"
@@ -1329,7 +1329,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                             onChange={() => handleToggleNestedItem(st.id, sub.id, item.id)}
                                             style={{ width: '12px', height: '12px' }}
                                           />
-                                          <span style={{ color: '#636366', userSelect: 'none', minWidth: '20px' }}>{idx + 1}.{itemIdx + 1}</span>
+                                          <span style={{ color: '#636366', userSelect: 'none', minWidth: '20px', fontStyle: 'italic' }}>{idx + 1}.{itemIdx + 1}</span>
 
                                           <input
                                             type="text"
@@ -1506,7 +1506,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               
               <div style={{ backgroundColor: '#ffffff', padding: '8px 10px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
-                <span style={{ fontSize: '11px', color: '#1c1c1e' }}>Ролі</span>
+                <span style={{ fontSize: '11px', color: '#1c1c1e', fontStyle: 'italic' }}>Ролі</span>
                 <div
                   onClick={() => {
                     const nextVal = !enableRoles;
@@ -1539,7 +1539,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               </div>
 
               <div style={{ backgroundColor: '#ffffff', padding: '8px 10px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
-                <span style={{ fontSize: '11px', color: '#1c1c1e' }}>Теги</span>
+                <span style={{ fontSize: '11px', color: '#1c1c1e', fontStyle: 'italic' }}>Теги</span>
                 <div
                   onClick={() => {
                     const nextVal = !enableTags;
@@ -1572,7 +1572,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               </div>
 
               <div style={{ backgroundColor: '#ffffff', padding: '8px 10px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
-                <span style={{ fontSize: '11px', color: '#1c1c1e' }}>Теги в стадіях</span>
+                <span style={{ fontSize: '11px', color: '#1c1c1e', fontStyle: 'italic' }}>Теги в структурі</span>
                 <div
                   onClick={() => {
                     const nextVal = !showStageTags;
@@ -1605,7 +1605,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               </div>
 
               <div style={{ backgroundColor: '#ffffff', padding: '8px 10px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
-                <span style={{ fontSize: '11px', color: '#1c1c1e' }}>Дані</span>
+                <span style={{ fontSize: '11px', color: '#1c1c1e', fontStyle: 'italic' }}>Дані</span>
                 <div
                   onClick={() => {
                     const nextVal = !enableData;
@@ -1638,7 +1638,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               </div>
 
               <div style={{ backgroundColor: '#ffffff', padding: '8px 10px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
-                <span style={{ fontSize: '11px', color: '#1c1c1e' }}>Облік часу</span>
+                <span style={{ fontSize: '11px', color: '#1c1c1e', fontStyle: 'italic' }}>Облік часу</span>
                 <div
                   onClick={() => {
                     const nextVal = !enableTimeTracking;
@@ -1671,7 +1671,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               </div>
 
               <div style={{ backgroundColor: '#ffffff', padding: '8px 10px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
-                <span style={{ fontSize: '11px', color: '#1c1c1e' }}>Терміни</span>
+                <span style={{ fontSize: '11px', color: '#1c1c1e', fontStyle: 'italic' }}>Терміни</span>
                 <div
                   onClick={() => {
                     const nextVal = !showDates;
@@ -1704,7 +1704,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               </div>
 
               <div style={{ backgroundColor: '#ffffff', padding: '8px 10px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
-                <span style={{ fontSize: '11px', color: '#1c1c1e' }}>Переміщення підстадій</span>
+                <span style={{ fontSize: '11px', color: '#1c1c1e', fontStyle: 'italic' }}>Переміщення підстадій</span>
                 <div
                   onClick={() => {
                     const nextVal = !enableSubtaskMoving;
@@ -1737,7 +1737,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               </div>
 
               <div style={{ backgroundColor: '#ffffff', padding: '8px 10px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
-                <span style={{ fontSize: '11px', color: '#1c1c1e' }}>Створення нових підпунктів</span>
+                <span style={{ fontSize: '11px', color: '#1c1c1e', fontStyle: 'italic' }}>Створення нових підпунктів</span>
                 <div
                   onClick={() => {
                     const nextVal = !enableNestedItems;
@@ -1776,7 +1776,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
       {/* 5. Save Block */}
       <div style={{ backgroundColor: '#ffffff', padding: '12px', border: '1px solid #e5e5ea', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', cursor: 'pointer' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontStyle: 'italic', cursor: 'pointer' }}>
           <input
             type="checkbox"
             checked={saveAsTemplate}
@@ -1800,7 +1800,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           onClick={handleFinalSave}
           style={{ width: '100%', padding: '10px', backgroundColor: '#007aff', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontStyle: 'italic', fontSize: '12px', cursor: 'pointer', lineHeight: 1 }}
         >
-          Зберегти зміни
+          Зберегти шаблон
         </button>
       </div>
     </div>
@@ -1839,7 +1839,8 @@ const labelStyle: React.CSSProperties = {
   color: '#636366',
   marginBottom: '2px',
   display: 'block',
-  lineHeight: 1
+  lineHeight: 1,
+  fontStyle: 'italic'
 };
 
 const btnStyle: React.CSSProperties = {
@@ -1848,7 +1849,8 @@ const btnStyle: React.CSSProperties = {
   border: 'none',
   fontSize: '11px',
   cursor: 'pointer',
-  lineHeight: 1
+  lineHeight: 1,
+  fontStyle: 'italic'
 };
 
 const iconBtnStyle: React.CSSProperties = {
