@@ -261,13 +261,14 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     triggerAutoSave({ stages: updatedStages });
   };
 
-  const handleAddStageContractor = (stageId: string, contractorName: string) => {
+  const handleAddStageContractor = (stageId: string, contractorName: string, roleName: string) => {
     if (!contractorName) return;
+    const formattedEntry = roleName ? `${contractorName} (${roleName})` : contractorName;
     const updatedStages = stages.map(s => {
       if (s.id === stageId) {
         const currentList = (s as any).contractors || (s.contractor ? [s.contractor] : []);
-        if (!currentList.includes(contractorName)) {
-          return { ...s, contractors: [...currentList, contractorName] };
+        if (!currentList.includes(formattedEntry)) {
+          return { ...s, contractors: [...currentList, formattedEntry] };
         }
       }
       return s;
@@ -276,11 +277,11 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     triggerAutoSave({ stages: updatedStages });
   };
 
-  const handleRemoveStageContractor = (stageId: string, contractorName: string) => {
+  const handleRemoveStageContractor = (stageId: string, contractorEntry: string) => {
     const updatedStages = stages.map(s => {
       if (s.id === stageId) {
         const currentList = (s as any).contractors || (s.contractor ? [s.contractor] : []);
-        return { ...s, contractors: currentList.filter((c: string) => c !== contractorName) };
+        return { ...s, contractors: currentList.filter((c: string) => c !== contractorEntry) };
       }
       return s;
     });
@@ -1344,13 +1345,29 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                     </option>
                                   ))}
                                 </select>
+
+                                <select
+                                  id={`select-role-${st.id}`}
+                                  defaultValue=""
+                                  style={{ ...cardInputStyle, fontSize: '12px', height: '28px', padding: '2px 8px', boxSizing: 'border-box', flex: 1 }}
+                                >
+                                  <option value="">Виберіть роль...</option>
+                                  {availableRoles.map((r, rIdx) => (
+                                    <option key={rIdx} value={r}>
+                                      {r}
+                                    </option>
+                                  ))}
+                                </select>
+
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    const selectEl = document.getElementById(`select-contractor-${st.id}`) as HTMLSelectElement;
-                                    if (selectEl && selectEl.value) {
-                                      handleAddStageContractor(st.id, selectEl.value);
-                                      selectEl.value = '';
+                                    const contractorEl = document.getElementById(`select-contractor-${st.id}`) as HTMLSelectElement;
+                                    const roleEl = document.getElementById(`select-role-${st.id}`) as HTMLSelectElement;
+                                    if (contractorEl && contractorEl.value) {
+                                      handleAddStageContractor(st.id, contractorEl.value, roleEl ? roleEl.value : '');
+                                      contractorEl.value = '';
+                                      if (roleEl) roleEl.value = '';
                                     }
                                   }}
                                   style={{ ...compactPlusBtnStyle, width: '28px', height: '28px', boxSizing: 'border-box' }}
@@ -1361,12 +1378,12 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
                               {stageContractors.length > 0 && (
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '2px' }}>
-                                  {stageContractors.map((cName, cIdx) => (
+                                  {stageContractors.map((cEntry, cIdx) => (
                                     <div key={cIdx} style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#e5e5ea', padding: '4px 8px', borderRadius: '6px', fontSize: '12px' }}>
-                                      <span>{cName}</span>
+                                      <span>{cEntry}</span>
                                       <button
                                         type="button"
-                                        onClick={() => handleRemoveStageContractor(st.id, cName)}
+                                        onClick={() => handleRemoveStageContractor(st.id, cEntry)}
                                         style={{ background: 'none', border: 'none', color: '#ff3b30', cursor: 'pointer', fontSize: '11px', padding: 0, fontWeight: 700 }}
                                       >
                                         ✕
