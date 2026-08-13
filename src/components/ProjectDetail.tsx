@@ -576,6 +576,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     return `${d}.${m}`;
   };
 
+  // Розрахунок кінцевої дати здачі проєкту (дедлайн останньої стадії в масиві)
+  const lastStage = stages[stages.length - 1];
+  const finalProjectDeadline = lastStage ? ((lastStage as any).reviewDate || lastStage.endDate) : '';
+
   const dateBoxStyle: React.CSSProperties = {
     height: '24px',
     boxSizing: 'border-box',
@@ -962,10 +966,18 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
         <div 
           onClick={() => setIsStructureOpen(!isStructureOpen)}
-          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: isStructureOpen ? '12px' : 0 }}
+          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isStructureOpen ? '12px' : 0 }}
         >
-          <span style={{ fontSize: '12px', color: '#8e8e93' }}>{isStructureOpen ? '▲' : '▼'}</span>
-          <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>Структура</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '12px', color: '#8e8e93' }}>{isStructureOpen ? '▲' : '▼'}</span>
+            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>Структура</h3>
+          </div>
+
+          {finalProjectDeadline && (
+            <div style={dateBoxStyle}>
+              📅 {formatDateShort(finalProjectDeadline)}
+            </div>
+          )}
         </div>
 
         {isStructureOpen && (
