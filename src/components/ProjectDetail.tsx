@@ -73,6 +73,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     (project as any).enableRoles ?? (project as any).enableTeamRoles ?? true
   );
   const [enableTags, setEnableTags] = useState<boolean>((project as any).enableTags ?? true);
+  const [showStageTags, setShowStageTags] = useState<boolean>((project as any).showStageTags ?? true);
   const [enableData, setEnableData] = useState<boolean>((project as any).enableData ?? true);
   const [enableTimeTracking, setEnableTimeTracking] = useState<boolean>((project as any).enableTimeTracking ?? true);
   const [showDates, setShowDates] = useState<boolean>((project as any).showDates ?? (permissions.showDates ?? true));
@@ -141,6 +142,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       enableRoles,
       enableTeamRoles: enableRoles,
       enableTags,
+      showStageTags,
       enableData,
       enableTimeTracking,
       showDates,
@@ -559,6 +561,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       enableRoles,
       enableTeamRoles: enableRoles,
       enableTags,
+      showStageTags,
       enableData,
       enableTimeTracking,
       showDates,
@@ -1077,31 +1080,33 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                         </div>
                       )}
 
-                      <select 
-                        value={currentStageStatusLabel}
-                        onChange={(e) => handleUpdateStageStatus(st.id, e.target.value)}
-                        style={{ 
-                          height: '24px',
-                          boxSizing: 'border-box',
-                          border: 'none', 
-                          borderRadius: '12px', 
-                          padding: '0 8px', 
-                          fontSize: '12px', 
-                          fontWeight: 'bold',
-                          fontStyle: 'italic',
-                          backgroundColor: currentStatusObj?.color || '#8e8e93',
-                          color: '#000000',
-                          cursor: 'pointer',
-                          outline: 'none',
-                          lineHeight: 1
-                        }}
-                      >
-                        {statuses.map(s => (
-                          <option key={s.id} value={s.label} style={{ backgroundColor: '#fff', color: '#000000', fontStyle: 'normal' }}>
-                            {s.label}
-                          </option>
-                        ))}
-                      </select>
+                      {showStageTags && (
+                        <select 
+                          value={currentStageStatusLabel}
+                          onChange={(e) => handleUpdateStageStatus(st.id, e.target.value)}
+                          style={{ 
+                            height: '24px',
+                            boxSizing: 'border-box',
+                            border: 'none', 
+                            borderRadius: '12px', 
+                            padding: '0 8px', 
+                            fontSize: '12px', 
+                            fontWeight: 'bold',
+                            fontStyle: 'italic',
+                            backgroundColor: currentStatusObj?.color || '#8e8e93',
+                            color: '#000000',
+                            cursor: 'pointer',
+                            outline: 'none',
+                            lineHeight: 1
+                          }}
+                        >
+                          {statuses.map(s => (
+                            <option key={s.id} value={s.label} style={{ backgroundColor: '#fff', color: '#000000', fontStyle: 'normal' }}>
+                              {s.label}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
@@ -1560,6 +1565,39 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       position: 'absolute',
                       top: '2px',
                       left: enableTags ? '16px' : '2px',
+                      transition: 'left 0.2s'
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ backgroundColor: '#ffffff', padding: '8px 10px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
+                <span style={{ fontSize: '11px', color: '#1c1c1e' }}>Теги в стадіях</span>
+                <div
+                  onClick={() => {
+                    const nextVal = !showStageTags;
+                    setShowStageTags(nextVal);
+                    triggerAutoSave({ showStageTags: nextVal });
+                  }}
+                  style={{
+                    width: '30px',
+                    height: '16px',
+                    borderRadius: '8px',
+                    backgroundColor: showStageTags ? '#34c759' : '#e5e5ea',
+                    position: 'relative',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s'
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '12px',
+                      height: '12px',
+                      borderRadius: '50%',
+                      backgroundColor: '#fff',
+                      position: 'absolute',
+                      top: '2px',
+                      left: showStageTags ? '16px' : '2px',
                       transition: 'left 0.2s'
                     }}
                   />
