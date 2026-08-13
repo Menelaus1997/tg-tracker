@@ -225,11 +225,27 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       if (r.id === id) {
         if (field === 'label') {
           const trimmedText = typeof text === 'string' ? text.trim() : text;
-          // Авторозпізнавання посилань
+          
           if (trimmedText.startsWith('http://') || trimmedText.startsWith('https://')) {
+            let detectedName = 'Посилання на проєкт';
+            
+            if (trimmedText.includes('drive.google.com') || trimmedText.includes('docs.google.com')) {
+              detectedName = 'Google Drive';
+            } else if (trimmedText.includes('t.me') || trimmedText.includes('telegram.org')) {
+              detectedName = 'Telegram';
+            } else if (trimmedText.includes('facebook.com')) {
+              detectedName = 'Facebook';
+            } else if (trimmedText.includes('instagram.com')) {
+              detectedName = 'Instagram';
+            } else if (trimmedText.includes('figma.com')) {
+              detectedName = 'Figma';
+            } else if (trimmedText.includes('notion.so')) {
+              detectedName = 'Notion';
+            }
+
             return {
               ...r,
-              label: 'Посилання на проєкт',
+              label: detectedName,
               value: trimmedText,
               enableSecondRow: true
             };
@@ -989,25 +1005,58 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   />
 
                   {r.enableSecondRow && (
-                    <input
-                      type="text"
-                      placeholder="Значення"
-                      value={r.value}
-                      onChange={(e) => handleUpdateGeneralRow(r.id, 'value', e.target.value)}
-                      disabled={!isSuperAdmin}
-                      style={{ 
-                        ...cardInputStyle, 
-                        flex: 'none', 
-                        width: `${Math.max((r.value || '').length + 4, 8)}ch`, 
-                        minWidth: '60px',
-                        height: '24px', 
-                        padding: '2px 6px', 
-                        boxSizing: 'border-box',
-                        textAlign: 'center',
-                        fontSize: '11px',
-                        fontStyle: 'italic' 
-                      }}
-                    />
+                    <div style={{ flex: 'none', display: 'flex', alignItems: 'center' }}>
+                      {r.value && (r.value.startsWith('http://') || r.value.startsWith('https://')) ? (
+                        <a
+                          href={r.value}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={r.value}
+                          style={{
+                            ...cardInputStyle,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#007aff',
+                            textDecoration: 'underline',
+                            width: 'auto',
+                            minWidth: '60px',
+                            maxWidth: '120px',
+                            height: '24px',
+                            padding: '2px 6px',
+                            boxSizing: 'border-box',
+                            fontSize: '11px',
+                            fontStyle: 'italic',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {r.label || 'Посилання'}
+                        </a>
+                      ) : (
+                        <input
+                          type="text"
+                          placeholder="Значення"
+                          value={r.value}
+                          onChange={(e) => handleUpdateGeneralRow(r.id, 'value', e.target.value)}
+                          disabled={!isSuperAdmin}
+                          style={{ 
+                            ...cardInputStyle, 
+                            flex: 'none', 
+                            width: `${Math.max((r.value || '').length + 4, 8)}ch`, 
+                            minWidth: '60px',
+                            height: '24px', 
+                            padding: '2px 6px', 
+                            boxSizing: 'border-box',
+                            textAlign: 'center',
+                            fontSize: '11px',
+                            fontStyle: 'italic' 
+                          }}
+                        />
+                      )}
+                    </div>
                   )}
 
                   <input
