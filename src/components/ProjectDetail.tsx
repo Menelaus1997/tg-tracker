@@ -1126,7 +1126,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 const currentStageStatusLabel = (st as any).currentStatus || statuses[0]?.label || 'В процесі';
                 const currentStatusObj = statuses.find(s => s.label === currentStageStatusLabel) || statuses[0];
 
-                // Перевірка чи стадія завершена (блокування)
                 const isCompletedStatus = currentStageStatusLabel.toLowerCase().includes('завершено');
 
                 const deadlineDateStr = (st as any).reviewDate || st.endDate;
@@ -1171,7 +1170,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                         )}
                       </div>
 
-                      {/* Символ замка з правого боку коли статус Завершено */}
                       {isCompletedStatus && (
                         <div title="Стадія заблокована (змінити статус для розблокування)" style={{ fontSize: '14px', lineHeight: 1, paddingRight: '4px' }}>
                           🔒
@@ -1478,66 +1476,73 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                             </div>
                           )}
 
-                          {isSuperAdmin && enableRoles && !isCompletedStatus && (
+                          {isSuperAdmin && enableRoles && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
-                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', alignItems: 'center' }}>
-                                <select
-                                  id={`select-contractor-${st.id}`}
-                                  defaultValue=""
-                                  style={{ ...cardInputStyle, fontSize: '11px', fontStyle: 'italic', height: '24px', padding: '2px 6px', boxSizing: 'border-box', width: '100%' }}
-                                >
-                                  <option value="">Виберіть виконавця...</option>
-                                  {teamDatabase.map(m => (
-                                    <option key={m.id} value={m.fullName} style={{ fontStyle: 'normal' }}>
-                                      {m.fullName}
-                                    </option>
-                                  ))}
-                                </select>
-
-                                <div style={{ display: 'flex', gap: '4px', alignItems: 'center', width: '100%' }}>
+                              
+                              {/* Селектори для додавання нових виконавців приховуємо, якщо стадія завершена */}
+                              {!isCompletedStatus && (
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', alignItems: 'center' }}>
                                   <select
-                                    id={`select-role-${st.id}`}
+                                    id={`select-contractor-${st.id}`}
                                     defaultValue=""
-                                    style={{ ...cardInputStyle, fontSize: '11px', fontStyle: 'italic', height: '24px', padding: '2px 6px', boxSizing: 'border-box', flex: 1 }}
+                                    style={{ ...cardInputStyle, fontSize: '11px', fontStyle: 'italic', height: '24px', padding: '2px 6px', boxSizing: 'border-box', width: '100%' }}
                                   >
-                                    <option value="">Виберіть роль...</option>
-                                    {availableRoles.map((r, rIdx) => (
-                                      <option key={rIdx} value={r} style={{ fontStyle: 'normal' }}>
-                                        {r}
+                                    <option value="">Виберіть виконавця...</option>
+                                    {teamDatabase.map(m => (
+                                      <option key={m.id} value={m.fullName} style={{ fontStyle: 'normal' }}>
+                                        {m.fullName}
                                       </option>
                                     ))}
                                   </select>
 
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const contractorEl = document.getElementById(`select-contractor-${st.id}`) as HTMLSelectElement;
-                                      const roleEl = document.getElementById(`select-role-${st.id}`) as HTMLSelectElement;
-                                      if (contractorEl && contractorEl.value) {
-                                        handleAddStageContractor(st.id, contractorEl.value, roleEl ? roleEl.value : '');
-                                        contractorEl.value = '';
-                                        if (roleEl) roleEl.value = '';
-                                      }
-                                    }}
-                                    style={{ ...compactPlusBtnStyle, width: '24px', height: '24px', boxSizing: 'border-box', flexShrink: 0 }}
-                                  >
-                                    +
-                                  </button>
-                                </div>
-                              </div>
+                                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center', width: '100%' }}>
+                                    <select
+                                      id={`select-role-${st.id}`}
+                                      defaultValue=""
+                                      style={{ ...cardInputStyle, fontSize: '11px', fontStyle: 'italic', height: '24px', padding: '2px 6px', boxSizing: 'border-box', flex: 1 }}
+                                    >
+                                      <option value="">Виберіть роль...</option>
+                                      {availableRoles.map((r, rIdx) => (
+                                        <option key={rIdx} value={r} style={{ fontStyle: 'normal' }}>
+                                          {r}
+                                        </option>
+                                      ))}
+                                    </select>
 
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const contractorEl = document.getElementById(`select-contractor-${st.id}`) as HTMLSelectElement;
+                                        const roleEl = document.getElementById(`select-role-${st.id}`) as HTMLSelectElement;
+                                        if (contractorEl && contractorEl.value) {
+                                          handleAddStageContractor(st.id, contractorEl.value, roleEl ? roleEl.value : '');
+                                          contractorEl.value = '';
+                                          if (roleEl) roleEl.value = '';
+                                        }
+                                      }}
+                                      style={{ ...compactPlusBtnStyle, width: '24px', height: '24px', boxSizing: 'border-box', flexShrink: 0 }}
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Список доданих виконавців залишається видимим (але видалення кнопочкою ✕ блокується, якщо стадія завершена) */}
                               {stageContractors.length > 0 && (
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '2px' }}>
                                   {stageContractors.map((cEntry, cIdx) => (
                                     <div key={cIdx} style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#e5e5ea', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>
                                       <span>{cEntry}</span>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleRemoveStageContractor(st.id, cEntry)}
-                                        style={{ background: 'none', border: 'none', color: '#ff3b30', cursor: 'pointer', fontSize: '10px', padding: 0 }}
-                                      >
-                                        ✕
-                                      </button>
+                                      {!isCompletedStatus && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRemoveStageContractor(st.id, cEntry)}
+                                          style={{ background: 'none', border: 'none', color: '#ff3b30', cursor: 'pointer', fontSize: '10px', padding: 0 }}
+                                        >
+                                          ✕
+                                        </button>
+                                      )}
                                     </div>
                                   ))}
                                 </div>
