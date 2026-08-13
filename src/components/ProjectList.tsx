@@ -9,6 +9,13 @@ interface ProjectListProps {
   onPermanentDelete?: (id: string) => void;
 }
 
+// Допоміжна функція для форматування дати у формат ДД.ММ
+const formatDateShort = (dateStr?: string) => {
+  if (!dateStr) return '';
+  const [y, m, d] = dateStr.split('-');
+  return `${d}.${m}`;
+};
+
 export const ProjectList: React.FC<ProjectListProps> = ({
   projects,
   onSelectProject,
@@ -87,89 +94,103 @@ export const ProjectList: React.FC<ProjectListProps> = ({
             Проєктів не знайдено.
           </div>
         ) : (
-          filteredProjects.map((p, idx) => (
-            <div
-              key={p.id || idx}
-              onClick={() => onSelectProject(p.id)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '10px 12px',
-                backgroundColor: '#f2f2f7',
-                borderRadius: '10px',
-                border: '1px solid #e5e5ea',
-                cursor: 'pointer'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div
-                  style={{
-                    width: '14px',
-                    height: '14px',
-                    borderRadius: '50%',
-                    backgroundColor: p.color || '#007aff',
-                    border: '1px solid #d1d1d6',
-                    flexShrink: 0
-                  }}
-                />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '14px', fontStyle: 'italic', color: '#1c1c1e', lineHeight: 1 }}>{p.name || 'Без назви'}</div>
-                  <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#8e8e93', lineHeight: 1 }}>ID: {p.id || 'не вказано'}</div>
-                </div>
-              </div>
+          filteredProjects.map((p, idx) => {
+            const firstStage = p.stages && p.stages[0];
+            const lastStage = p.stages && p.stages[p.stages.length - 1];
+            const startDateStr = firstStage ? firstStage.startDate : '';
+            const endDateStr = lastStage ? ((lastStage as any).reviewDate || lastStage.endDate) : '';
 
-              <div style={{ display: 'flex', gap: '6px' }} onClick={(e) => e.stopPropagation()}>
-                {filter === 'active' && (
-                  <button
-                    onClick={() => handleStatusChange(p.id, 'archived')}
-                    style={actionBtnStyle}
-                    title="Перенести в архів"
-                  >
-                    📦
-                  </button>
-                )}
-                {filter === 'archived' && (
-                  <button
-                    onClick={() => handleStatusChange(p.id, 'active')}
-                    style={actionBtnStyle}
-                    title="Відновити в активні"
-                  >
-                    ↩️
-                  </button>
-                )}
-                {filter !== 'trash' && (
-                  <button
-                    onClick={() => handleStatusChange(p.id, 'trash')}
-                    style={actionBtnStyle}
-                    title="Перенести в кошик"
-                  >
-                    🗑️
-                  </button>
-                )}
-                {filter === 'trash' && (
-                  <>
+            return (
+              <div
+                key={p.id || idx}
+                onClick={() => onSelectProject(p.id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 12px',
+                  backgroundColor: '#f2f2f7',
+                  borderRadius: '10px',
+                  border: '1px solid #e5e5ea',
+                  cursor: 'pointer'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div
+                    style={{
+                      width: '14px',
+                      height: '14px',
+                      borderRadius: '50%',
+                      backgroundColor: p.color || '#007aff',
+                      border: '1px solid #d1d1d6',
+                      flexShrink: 0
+                    }}
+                  />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '14px', fontStyle: 'italic', color: '#1c1c1e', lineHeight: 1 }}>{p.name || 'Без назви'}</div>
+                    <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#8e8e93', lineHeight: 1 }}>ID: {p.id || 'не вказано'}</div>
+                    
+                    {/* Виведення діапазону дат під ID проекту */}
+                    {(startDateStr || endDateStr) && (
+                      <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#1c1c1e', fontWeight: 'bold', lineHeight: 1, marginTop: '2px' }}>
+                        {formatDateShort(startDateStr)} {startDateStr && endDateStr ? '-' : ''} {formatDateShort(endDateStr)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '6px' }} onClick={(e) => e.stopPropagation()}>
+                  {filter === 'active' && (
+                    <button
+                      onClick={() => handleStatusChange(p.id, 'archived')}
+                      style={actionBtnStyle}
+                      title="Перенести в архів"
+                    >
+                      📦
+                    </button>
+                  )}
+                  {filter === 'archived' && (
                     <button
                       onClick={() => handleStatusChange(p.id, 'active')}
                       style={actionBtnStyle}
-                      title="Відновити"
+                      title="Відновити в активні"
                     >
                       ↩️
                     </button>
-                    {onPermanentDelete && (
+                  )}
+                  {filter !== 'trash' && (
+                    <button
+                      onClick={() => handleStatusChange(p.id, 'trash')}
+                      style={actionBtnStyle}
+                      title="Перенести в кошик"
+                    >
+                      🗑️
+                    </button>
+                  )}
+                  {filter === 'trash' && (
+                    <>
                       <button
-                        onClick={() => onPermanentDelete(p.id)}
-                        style={{ ...actionBtnStyle, color: '#ff3b30' }}
-                        title="Видалити назавжди"
+                        onClick={() => handleStatusChange(p.id, 'active')}
+                        style={actionBtnStyle}
+                        title="Відновити"
                       >
-                        ❌
+                        ↩️
                       </button>
-                    )}
-                  </>
-                )}
+                      {onPermanentDelete && (
+                        <button
+                          onClick={() => onPermanentDelete(p.id)}
+                          style={{ ...actionBtnStyle, color: '#ff3b30' }}
+                          title="Видалити назавжди"
+                        >
+                          ❌
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
