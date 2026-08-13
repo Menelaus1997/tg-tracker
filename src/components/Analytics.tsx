@@ -67,6 +67,10 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
     return false;
   });
 
+  // Динамічні назви для головного селекта типів на основі збережених налаштувань проєктів
+  const dynamicDataTitle = targetProjects.find(p => (p as any).dataTitle)?.dataTitle || 'Дані';
+  const dynamicStructureTitle = targetProjects.find(p => (p as any).structureTitle)?.structureTitle || 'Структура';
+
   // Отримуємо унікальні назви рядків паспорта (Дані)
   const availableDataFields = Array.from(
     new Set(
@@ -259,7 +263,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px', width: '100%', boxSizing: 'border-box' }}>
           <div style={{ display: 'flex', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
-            {/* Випадаючий список типів із чистими назвами без дужок */}
+            {/* Динамічні назви в селекта з урахуванням кастомних змін */}
             <select
               value={sourceType}
               onChange={(e) => {
@@ -268,8 +272,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
               }}
               style={{ ...inputStyle, flex: 1, minWidth: 0 }}
             >
-              <option value="data">Дані</option>
-              <option value="structure">Структура</option>
+              <option value="data">{dynamicDataTitle}</option>
+              <option value="structure">{dynamicStructureTitle}</option>
             </select>
 
             <select
@@ -338,7 +342,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
                 outerRadius={85} 
                 paddingAngle={4} 
                 dataKey="value"
-                // Відображення на графіку виключно ID проєкту без назви та дужок
                 label={({ projectId }) => `${projectId}`}
                 labelLine={true}
               >
