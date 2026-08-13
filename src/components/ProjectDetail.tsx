@@ -247,7 +247,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               ...r,
               label: detectedName,
               value: trimmedText,
-              enableSecondRow: false // Автоматично вимикаємо галочку, роблячи рядок однорядковим посиланням
+              enableSecondRow: false
             };
           }
         }
@@ -371,16 +371,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     triggerAutoSave({ stages: updatedStages });
   };
 
+  // Оновлена функція вибору дат без обмежень на вихідні
   const handleUpdateStageDates = (stageId: string, field: 'startDate' | 'endDate', val: string) => {
     if (!isSuperAdmin) return;
-    if (val) {
-      const dateObj = new Date(val);
-      const dayOfWeek = dateObj.getDay();
-      if (dayOfWeek === 0 || dayOfWeek === 6) {
-        alert('Вихідні (субота та неділя) не можуть бути вибрані. Будь ласка, оберіть будній день.');
-        return;
-      }
-    }
     const updatedStages = stages.map(s => s.id === stageId ? { ...s, [field]: val } : s);
     setStages(updatedStages);
     triggerAutoSave({ stages: updatedStages });
