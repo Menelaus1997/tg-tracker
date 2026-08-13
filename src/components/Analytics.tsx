@@ -24,6 +24,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
   
   const [yearIndex, setYearIndex] = useState(1);   // 2026
   const [monthIndex, setMonthIndex] = useState(7); // Серпень
+  const [weekOffset, setWeekOffset] = useState(0); // Тиждень (зміщення відносно поточного)
   
   const [sourceType, setSourceType] = useState<'data' | 'structure'>('structure');
   const [selectedItem, setSelectedItem] = useState<string>('');
@@ -36,6 +37,20 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
 
   const handlePrevMonth = () => setMonthIndex(prev => (prev > 0 ? prev - 1 : MONTHS_LIST.length - 1));
   const handleNextMonth = () => setMonthIndex(prev => (prev < MONTHS_LIST.length - 1 ? prev + 1 : 0));
+
+  const handlePrevWeek = () => setWeekOffset(prev => prev - 1);
+  const handleNextWeek = () => setWeekOffset(prev => prev + 1);
+
+  // Формування назви поточного тижня для відображення
+  const getWeekRangeLabel = (offset: number) => {
+    const now = new Date();
+    const firstDayOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 1 + offset * 7));
+    const lastDayOfWeek = new Date(firstDayOfWeek);
+    lastDayOfWeek.setDate(lastDayOfWeek.getDate() + 6);
+
+    const format = (d: Date) => `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
+    return `${format(firstDayOfWeek)} — ${format(lastDayOfWeek)}`;
+  };
 
   const currentYear = Number(YEARS_LIST[yearIndex]);
   const today = new Date();
@@ -53,6 +68,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
     return false;
   });
 
+  // Автоматичне підтягування актуальних назв заголовків (синхронізовано з проєктами)
   const availableDataFields = Array.from(
     new Set(
       targetProjects.flatMap(p => (p.passportRows || []).map(r => r.label).filter(Boolean))
@@ -70,10 +86,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
   // Аналіз команд із пошукового рядка
   const queryText = searchQuery.trim();
   const isTimeOp = queryText.includes('#') || queryText.toLowerCase().includes('⏱');
-  
-  // Перевірка на години (# 1) чи дні (# 0 або просто #)
   const isHoursMode = queryText.includes('# 1') || queryText.includes('#1');
-  
   const isPercentOp = queryText.includes('%');
   const isAverageOp = queryText.includes('&');
   
@@ -144,12 +157,10 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
             matchCount++;
             if (isTimeOp) {
               if (isHoursMode) {
-                // Якщо години — беремо зафіксовані секунди з проєкту / 3600 або стандартні 8 годин на день
                 const loggedSec = (st as any).loggedSeconds || 0;
                 const hours = loggedSec > 0 ? loggedSec / 3600 : 8; 
                 resultValue += hours;
               } else {
-                // Якщо дні (# 0 або #) — рахуємо календарні дні
                 let days = 0;
                 if (st.startDate && st.endDate) {
                   const [sY, sM, sD] = st.startDate.split('-').map(Number);
@@ -185,16 +196,16 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
     ? Number((chartData.reduce((acc, curr) => acc + curr.value, 0) / chartData.length).toFixed(1))
     : chartData.reduce((acc, curr) => acc + curr.value, 0);
 
-  // Визначення підпису для центру кола
   let centerLabel = 'Загалом';
   if (isPercentOp) centerLabel = 'Виконання';
   else if (isTimeOp) centerLabel = isHoursMode ? 'Годин загалом' : 'Днів загалом';
 
   return (
-    <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e', paddingBottom: '80px' }}>
+    <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e', paddingBottom: '80px', boxSizing: 'border-box' }}>
       
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px', backgroundColor: '#f9f9fb', padding: '12px', borderRadius: '12px', border: '1px solid #e5e5ea' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px', backgroundColor: '#f9f9fb', padding: '12px', borderRadius: '12px', border: '1px solid #e5e5ea', boxSizing: 'border-box' }}>
         
+        {/* Перемикач періодів */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: '6px' }}>
           {(['week', 'month', 'year'] as const).map(p => (
             <button
@@ -217,6 +228,16 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
           ))}
         </div>
 
+        {/* Навігація для Тижня */}
+        {period === 'week' && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '2px 0' }}>
+            <button onClick={handlePrevWeek} style={arrowBtnStyle}>◀</button>
+            <div style={selectorTextStyle}>{getWeekRangeLabel(weekOffset)}</div>
+            <button onClick={handleNextWeek} style={arrowBtnStyle}>▶</button>
+          </div>
+        )}
+
+        {/* Навігація для Року */}
         {period === 'year' && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '2px 0' }}>
             <button onClick={handlePrevYear} style={arrowBtnStyle}>◀</button>
@@ -225,6 +246,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
           </div>
         )}
 
+        {/* Навігація для Місяця */}
         {period === 'month' && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '2px 0' }}>
             <button onClick={handlePrevMonth} style={arrowBtnStyle}>◀</button>
@@ -233,24 +255,26 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
           </div>
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
-          <div style={{ display: 'flex', gap: '8px' }}>
+        {/* Фільтри та селекти з фіксованим обмеженням ширини */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px', width: '100%', boxSizing: 'border-box' }}>
+          <div style={{ display: 'flex', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
             <select
               value={sourceType}
               onChange={(e) => {
                 setSourceType(e.target.value as 'data' | 'structure');
                 setSelectedItem('');
               }}
-              style={inputStyle}
+              style={{ ...inputStyle, flex: 1, minWidth: 0 }}
             >
               <option value="data">📊 Дані (Паспорт)</option>
               <option value="structure">📑 Структура (Стадії)</option>
             </select>
 
+            {/* Суворе обмеження ширини селекта, щоб не виходив за межі знаку ? */}
             <select
               value={selectedItem}
               onChange={(e) => setSelectedItem(e.target.value)}
-              style={inputStyle}
+              style={{ ...inputStyle, flex: 1, minWidth: 0, maxWidth: 'calc(50% - 4px)' }}
             >
               <option value="">Усі заголовки</option>
               {currentOptions.map((opt, idx) => (
@@ -259,13 +283,13 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
             </select>
           </div>
 
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', width: '100%', boxSizing: 'border-box' }}>
             <input
               type="text"
               placeholder="Уточнення (# 0 — дні, # 1 — години)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ ...inputStyle, flex: 1 }}
+              style={{ ...inputStyle, flex: 1, minWidth: 0 }}
             />
             <button
               onClick={() => setShowHelp(!showHelp)}
@@ -347,7 +371,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {chartData.map((item) => (
-          <div key={item.projectId || item.name} style={{ backgroundColor: '#f2f2f7', padding: '12px 16px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
+          <div key={item.projectId || item.name} style={{ backgroundColor: '#f2f2f7', padding: '12px 16px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: item.color }} />
               <div>
