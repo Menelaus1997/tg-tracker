@@ -1346,34 +1346,36 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                   ))}
                                 </select>
 
-                                <select
-                                  id={`select-role-${st.id}`}
-                                  defaultValue=""
-                                  style={{ ...cardInputStyle, fontSize: '12px', height: '28px', padding: '2px 8px', boxSizing: 'border-box', flex: 1 }}
-                                >
-                                  <option value="">Виберіть роль...</option>
-                                  {availableRoles.map((r, rIdx) => (
-                                    <option key={rIdx} value={r}>
-                                      {r}
-                                    </option>
-                                  ))}
-                                </select>
+                                <div style={{ display: 'flex', gap: '6px', flex: 1, alignItems: 'center' }}>
+                                  <select
+                                    id={`select-role-${st.id}`}
+                                    defaultValue=""
+                                    style={{ ...cardInputStyle, fontSize: '12px', height: '28px', padding: '2px 8px', boxSizing: 'border-box', flex: 1 }}
+                                  >
+                                    <option value="">Виберіть роль...</option>
+                                    {availableRoles.map((r, rIdx) => (
+                                      <option key={rIdx} value={r}>
+                                        {r}
+                                      </option>
+                                    ))}
+                                  </select>
 
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const contractorEl = document.getElementById(`select-contractor-${st.id}`) as HTMLSelectElement;
-                                    const roleEl = document.getElementById(`select-role-${st.id}`) as HTMLSelectElement;
-                                    if (contractorEl && contractorEl.value) {
-                                      handleAddStageContractor(st.id, contractorEl.value, roleEl ? roleEl.value : '');
-                                      contractorEl.value = '';
-                                      if (roleEl) roleEl.value = '';
-                                    }
-                                  }}
-                                  style={{ ...compactPlusBtnStyle, width: '28px', height: '28px', boxSizing: 'border-box' }}
-                                >
-                                  +
-                                </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const contractorEl = document.getElementById(`select-contractor-${st.id}`) as HTMLSelectElement;
+                                      const roleEl = document.getElementById(`select-role-${st.id}`) as HTMLSelectElement;
+                                      if (contractorEl && contractorEl.value) {
+                                        handleAddStageContractor(st.id, contractorEl.value, roleEl ? roleEl.value : '');
+                                        contractorEl.value = '';
+                                        if (roleEl) roleEl.value = '';
+                                      }
+                                    }}
+                                    style={{ ...compactPlusBtnStyle, width: '28px', height: '28px', boxSizing: 'border-box', flexShrink: 0 }}
+                                  >
+                                    +
+                                  </button>
+                                </div>
                               </div>
 
                               {stageContractors.length > 0 && (
