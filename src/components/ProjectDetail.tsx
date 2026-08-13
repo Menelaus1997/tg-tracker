@@ -65,6 +65,12 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [name, setName] = useState(project.name);
   const [projectId, setProjectId] = useState(project.id);
   
+  // Кастомізація назв заголовків блоків
+  const [tagsTitle, setTagsTitle] = useState((project as any).tagsTitle || 'Теги');
+  const [dataTitle, setDataTitle] = useState((project as any).dataTitle || 'Дані');
+  const [structureTitle, setStructureTitle] = useState((project as any).structureTitle || 'Структура');
+  const [settingsTitle, setSettingsTitle] = useState((project as any).settingsTitle || 'Налаштування');
+
   const [enableRoles, setEnableRoles] = useState<boolean>(
     (project as any).enableRoles ?? (project as any).enableTeamRoles ?? true
   );
@@ -137,6 +143,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       enableTimeTracking,
       enableStructure: true,
       customStatuses: statuses,
+      tagsTitle,
+      dataTitle,
+      structureTitle,
+      settingsTitle,
       ...overrides
     } as any;
 
@@ -547,7 +557,11 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       enableData,
       enableTimeTracking,
       enableStructure: true,
-      customStatuses: statuses
+      customStatuses: statuses,
+      tagsTitle,
+      dataTitle,
+      structureTitle,
+      settingsTitle
     } as any;
 
     onUpdateProject(updatedProject);
@@ -713,11 +727,23 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       {isSuperAdmin && enableTags && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
           <div 
-            onClick={() => setIsTagsOpen(!isTagsOpen)}
-            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: isTagsOpen ? '10px' : 0 }}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: isTagsOpen ? '10px' : 0 }}
           >
-            <span style={{ fontSize: '12px', color: '#8e8e93' }}>{isTagsOpen ? '▲' : '▼'}</span>
-            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>Теги</h3>
+            <span 
+              onClick={() => setIsTagsOpen(!isTagsOpen)} 
+              style={{ fontSize: '12px', color: '#8e8e93', cursor: 'pointer', userSelect: 'none' }}
+            >
+              {isTagsOpen ? '▲' : '▼'}
+            </span>
+            <input
+              type="text"
+              value={tagsTitle}
+              onChange={(e) => {
+                setTagsTitle(e.target.value);
+                triggerAutoSave({ tagsTitle: e.target.value });
+              }}
+              style={{ ...inlineTitleInputStyle, fontSize: '15px', fontWeight: 700, flex: 1, padding: 0 }}
+            />
           </div>
 
           {isTagsOpen && (
@@ -879,11 +905,23 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       {isSuperAdmin && enableData && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
           <div 
-            onClick={() => setIsGeneralDataOpen(!isGeneralDataOpen)}
-            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            <span style={{ fontSize: '12px', color: '#8e8e93' }}>{isGeneralDataOpen ? '▲' : '▼'}</span>
-            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>Дані</h3>
+            <span 
+              onClick={() => setIsGeneralDataOpen(!isGeneralDataOpen)}
+              style={{ fontSize: '12px', color: '#8e8e93', cursor: 'pointer', userSelect: 'none' }}
+            >
+              {isGeneralDataOpen ? '▲' : '▼'}
+            </span>
+            <input
+              type="text"
+              value={dataTitle}
+              onChange={(e) => {
+                setDataTitle(e.target.value);
+                triggerAutoSave({ dataTitle: e.target.value });
+              }}
+              style={{ ...inlineTitleInputStyle, fontSize: '15px', fontWeight: 700, flex: 1, padding: 0 }}
+            />
           </div>
 
           {isGeneralDataOpen && (
@@ -966,12 +1004,24 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       {/* Блок "Структура" */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
         <div 
-          onClick={() => setIsStructureOpen(!isStructureOpen)}
-          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isStructureOpen ? '12px' : 0 }}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isStructureOpen ? '12px' : 0 }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '12px', color: '#8e8e93' }}>{isStructureOpen ? '▲' : '▼'}</span>
-            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>Структура</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
+            <span 
+              onClick={() => setIsStructureOpen(!isStructureOpen)}
+              style={{ fontSize: '12px', color: '#8e8e93', cursor: 'pointer', userSelect: 'none' }}
+            >
+              {isStructureOpen ? '▲' : '▼'}
+            </span>
+            <input
+              type="text"
+              value={structureTitle}
+              onChange={(e) => {
+                setStructureTitle(e.target.value);
+                triggerAutoSave({ structureTitle: e.target.value });
+              }}
+              style={{ ...inlineTitleInputStyle, fontSize: '15px', fontWeight: 700, flex: 1, padding: 0 }}
+            />
           </div>
 
           {finalProjectDeadline && (
@@ -1332,11 +1382,12 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
                           {isSuperAdmin && enableRoles && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px' }}>
-                              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                              {/* Ідеально вирівняна сітка 50/50 під датами */}
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', alignItems: 'center' }}>
                                 <select
                                   id={`select-contractor-${st.id}`}
                                   defaultValue=""
-                                  style={{ ...cardInputStyle, fontSize: '12px', height: '28px', padding: '2px 8px', boxSizing: 'border-box', flex: 1 }}
+                                  style={{ ...cardInputStyle, fontSize: '12px', height: '28px', padding: '2px 8px', boxSizing: 'border-box', width: '100%' }}
                                 >
                                   <option value="">Виберіть виконавця...</option>
                                   {teamDatabase.map(m => (
@@ -1346,7 +1397,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                   ))}
                                 </select>
 
-                                <div style={{ display: 'flex', gap: '6px', flex: 1, alignItems: 'center' }}>
+                                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', width: '100%' }}>
                                   <select
                                     id={`select-role-${st.id}`}
                                     defaultValue=""
@@ -1413,11 +1464,23 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       {isSuperAdmin && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
           <div 
-            onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: isSettingsOpen ? '12px' : 0 }}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: isSettingsOpen ? '12px' : 0 }}
           >
-            <span style={{ fontSize: '12px', color: '#8e8e93' }}>{isSettingsOpen ? '▲' : '▼'}</span>
-            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>Налаштування</h3>
+            <span 
+              onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+              style={{ fontSize: '12px', color: '#8e8e93', cursor: 'pointer', userSelect: 'none' }}
+            >
+              {isSettingsOpen ? '▲' : '▼'}
+            </span>
+            <input
+              type="text"
+              value={settingsTitle}
+              onChange={(e) => {
+                setSettingsTitle(e.target.value);
+                triggerAutoSave({ settingsTitle: e.target.value });
+              }}
+              style={{ ...inlineTitleInputStyle, fontSize: '15px', fontWeight: 700, flex: 1, padding: 0 }}
+            />
           </div>
 
           {isSettingsOpen && (
