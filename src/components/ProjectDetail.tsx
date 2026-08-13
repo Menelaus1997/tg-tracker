@@ -70,6 +70,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   );
   const [enableTags, setEnableTags] = useState<boolean>((project as any).enableTags ?? true);
   const [enableData, setEnableData] = useState<boolean>((project as any).enableData ?? true);
+  const [enableTimeTracking, setEnableTimeTracking] = useState<boolean>((project as any).enableTimeTracking ?? true);
 
   const [statuses, setStatuses] = useState<ProjectStatus[]>(
     (project.customStatuses || DEFAULT_STATUSES).map((s: any) => ({
@@ -114,13 +115,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [manualHours, setManualHours] = useState('0');
   const [manualMinutes, setManualMinutes] = useState('0');
 
-  const [isTeamOpen, setIsTeamOpen] = useState(true);
-  const [projectTeam, setProjectTeam] = useState<{ id: string; memberId: string; role: string }[]>(
-    project.projectTeam || []
-  );
-  const [selectedMemberId, setSelectedMemberId] = useState(teamDatabase[0]?.id || '');
-  const [selectedProjectRole, setSelectedProjectRole] = useState(availableRoles[0] || 'Draftsman');
-
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const [templateNameInput, setTemplateNameInput] = useState(project.name);
 
@@ -134,11 +128,11 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       color: colors[selectedColorIndex],
       passportRows: generalRows,
       stages,
-      projectTeam,
       enableRoles,
       enableTeamRoles: enableRoles,
       enableTags,
       enableData,
+      enableTimeTracking,
       enableStructure: true,
       customStatuses: statuses,
       ...overrides
@@ -536,21 +530,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     triggerAutoSave({ stages: updatedStages });
   };
 
-  const handleAddProjectMember = () => {
-    if (!selectedMemberId || !isSuperAdmin) return;
-    const newEntry = { id: Date.now().toString(), memberId: selectedMemberId, role: selectedProjectRole };
-    const updatedTeam = [...projectTeam, newEntry];
-    setProjectTeam(updatedTeam);
-    triggerAutoSave({ projectTeam: updatedTeam });
-  };
-
-  const handleRemoveProjectMember = (id: string) => {
-    if (!isSuperAdmin) return;
-    const updatedTeam = projectTeam.filter(m => m.id !== id);
-    setProjectTeam(updatedTeam);
-    triggerAutoSave({ projectTeam: updatedTeam });
-  };
-
   const handleFinalSave = () => {
     const updatedProject: Project = {
       ...project,
@@ -559,11 +538,11 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       color: colors[selectedColorIndex],
       passportRows: generalRows,
       stages,
-      projectTeam,
       enableRoles,
       enableTeamRoles: enableRoles,
       enableTags,
       enableData,
+      enableTimeTracking,
       enableStructure: true,
       customStatuses: statuses
     } as any;
@@ -644,10 +623,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               <input
                 type="text"
                 value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  triggerAutoSave({ name: e.target.value.trim() });
-                }}
+                onChange={(e) => setName(e.target.value)}
+                onBlur={(e) => triggerAutoSave({ name: e.target.value.trim() })}
                 style={cardInputStyle}
               />
             </div>
@@ -657,16 +634,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               <input
                 type="text"
                 value={projectId}
-                onChange={(e) => {
-                  const newId = e.target.value;
-                  setProjectId(newId);
-                  triggerAutoSave({ id: newId.trim() });
-                }}
+                onChange={(e) => setProjectId(e.target.value)}
+                onBlur={(e) => triggerAutoSave({ id: e.target.value.trim() })}
                 style={cardInputStyle}
               />
             </div>
 
-            {/* Вибір кольору в один компактний рядок (8 кружечків + 9й з плюсиком для вибору) */}
+            {/* Вибір кольору в один компактний рядок */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '4px', marginTop: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
               {colors.slice(0, 8).map((c, idx) => {
                 const isSelected = selectedColorIndex === idx;
@@ -695,7 +669,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 );
               })}
 
-              {/* 9-й елемент: Кнопка з плюсиком для вибору власного кольору */}
               <label
                 style={{
                   width: '26px',
@@ -1081,7 +1054,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       </div>
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        {enableRoles && isTrackTimeOn && (
+                        {enableRoles && enableTimeTracking && isTrackTimeOn && (
                           <>
                             <button
                               onClick={() => handleToggleStageTimer(st.id)}
@@ -1132,7 +1105,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     {!isCollapsed && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #e5e5ea' }}>
                         
-                        {enableRoles && (
+                        {enableRoles && enableTimeTracking && (
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
                             <span>Облік часу</span>
                             <div style={{ width: '38px', display: 'flex', justifyContent: 'center', transform: 'translateX(1px)' }}>
@@ -1353,15 +1326,11 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                   style={{ ...cardInputStyle, fontSize: '12px', height: '28px', padding: '2px 8px', boxSizing: 'border-box', flex: 1 }}
                                 >
                                   <option value="">Виберіть виконавця...</option>
-                                  {projectTeam.map(pt => {
-                                    const member = teamDatabase.find(m => m.id === pt.memberId);
-                                    const nameStr = `${member?.fullName || 'Учасник'} (${pt.role})`;
-                                    return (
-                                      <option key={pt.id} value={member?.fullName || ''}>
-                                        {nameStr}
-                                      </option>
-                                    );
-                                  })}
+                                  {teamDatabase.map(m => (
+                                    <option key={m.id} value={m.fullName}>
+                                      {m.fullName}
+                                    </option>
+                                  ))}
                                 </select>
                                 <button
                                   type="button"
@@ -1409,68 +1378,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* Блок "Команда" */}
-      {isSuperAdmin && enableRoles && (
-        <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
-          <div 
-            onClick={() => setIsTeamOpen(!isTeamOpen)}
-            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: isTeamOpen ? '10px' : 0 }}
-          >
-            <span style={{ fontSize: '12px', color: '#8e8e93' }}>{isTeamOpen ? '▲' : '▼'}</span>
-            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>Команда</h3>
-          </div>
-
-          {isTeamOpen && (
-            <>
-              <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', alignItems: 'center' }}>
-                <select
-                  value={selectedMemberId}
-                  onChange={(e) => setSelectedMemberId(e.target.value)}
-                  style={{ ...cardInputStyle, flex: 1, fontSize: '12px', height: '28px', padding: '2px 8px', boxSizing: 'border-box' }}
-                >
-                  {teamDatabase.length === 0 && <option value="">Немає учасників в базі</option>}
-                  {teamDatabase.map((m) => (
-                    <option key={m.id} value={m.id}>{m.fullName}</option>
-                  ))}
-                </select>
-
-                <select
-                  value={selectedProjectRole}
-                  onChange={(e) => setSelectedProjectRole(e.target.value)}
-                  style={{ ...cardInputStyle, flex: 1, fontSize: '12px', height: '28px', padding: '2px 8px', boxSizing: 'border-box' }}
-                >
-                  {availableRoles.map((r) => (
-                    <option key={r} value={r}>{r}</option>
-                  ))}
-                </select>
-
-                <button 
-                  onClick={handleAddProjectMember} 
-                  style={{ ...compactPlusBtnStyle, width: '28px', height: '28px', boxSizing: 'border-box' }}
-                >
-                  +
-                </button>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {projectTeam.map((pt) => {
-                  const member = teamDatabase.find(m => m.id === pt.memberId);
-                  return (
-                    <div key={pt.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', backgroundColor: '#ffffff', borderRadius: '8px', fontSize: '13px', border: '1px solid #e5e5ea' }}>
-                      <span><strong>{member?.fullName || 'Учасник'}</strong> ({pt.role})</span>
-                      <div style={{ width: '38px', display: 'flex', justifyContent: 'center', transform: 'translateX(1px)' }}>
-                        <button onClick={() => handleRemoveProjectMember(pt.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}>🗑️</button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* --- Група Перемикачів перед блоком збереження --- */}
+      {/* --- Група Перемикачів (Налаштування проєкту) --- */}
       {isSuperAdmin && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
           
@@ -1567,6 +1475,39 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   position: 'absolute',
                   top: '2px',
                   left: enableData ? '16px' : '2px',
+                  transition: 'left 0.2s'
+                }}
+              />
+            </div>
+          </div>
+
+          <div style={{ backgroundColor: '#f2f2f7', padding: '12px 14px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: '#1c1c1e' }}>Облік часу</span>
+            <div
+              onClick={() => {
+                const nextVal = !enableTimeTracking;
+                setEnableTimeTracking(nextVal);
+                triggerAutoSave({ enableTimeTracking: nextVal });
+              }}
+              style={{
+                width: '34px',
+                height: '20px',
+                borderRadius: '10px',
+                backgroundColor: enableTimeTracking ? '#34c759' : '#e5e5ea',
+                position: 'relative',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s'
+              }}
+            >
+              <div
+                style={{
+                  width: '16px',
+                  height: '16px',
+                  borderRadius: '50%',
+                  backgroundColor: '#fff',
+                  position: 'absolute',
+                  top: '2px',
+                  left: enableTimeTracking ? '16px' : '2px',
                   transition: 'left 0.2s'
                 }}
               />
