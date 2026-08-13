@@ -130,9 +130,25 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                     <div style={{ fontWeight: 'bold', fontSize: '14px', fontStyle: 'italic', color: '#1c1c1e', lineHeight: 1 }}>{p.name || 'Без назви'}</div>
                     <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#8e8e93', lineHeight: 1 }}>ID: {p.id || 'не вказано'}</div>
                     
-                    {/* Виведення діапазону дат під ID проекту */}
+                    {/* Дата у закругленому прямокутнику на 3 тони світлішому за фон (#f2f2f7 -> #ffffff) */}
                     {(startDateStr || endDateStr) && (
-                      <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#1c1c1e', fontWeight: 'bold', lineHeight: 1, marginTop: '2px' }}>
+                      <div
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #e5e5ea',
+                          borderRadius: '6px',
+                          padding: '2px 6px',
+                          fontSize: '11px',
+                          fontStyle: 'italic',
+                          color: '#1c1c1e',
+                          fontWeight: 'bold',
+                          marginTop: '3px',
+                          width: 'fit-content',
+                          lineHeight: 1
+                        }}
+                      >
                         {formatDateShort(startDateStr)} {startDateStr && endDateStr ? '-' : ''} {formatDateShort(endDateStr)}
                       </div>
                     )}
