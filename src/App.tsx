@@ -56,7 +56,6 @@ export interface Project {
   passportRows?: any[];
   totalLoggedSeconds?: number;
   projectTeam?: any[];
-  // Додано підтримку кастомних назв заголовків, щоб вони успішно зберігалися та підтягувались в аналітику
   structureTitle?: string;
   tagsTitle?: string;
   dataTitle?: string;
@@ -109,7 +108,7 @@ export const App: React.FC = () => {
 
   const [botToken, setBotToken] = useState<string>(() => localStorage.getItem('app_bot_token') || '');
   const [groupId, setGroupId] = useState<string>(() => localStorage.getItem('app_group_id') || '');
-  const [fontFamily, setFontFamily] = useState<string>(() => localStorage.getItem('app_font') || 'system-ui');
+  const [fontFamily, setFontFamily] = useState<string>(() => localStorage.getItem('app_font') || "'SF Pro Condensed', -apple-system, sans-serif");
 
   const [adminCredentials, setAdminCredentials] = useState(() => {
     const saved = localStorage.getItem('app_admin_credentials');
