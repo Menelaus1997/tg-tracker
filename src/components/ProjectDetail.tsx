@@ -221,7 +221,24 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   };
 
   const handleUpdateGeneralRow = (id: string, field: 'label' | 'value' | 'enableSecondRow', text: any) => {
-    const updated = generalRows.map(r => r.id === id ? { ...r, [field]: text } : r);
+    const updated = generalRows.map(r => {
+      if (r.id === id) {
+        if (field === 'label') {
+          const trimmedText = typeof text === 'string' ? text.trim() : text;
+          // Авторозпізнавання посилань
+          if (trimmedText.startsWith('http://') || trimmedText.startsWith('https://')) {
+            return {
+              ...r,
+              label: 'Посилання на проєкт',
+              value: trimmedText,
+              enableSecondRow: true
+            };
+          }
+        }
+        return { ...r, [field]: text };
+      }
+      return r;
+    });
     setGeneralRows(updated);
     triggerAutoSave({ passportRows: updated });
   };
@@ -945,7 +962,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   style={{ display: 'flex', gap: '6px', alignItems: 'center', cursor: isSuperAdmin ? 'grab' : 'default' }}
                 >
                   <textarea
-                    placeholder="Назва рядка"
+                    placeholder="Назва рядка або вставте посилання"
                     value={r.label || ''}
                     onChange={(e) => handleUpdateGeneralRow(r.id, 'label', e.target.value)}
                     disabled={!isSuperAdmin}
