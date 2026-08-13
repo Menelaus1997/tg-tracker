@@ -622,7 +622,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     return `${d}.${m}`;
   };
 
+  const firstStage = stages[0];
   const lastStage = stages[stages.length - 1];
+  const projectStartDate = firstStage ? firstStage.startDate : '';
   const finalProjectDeadline = lastStage ? ((lastStage as any).reviewDate || lastStage.endDate) : '';
 
   const dateBoxStyle: React.CSSProperties = {
@@ -1093,9 +1095,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             />
           </div>
 
-          {showDates && finalProjectDeadline && (
+          {/* Виведення дати початку та дедлайну проекту біля назви Структура */}
+          {showDates && (projectStartDate || finalProjectDeadline) && (
             <div style={dateBoxStyle}>
-              📅 {formatDateShort(finalProjectDeadline)}
+              📅 {formatDateShort(projectStartDate)} {projectStartDate && finalProjectDeadline ? '-' : ''} {formatDateShort(finalProjectDeadline)}
             </div>
           )}
         </div>
@@ -1479,7 +1482,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           {isSuperAdmin && enableRoles && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
                               
-                              {/* Селектори для додавання нових виконавців приховуємо, якщо стадія завершена */}
                               {!isCompletedStatus && (
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', alignItems: 'center' }}>
                                   <select
@@ -1528,7 +1530,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                 </div>
                               )}
 
-                              {/* Список доданих виконавців залишається видимим (але видалення кнопочкою ✕ блокується, якщо стадія завершена) */}
                               {stageContractors.length > 0 && (
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '2px' }}>
                                   {stageContractors.map((cEntry, cIdx) => (
@@ -1920,7 +1921,7 @@ const labelStyle: React.CSSProperties = {
   color: '#636366',
   marginBottom: '2px',
   display: 'block',
-  lineHeight: 1,
+  LineHeight: 1,
   fontStyle: 'italic'
 };
 
