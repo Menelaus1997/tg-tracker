@@ -124,7 +124,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const triggerAutoSave = (overrides: Partial<Project> = {}) => {
     const updatedProject: Project = {
       ...project,
-      // Гарантуємо унікальний ідентифікатор щоб проєкти не зливалися в один
       id: projectId.trim() || project.id,
       name: name.trim(),
       color: projectColor,
@@ -1127,44 +1126,56 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 const currentStageStatusLabel = (st as any).currentStatus || statuses[0]?.label || 'В процесі';
                 const currentStatusObj = statuses.find(s => s.label === currentStageStatusLabel) || statuses[0];
 
+                // Перевірка чи стадія завершена (блокування)
+                const isCompletedStatus = currentStageStatusLabel.toLowerCase().includes('завершено');
+
                 const deadlineDateStr = (st as any).reviewDate || st.endDate;
 
                 return (
-                  <div key={st.id} style={{ backgroundColor: '#ffffff', padding: '10px', borderRadius: '8px', border: '1px solid #e5e5ea' }}>
+                  <div key={st.id} style={{ backgroundColor: '#ffffff', padding: '10px', borderRadius: '8px', border: '1px solid #e5e5ea', opacity: isCompletedStatus ? 0.85 : 1 }}>
                     
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                      {showDates && deadlineDateStr && (
-                        <div style={dateBoxStyle}>
-                          📅 {formatDateShort(deadlineDateStr)}
-                        </div>
-                      )}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {showDates && deadlineDateStr && (
+                          <div style={dateBoxStyle}>
+                            📅 {formatDateShort(deadlineDateStr)}
+                          </div>
+                        )}
 
-                      {showStageTags && (
-                        <select 
-                          value={currentStageStatusLabel}
-                          onChange={(e) => handleUpdateStageStatus(st.id, e.target.value)}
-                          style={{ 
-                            height: '24px',
-                            boxSizing: 'border-box',
-                            border: 'none', 
-                            borderRadius: '12px', 
-                            padding: '0 8px', 
-                            fontSize: '12px', 
-                            fontWeight: 'bold',
-                            fontStyle: 'italic',
-                            backgroundColor: currentStatusObj?.color || '#8e8e93',
-                            color: '#000000',
-                            cursor: 'pointer',
-                            outline: 'none',
-                            lineHeight: 1
-                          }}
-                        >
-                          {statuses.map(s => (
-                            <option key={s.id} value={s.label} style={{ backgroundColor: '#fff', color: '#000000', fontStyle: 'normal' }}>
-                              {s.label}
-                            </option>
-                          ))}
-                        </select>
+                        {showStageTags && (
+                          <select 
+                            value={currentStageStatusLabel}
+                            onChange={(e) => handleUpdateStageStatus(st.id, e.target.value)}
+                            style={{ 
+                              height: '24px',
+                              boxSizing: 'border-box',
+                              border: 'none', 
+                              borderRadius: '12px', 
+                              padding: '0 8px', 
+                              fontSize: '12px', 
+                              fontWeight: 'bold',
+                              fontStyle: 'italic',
+                              backgroundColor: currentStatusObj?.color || '#8e8e93',
+                              color: '#000000',
+                              cursor: 'pointer',
+                              outline: 'none',
+                              lineHeight: 1
+                            }}
+                          >
+                            {statuses.map(s => (
+                              <option key={s.id} value={s.label} style={{ backgroundColor: '#fff', color: '#000000', fontStyle: 'normal' }}>
+                                {s.label}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+
+                      {/* Символ замка з правого боку коли статус Завершено */}
+                      {isCompletedStatus && (
+                        <div title="Стадія заблокована (змінити статус для розблокування)" style={{ fontSize: '14px', lineHeight: 1, paddingRight: '4px' }}>
+                          🔒
+                        </div>
                       )}
                     </div>
 
@@ -1177,7 +1188,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           {isCollapsed ? '▼' : '▲'}
                         </span>
 
-                        {isSuperAdmin ? (
+                        {isSuperAdmin && !isCompletedStatus ? (
                           <input
                             type="text"
                             value={st.title}
@@ -1190,7 +1201,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       </div>
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        {enableRoles && enableTimeTracking && isTrackTimeOn && (
+                        {enableRoles && enableTimeTracking && isTrackTimeOn && !isCompletedStatus && (
                           <>
                             <button
                               onClick={() => handleToggleStageTimer(st.id)}
@@ -1218,7 +1229,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           </>
                         )}
 
-                        {isSuperAdmin && (
+                        {isSuperAdmin && !isCompletedStatus && (
                           <div style={{ width: '32px', display: 'flex', justifyContent: 'center' }}>
                             <button onClick={() => handleDeleteStage(st.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '11px' }}>
                               🗑️
@@ -1228,7 +1239,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       </div>
                     </div>
 
-                    {editingTimeStageId === st.id && (
+                    {editingTimeStageId === st.id && !isCompletedStatus && (
                       <div style={{ display: 'flex', gap: '4px', alignItems: 'center', marginBottom: '6px', padding: '4px', backgroundColor: '#f2f2f7', borderRadius: '6px', fontSize: '11px' }}>
                         <span>Годин:</span>
                         <input type="number" value={manualHours} onChange={(e) => setManualHours(e.target.value)} style={{ ...cardInputStyle, width: '40px', padding: '2px 4px', height: '24px', boxSizing: 'border-box', fontSize: '11px', fontStyle: 'italic' }} />
@@ -1246,14 +1257,16 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                             <span>Облік часу</span>
                             <div style={{ width: '32px', display: 'flex', justifyContent: 'center' }}>
                               <div
-                                onClick={() => handleToggleStageTrackTime(st.id)}
+                                onClick={() => {
+                                  if (!isCompletedStatus) handleToggleStageTrackTime(st.id);
+                                }}
                                 style={{
                                   width: '30px',
                                   height: '16px',
                                   borderRadius: '8px',
                                   backgroundColor: isTrackTimeOn ? '#34c759' : '#e5e5ea',
                                   position: 'relative',
-                                  cursor: 'pointer'
+                                  cursor: isCompletedStatus ? 'default' : 'pointer'
                                 }}
                               >
                                 <div
@@ -1284,7 +1297,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11px' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1 }}>
                                     
-                                    {canManageSubtasks && enableSubtaskMoving && (
+                                    {canManageSubtasks && enableSubtaskMoving && !isCompletedStatus && (
                                       <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', marginRight: '2px' }}>
                                         <button 
                                           onClick={() => handleMoveSubStage(st.id, idx, 'up')}
@@ -1315,15 +1328,16 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                     <input
                                       type="checkbox"
                                       checked={sub.completed}
+                                      disabled={isCompletedStatus}
                                       onChange={() => handleToggleSubStage(st.id, sub.id)}
-                                      style={{ width: '12px', height: '12px' }}
+                                      style={{ width: '12px', height: '12px', cursor: isCompletedStatus ? 'default' : 'pointer' }}
                                     />
                                     <span style={{ color: '#1c1c1e', userSelect: 'none', minWidth: '14px', fontStyle: 'italic' }}>{idx + 1}.</span>
 
                                     <input
                                       type="text"
                                       value={sub.title}
-                                      disabled={!canManageSubtasks}
+                                      disabled={!canManageSubtasks || isCompletedStatus}
                                       onChange={(e) => handleUpdateSubStageTitle(st.id, sub.id, e.target.value)}
                                       style={{
                                         ...inlineTitleInputStyle,
@@ -1335,7 +1349,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                     />
                                   </div>
 
-                                  {canManageSubtasks && (
+                                  {canManageSubtasks && !isCompletedStatus && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                       {enableNestedItems && (
                                         <button 
@@ -1363,7 +1377,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                       <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11px' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1 }}>
                                           
-                                          {canManageSubtasks && enableSubtaskMoving && (
+                                          {canManageSubtasks && enableSubtaskMoving && !isCompletedStatus && (
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', marginRight: '2px' }}>
                                               <button 
                                                 onClick={() => handleMoveNestedItem(st.id, sub.id, itemIdx, 'up')}
@@ -1385,6 +1399,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                           <input
                                             type="checkbox"
                                             checked={item.completed}
+                                            disabled={isCompletedStatus}
                                             onChange={() => handleToggleNestedItem(st.id, sub.id, item.id)}
                                             style={{ width: '12px', height: '12px' }}
                                           />
@@ -1393,7 +1408,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                           <input
                                             type="text"
                                             value={item.title}
-                                            disabled={!canManageSubtasks}
+                                            disabled={!canManageSubtasks || isCompletedStatus}
                                             onChange={(e) => handleUpdateNestedItemTitle(st.id, sub.id, item.id, e.target.value)}
                                             style={{
                                               ...inlineTitleInputStyle,
@@ -1405,7 +1420,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                           />
                                         </div>
 
-                                        {canManageSubtasks && (
+                                        {canManageSubtasks && !isCompletedStatus && (
                                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                             <div style={{ width: '20px' }} />
                                             <div style={{ width: '24px', display: 'flex', justifyContent: 'center' }}>
@@ -1422,7 +1437,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           })}
                         </div>
 
-                        {canManageSubtasks && (
+                        {canManageSubtasks && !isCompletedStatus && (
                           <div style={{ display: 'flex', gap: '6px', marginTop: '6px', alignItems: 'center' }}>
                             <input
                               type="text"
@@ -1446,6 +1461,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                 <input
                                   type="date"
                                   title="Дата початку"
+                                  disabled={isCompletedStatus}
                                   value={st.startDate || ''}
                                   onChange={(e) => handleUpdateStageDates(st.id, 'startDate', e.target.value)}
                                   style={{ ...cardInputStyle, flex: 1, padding: '2px 4px', fontSize: '11px', fontStyle: 'italic', height: '24px', boxSizing: 'border-box' }}
@@ -1453,6 +1469,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                 <input
                                   type="date"
                                   title="Дедлайн"
+                                  disabled={isCompletedStatus}
                                   value={(st as any).reviewDate || st.endDate || ''}
                                   onChange={(e) => handleUpdateStageDates(st.id, 'endDate', e.target.value)}
                                   style={{ ...cardInputStyle, flex: 1, padding: '2px 4px', fontSize: '11px', fontStyle: 'italic', height: '24px', boxSizing: 'border-box' }}
@@ -1461,7 +1478,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                             </div>
                           )}
 
-                          {isSuperAdmin && enableRoles && (
+                          {isSuperAdmin && enableRoles && !isCompletedStatus && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
                               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', alignItems: 'center' }}>
                                 <select
