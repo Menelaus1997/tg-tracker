@@ -638,7 +638,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ fontSize: '10px', color: '#8e8e93' }}>{isHeaderOpen ? '▲' : '▼'}</span>
-            <h3 style={{ margin: 0, fontSize: '12px', fontWeight: 380, lineHeight: 1 }}>{name || 'Без назви'}</h3>
+            <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 'bold', fontStyle: 'italic', lineHeight: 1 }}>{name || 'Без назви'}</h3>
           </div>
         </div>
 
@@ -746,7 +746,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 setTagsTitle(e.target.value);
                 triggerAutoSave({ tagsTitle: e.target.value });
               }}
-              style={{ ...inlineTitleInputStyle, fontSize: '12px', fontWeight: 380, flex: 1, padding: 0 }}
+              style={{ ...inlineTitleInputStyle, fontSize: '14px', fontWeight: 'bold', fontStyle: 'italic', flex: 1, padding: 0 }}
             />
           </div>
 
@@ -922,7 +922,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 setDataTitle(e.target.value);
                 triggerAutoSave({ dataTitle: e.target.value });
               }}
-              style={{ ...inlineTitleInputStyle, fontSize: '12px', fontWeight: 380, flex: 1, padding: 0 }}
+              style={{ ...inlineTitleInputStyle, fontSize: '14px', fontWeight: 'bold', fontStyle: 'italic', flex: 1, padding: 0 }}
             />
           </div>
 
@@ -1022,7 +1022,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 setStructureTitle(e.target.value);
                 triggerAutoSave({ structureTitle: e.target.value });
               }}
-              style={{ ...inlineTitleInputStyle, fontSize: '12px', fontWeight: 380, flex: 1, padding: 0 }}
+              style={{ ...inlineTitleInputStyle, fontSize: '14px', fontWeight: 'bold', fontStyle: 'italic', flex: 1, padding: 0 }}
             />
           </div>
 
@@ -1111,10 +1111,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                             type="text"
                             value={st.title}
                             onChange={(e) => handleUpdateStageTitle(st.id, e.target.value)}
-                            style={{ ...inlineTitleInputStyle, fontSize: '11px' }}
+                            style={{ ...inlineTitleInputStyle, fontSize: '14px', fontWeight: 'bold', fontStyle: 'italic' }}
                           />
                         ) : (
-                          <span style={{ fontSize: '11px', fontWeight: 380, color: '#1c1c1e' }}>{st.title}</span>
+                          <span style={{ fontSize: '14px', fontWeight: 'bold', fontStyle: 'italic', color: '#1c1c1e' }}>{st.title}</span>
                         )}
                       </div>
 
@@ -1484,7 +1484,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 setSettingsTitle(e.target.value);
                 triggerAutoSave({ settingsTitle: e.target.value });
               }}
-              style={{ ...inlineTitleInputStyle, fontSize: '12px', fontWeight: 380, flex: 1, padding: 0 }}
+              style={{ ...inlineTitleInputStyle, fontSize: '14px', fontWeight: 'bold', fontStyle: 'italic', flex: 1, padding: 0 }}
             />
           </div>
 
@@ -1745,8 +1745,9 @@ const inlineTitleInputStyle: React.CSSProperties = {
   width: '100%',
   border: 'none',
   background: 'transparent',
-  fontSize: '11px',
-  fontWeight: 380,
+  fontSize: '14px',
+  fontWeight: 'bold',
+  fontStyle: 'italic',
   color: '#1c1c1e',
   outline: 'none',
   padding: '2px 0',
