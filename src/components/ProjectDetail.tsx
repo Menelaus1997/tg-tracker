@@ -623,12 +623,12 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const remainingTags = statuses.slice(1);
 
   return (
-    <div style={{ padding: '16px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e', paddingBottom: '80px', fontFamily: "'SF Pro Condensed', -apple-system, sans-serif", fontSize: '11px', fontStyle: 'italic', lineHeight: 1 }}>
+    <div style={{ padding: '16px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e', paddingBottom: '80px', fontFamily: "'SF Pro Condensed', -apple-system, sans-serif", fontSize: '11px', lineHeight: 1 }}>
       <button 
         onClick={onBack} 
-        style={{ background: 'none', border: 'none', fontSize: '11px', fontStyle: 'italic', color: '#000000', cursor: 'pointer', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '4px', lineHeight: 1 }}
+        style={{ background: 'none', border: 'none', fontSize: '11px', color: '#000000', cursor: 'pointer', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '4px', lineHeight: 1 }}
       >
-        <span style={{ fontSize: '13px', fontStyle: 'italic' }}>←</span> Назад
+        <span style={{ fontSize: '13px' }}>←</span> <span style={{ fontStyle: 'italic' }}>Назад</span>
       </button>
 
       {/* 1. Header Block */}
@@ -638,13 +638,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isHeaderOpen ? '10px' : 0 }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '11px', fontStyle: 'italic', color: '#8e8e93' }}>{isHeaderOpen ? '▲' : '▼'}</span>
+            <span style={{ fontSize: '11px', color: '#8e8e93' }}>{isHeaderOpen ? '▲' : '▼'}</span>
             <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 'bold', fontStyle: 'italic', lineHeight: 1 }}>{name || 'Без назви'}</h3>
           </div>
         </div>
 
         {isHeaderOpen && isSuperAdmin && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontStyle: 'normal' }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }} onClick={(e) => e.stopPropagation()}>
             <div>
               <label style={labelStyle}>Назва проекту</label>
               <input
@@ -690,7 +690,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       flexShrink: 0
                     }}
                   >
-                    {isSelected && <span style={{ color: '#fff', fontSize: '10px', fontStyle: 'italic' }}>✓</span>}
+                    {isSelected && <span style={{ color: '#fff', fontSize: '10px' }}>✓</span>}
                   </div>
                 );
               })}
@@ -708,7 +708,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   justifyContent: 'center',
                   flexShrink: 0,
                   fontSize: '14px',
-                  fontStyle: 'italic',
                   color: '#007aff',
                   position: 'relative',
                   padding: 0,
@@ -736,7 +735,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: isTagsOpen ? '8px' : 0 }}>
             <span 
               onClick={() => setIsTagsOpen(!isTagsOpen)} 
-              style={{ fontSize: '11px', fontStyle: 'italic', color: '#8e8e93', cursor: 'pointer', userSelect: 'none' }}
+              style={{ fontSize: '11px', color: '#8e8e93', cursor: 'pointer', userSelect: 'none' }}
             >
               {isTagsOpen ? '▲' : '▼'}
             </span>
@@ -754,7 +753,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           {isTagsOpen && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
-                <button onClick={handleAddStatus} style={{ ...compactPlusBtnStyle, height: '24px', width: '24px', borderRadius: '12px', fontStyle: 'italic' }} title="Додати тег">+</button>
+                <button onClick={handleAddStatus} style={{ ...compactPlusBtnStyle, height: '24px', width: '24px', borderRadius: '12px' }} title="Додати тег">+</button>
 
                 <label 
                   style={{ 
@@ -818,7 +817,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                         flexShrink: 0 
                       }}
                     >
-                      {selectedTagId === firstTag.id && <span style={{ color: '#fff', fontSize: '9px', fontStyle: 'italic', lineHeight: 1 }}>✓</span>}
+                      {selectedTagId === firstTag.id && <span style={{ color: '#fff', fontSize: '9px', lineHeight: 1 }}>✓</span>}
                     </div>
 
                     <input
@@ -831,7 +830,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     {statuses.length > 1 && (
                       <button 
                         onClick={(e) => handleDeleteStatus(firstTag.id, e)} 
-                        style={{ background: 'none', border: 'none', color: '#8e8e93', cursor: 'pointer', fontSize: '10px', fontStyle: 'italic', padding: 0 }}
+                        style={{ background: 'none', border: 'none', color: '#8e8e93', cursor: 'pointer', fontSize: '10px', padding: 0 }}
                       >
                         ✕
                       </button>
@@ -880,7 +879,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                             flexShrink: 0 
                           }}
                         >
-                          {isSelected && <span style={{ color: '#fff', fontSize: '9px', fontStyle: 'italic', lineHeight: 1 }}>✓</span>}
+                          {isSelected && <span style={{ color: '#fff', fontSize: '9px', lineHeight: 1 }}>✓</span>}
                         </div>
 
                         <input
@@ -893,7 +892,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                         {statuses.length > 1 && (
                           <button 
                             onClick={(e) => handleDeleteStatus(s.id, e)} 
-                            style={{ background: 'none', border: 'none', color: '#8e8e93', cursor: 'pointer', fontSize: '10px', fontStyle: 'italic', padding: 0 }}
+                            style={{ background: 'none', border: 'none', color: '#8e8e93', cursor: 'pointer', fontSize: '10px', padding: 0 }}
                           >
                             ✕
                           </button>
@@ -914,7 +913,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span 
               onClick={() => setIsGeneralDataOpen(!isGeneralDataOpen)}
-              style={{ fontSize: '11px', fontStyle: 'italic', color: '#8e8e93', cursor: 'pointer', userSelect: 'none' }}
+              style={{ fontSize: '11px', color: '#8e8e93', cursor: 'pointer', userSelect: 'none' }}
             >
               {isGeneralDataOpen ? '▲' : '▼'}
             </span>
@@ -930,7 +929,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           </div>
 
           {isGeneralDataOpen && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px', fontStyle: 'normal' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
               {generalRows.map((r, index) => (
                 <div 
                   key={r.id} 
@@ -1016,7 +1015,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
             <span 
               onClick={() => setIsStructureOpen(!isStructureOpen)}
-              style={{ fontSize: '11px', fontStyle: 'italic', color: '#8e8e93', cursor: 'pointer', userSelect: 'none' }}
+              style={{ fontSize: '11px', color: '#8e8e93', cursor: 'pointer', userSelect: 'none' }}
             >
               {isStructureOpen ? '▲' : '▼'}
             </span>
@@ -1041,7 +1040,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         {isStructureOpen && (
           <>
             {isSuperAdmin && (
-              <form onSubmit={handleAddStage} style={{ display: 'flex', gap: '6px', marginBottom: '12px', alignItems: 'center', fontStyle: 'normal' }}>
+              <form onSubmit={handleAddStage} style={{ display: 'flex', gap: '6px', marginBottom: '12px', alignItems: 'center' }}>
                 <input
                   type="text"
                   placeholder="створіть власну структуру"
@@ -1107,7 +1106,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
                         <span 
                           onClick={() => setCollapsedStages({ ...collapsedStages, [st.id]: !isCollapsed })}
-                          style={{ fontSize: '11px', fontStyle: 'italic', color: '#8e8e93', cursor: 'pointer', userSelect: 'none' }}
+                          style={{ fontSize: '11px', color: '#8e8e93', cursor: 'pointer', userSelect: 'none' }}
                         >
                           {isCollapsed ? '▼' : '▲'}
                         </span>
@@ -1124,7 +1123,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                         )}
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontStyle: 'normal' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                         {enableRoles && enableTimeTracking && isTrackTimeOn && (
                           <>
                             <button
@@ -1134,7 +1133,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                 backgroundColor: st.isTimerRunning ? '#ff3b30' : '#34c759',
                                 color: '#fff',
                                 fontSize: '10px',
-                                fontStyle: 'italic',
                                 padding: '2px 6px'
                               }}
                             >
@@ -1147,7 +1145,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                 setManualHours(Math.floor((st.loggedSeconds || 0) / 3600).toString());
                                 setManualMinutes(Math.floor(((st.loggedSeconds || 0) % 3600) / 60).toString());
                               }}
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '11px', fontStyle: 'italic' }}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '11px' }}
                             >
                               ⏱️
                             </button>
@@ -1156,7 +1154,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
                         {isSuperAdmin && (
                           <div style={{ width: '32px', display: 'flex', justifyContent: 'center' }}>
-                            <button onClick={() => handleDeleteStage(st.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '11px', fontStyle: 'italic' }}>
+                            <button onClick={() => handleDeleteStage(st.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '11px' }}>
                               🗑️
                             </button>
                           </div>
@@ -1165,12 +1163,12 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     </div>
 
                     {editingTimeStageId === st.id && (
-                      <div style={{ display: 'flex', gap: '4px', alignItems: 'center', marginBottom: '6px', padding: '4px', backgroundColor: '#f2f2f7', borderRadius: '6px', fontSize: '11px', fontStyle: 'italic' }}>
+                      <div style={{ display: 'flex', gap: '4px', alignItems: 'center', marginBottom: '6px', padding: '4px', backgroundColor: '#f2f2f7', borderRadius: '6px', fontSize: '11px' }}>
                         <span>Годин:</span>
                         <input type="number" value={manualHours} onChange={(e) => setManualHours(e.target.value)} style={{ ...cardInputStyle, width: '40px', padding: '2px 4px', height: '24px', boxSizing: 'border-box', fontSize: '11px', fontStyle: 'italic' }} />
                         <span>Хвил:</span>
                         <input type="number" value={manualMinutes} onChange={(e) => setManualMinutes(e.target.value)} style={{ ...cardInputStyle, width: '40px', padding: '2px 4px', height: '24px', boxSizing: 'border-box', fontSize: '11px', fontStyle: 'italic' }} />
-                        <button onClick={() => handleSaveManualTime(st.id)} style={{ ...btnStyle, backgroundColor: '#34c759', color: '#fff', padding: '2px 4px', fontSize: '10px', fontStyle: 'italic' }}>✓</button>
+                        <button onClick={() => handleSaveManualTime(st.id)} style={{ ...btnStyle, backgroundColor: '#34c759', color: '#fff', padding: '2px 4px', fontSize: '10px' }}>✓</button>
                       </div>
                     )}
 
@@ -1178,7 +1176,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px', paddingTop: '6px', borderTop: '1px solid #e5e5ea' }}>
                         
                         {enableRoles && enableTimeTracking && (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', fontStyle: 'italic' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px' }}>
                             <span>Облік часу</span>
                             <div style={{ width: '32px', display: 'flex', justifyContent: 'center' }}>
                               <div
@@ -1217,7 +1215,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
                             return (
                               <div key={sub.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px', backgroundColor: '#f9f9fb', padding: '6px', borderRadius: '6px', border: '1px solid #e5e5ea' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11px', fontStyle: 'italic' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11px' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1 }}>
                                     
                                     {canManageSubtasks && enableSubtaskMoving && (
@@ -1225,14 +1223,14 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                         <button 
                                           onClick={() => handleMoveSubStage(st.id, idx, 'up')}
                                           disabled={idx === 0}
-                                          style={{ background: 'none', border: 'none', cursor: idx === 0 ? 'default' : 'pointer', fontSize: '7px', fontStyle: 'italic', padding: 0, color: idx === 0 ? '#d1d1d6' : '#007aff', lineHeight: 1 }}
+                                          style={{ background: 'none', border: 'none', cursor: idx === 0 ? 'default' : 'pointer', fontSize: '7px', padding: 0, color: idx === 0 ? '#d1d1d6' : '#007aff', lineHeight: 1 }}
                                         >
                                           ▲
                                         </button>
                                         <button 
                                           onClick={() => handleMoveSubStage(st.id, idx, 'down')}
                                           disabled={idx === st.subStages.length - 1}
-                                          style={{ background: 'none', border: 'none', cursor: idx === st.subStages.length - 1 ? 'default' : 'pointer', fontSize: '7px', fontStyle: 'italic', padding: 0, color: idx === st.subStages.length - 1 ? '#d1d1d6' : '#007aff', lineHeight: 1 }}
+                                          style={{ background: 'none', border: 'none', cursor: idx === st.subStages.length - 1 ? 'default' : 'pointer', fontSize: '7px', padding: 0, color: idx === st.subStages.length - 1 ? '#d1d1d6' : '#007aff', lineHeight: 1 }}
                                         >
                                           ▼
                                         </button>
@@ -1242,7 +1240,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                     {enableNestedItems && (
                                       <span 
                                         onClick={() => setCollapsedSubStages({ ...collapsedSubStages, [sub.id]: !isSubCollapsed })}
-                                        style={{ fontSize: '10px', fontStyle: 'italic', color: '#8e8e93', cursor: 'pointer', userSelect: 'none', width: '10px', textAlign: 'center' }}
+                                        style={{ fontSize: '10px', color: '#8e8e93', cursor: 'pointer', userSelect: 'none', width: '10px', textAlign: 'center' }}
                                       >
                                         {isSubCollapsed ? '▶' : '▼'}
                                       </span>
@@ -1254,7 +1252,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                       onChange={() => handleToggleSubStage(st.id, sub.id)}
                                       style={{ width: '12px', height: '12px' }}
                                     />
-                                    <span style={{ fontStyle: 'italic', color: '#1c1c1e', userSelect: 'none', minWidth: '14px' }}>{idx + 1}.</span>
+                                    <span style={{ color: '#1c1c1e', userSelect: 'none', minWidth: '14px' }}>{idx + 1}.</span>
 
                                     <input
                                       type="text"
@@ -1272,7 +1270,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                   </div>
 
                                   {canManageSubtasks && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontStyle: 'normal' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                       {enableNestedItems && (
                                         <button 
                                           onClick={() => {
@@ -1281,7 +1279,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                             }
                                             handleAddNestedItem(st.id, sub.id);
                                           }} 
-                                          style={{ ...compactPlusBtnStyle, width: '20px', height: '20px', fontSize: '11px', fontStyle: 'italic' }}
+                                          style={{ ...compactPlusBtnStyle, width: '20px', height: '20px', fontSize: '11px' }}
                                         >
                                           +
                                         </button>
@@ -1296,7 +1294,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                 {enableNestedItems && !isSubCollapsed && nestedItems.length > 0 && (
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '22px', marginTop: '2px' }}>
                                     {nestedItems.map((item: any, itemIdx: number) => (
-                                      <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11px', fontStyle: 'italic' }}>
+                                      <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11px' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1 }}>
                                           
                                           {canManageSubtasks && enableSubtaskMoving && (
@@ -1304,14 +1302,14 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                               <button 
                                                 onClick={() => handleMoveNestedItem(st.id, sub.id, itemIdx, 'up')}
                                                 disabled={itemIdx === 0}
-                                                style={{ background: 'none', border: 'none', cursor: itemIdx === 0 ? 'default' : 'pointer', fontSize: '7px', fontStyle: 'italic', padding: 0, color: itemIdx === 0 ? '#d1d1d6' : '#636366', lineHeight: 1 }}
+                                                style={{ background: 'none', border: 'none', cursor: itemIdx === 0 ? 'default' : 'pointer', fontSize: '7px', padding: 0, color: itemIdx === 0 ? '#d1d1d6' : '#636366', lineHeight: 1 }}
                                               >
                                                 ▲
                                               </button>
                                               <button 
                                                 onClick={() => handleMoveNestedItem(st.id, sub.id, itemIdx, 'down')}
                                                 disabled={itemIdx === nestedItems.length - 1}
-                                                style={{ background: 'none', border: 'none', cursor: itemIdx === nestedItems.length - 1 ? 'default' : 'pointer', fontSize: '7px', fontStyle: 'italic', padding: 0, color: itemIdx === nestedItems.length - 1 ? '#d1d1d6' : '#636366', lineHeight: 1 }}
+                                                style={{ background: 'none', border: 'none', cursor: itemIdx === nestedItems.length - 1 ? 'default' : 'pointer', fontSize: '7px', padding: 0, color: itemIdx === nestedItems.length - 1 ? '#d1d1d6' : '#636366', lineHeight: 1 }}
                                               >
                                                 ▼
                                               </button>
@@ -1324,7 +1322,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                             onChange={() => handleToggleNestedItem(st.id, sub.id, item.id)}
                                             style={{ width: '12px', height: '12px' }}
                                           />
-                                          <span style={{ fontStyle: 'italic', color: '#636366', userSelect: 'none', minWidth: '20px' }}>{idx + 1}.{itemIdx + 1}</span>
+                                          <span style={{ color: '#636366', userSelect: 'none', minWidth: '20px' }}>{idx + 1}.{itemIdx + 1}</span>
 
                                           <input
                                             type="text"
@@ -1342,7 +1340,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                         </div>
 
                                         {canManageSubtasks && (
-                                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontStyle: 'normal' }}>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                             <div style={{ width: '20px' }} />
                                             <div style={{ width: '24px', display: 'flex', justifyContent: 'center' }}>
                                               <button onClick={() => handleDeleteNestedItem(st.id, sub.id, item.id)} style={{ ...iconBtnStyle, color: '#ff3b30' }}>🗑️</button>
@@ -1359,7 +1357,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                         </div>
 
                         {canManageSubtasks && (
-                          <div style={{ display: 'flex', gap: '6px', marginTop: '6px', alignItems: 'center', fontStyle: 'normal' }}>
+                          <div style={{ display: 'flex', gap: '6px', marginTop: '6px', alignItems: 'center' }}>
                             <input
                               type="text"
                               placeholder="Додати підзадачу"
@@ -1367,7 +1365,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                               onChange={(e) => setNewSubStageTitle({ ...newSubStageTitle, [st.id]: e.target.value })}
                               style={{ ...cardInputStyle, padding: '2px 6px', fontSize: '11px', fontStyle: 'italic', height: '24px', boxSizing: 'border-box', flex: 1 }}
                             />
-                            <button onClick={() => handleAddSubStage(st.id)} style={{ ...compactPlusBtnStyle, width: '24px', height: '24px', boxSizing: 'border-box', fontStyle: 'italic' }}>
+                            <button onClick={() => handleAddSubStage(st.id)} style={{ ...compactPlusBtnStyle, width: '24px', height: '24px', boxSizing: 'border-box' }}>
                               +
                             </button>
                           </div>
@@ -1377,8 +1375,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           
                           {showDates && isSuperAdmin && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                              <span style={{ fontSize: '11px', fontStyle: 'italic', color: '#636366' }}>Терміни (Старт / Дедлайн):</span>
-                              <div style={{ display: 'flex', gap: '6px', fontSize: '11px', fontStyle: 'italic' }}>
+                              <span style={{ fontSize: '11px', color: '#636366' }}>Терміни (Старт / Дедлайн):</span>
+                              <div style={{ display: 'flex', gap: '6px', fontSize: '11px' }}>
                                 <input
                                   type="date"
                                   title="Дата початку"
@@ -1398,7 +1396,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           )}
 
                           {isSuperAdmin && enableRoles && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px', fontStyle: 'normal' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
                               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', alignItems: 'center' }}>
                                 <select
                                   id={`select-contractor-${st.id}`}
@@ -1438,7 +1436,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                         if (roleEl) roleEl.value = '';
                                       }
                                     }}
-                                    style={{ ...compactPlusBtnStyle, width: '24px', height: '24px', boxSizing: 'border-box', flexShrink: 0, fontStyle: 'italic' }}
+                                    style={{ ...compactPlusBtnStyle, width: '24px', height: '24px', boxSizing: 'border-box', flexShrink: 0 }}
                                   >
                                     +
                                   </button>
@@ -1448,12 +1446,12 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                               {stageContractors.length > 0 && (
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '2px' }}>
                                   {stageContractors.map((cEntry, cIdx) => (
-                                    <div key={cIdx} style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#e5e5ea', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontStyle: 'italic' }}>
+                                    <div key={cIdx} style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#e5e5ea', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>
                                       <span>{cEntry}</span>
                                       <button
                                         type="button"
                                         onClick={() => handleRemoveStageContractor(st.id, cEntry)}
-                                        style={{ background: 'none', border: 'none', color: '#ff3b30', cursor: 'pointer', fontSize: '10px', fontStyle: 'italic', padding: 0 }}
+                                        style={{ background: 'none', border: 'none', color: '#ff3b30', cursor: 'pointer', fontSize: '10px', padding: 0 }}
                                       >
                                         ✕
                                       </button>
@@ -1482,7 +1480,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: isSettingsOpen ? '10px' : 0 }}>
             <span 
               onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-              style={{ fontSize: '11px', fontStyle: 'italic', color: '#8e8e93', cursor: 'pointer', userSelect: 'none' }}
+              style={{ fontSize: '11px', color: '#8e8e93', cursor: 'pointer', userSelect: 'none' }}
             >
               {isSettingsOpen ? '▲' : '▼'}
             </span>
@@ -1498,10 +1496,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           </div>
 
           {isSettingsOpen && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontStyle: 'normal' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               
               <div style={{ backgroundColor: '#ffffff', padding: '8px 10px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
-                <span style={{ fontSize: '11px', fontStyle: 'italic', color: '#1c1c1e' }}>Ролі</span>
+                <span style={{ fontSize: '11px', color: '#1c1c1e' }}>Ролі</span>
                 <div
                   onClick={() => {
                     const nextVal = !enableRoles;
@@ -1534,7 +1532,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               </div>
 
               <div style={{ backgroundColor: '#ffffff', padding: '8px 10px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
-                <span style={{ fontSize: '11px', fontStyle: 'italic', color: '#1c1c1e' }}>Теги</span>
+                <span style={{ fontSize: '11px', color: '#1c1c1e' }}>Теги</span>
                 <div
                   onClick={() => {
                     const nextVal = !enableTags;
@@ -1567,7 +1565,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               </div>
 
               <div style={{ backgroundColor: '#ffffff', padding: '8px 10px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
-                <span style={{ fontSize: '11px', fontStyle: 'italic', color: '#1c1c1e' }}>Дані</span>
+                <span style={{ fontSize: '11px', color: '#1c1c1e' }}>Дані</span>
                 <div
                   onClick={() => {
                     const nextVal = !enableData;
@@ -1600,7 +1598,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               </div>
 
               <div style={{ backgroundColor: '#ffffff', padding: '8px 10px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
-                <span style={{ fontSize: '11px', fontStyle: 'italic', color: '#1c1c1e' }}>Облік часу</span>
+                <span style={{ fontSize: '11px', color: '#1c1c1e' }}>Облік часу</span>
                 <div
                   onClick={() => {
                     const nextVal = !enableTimeTracking;
@@ -1633,7 +1631,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               </div>
 
               <div style={{ backgroundColor: '#ffffff', padding: '8px 10px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
-                <span style={{ fontSize: '11px', fontStyle: 'italic', color: '#1c1c1e' }}>Переміщення підстадій</span>
+                <span style={{ fontSize: '11px', color: '#1c1c1e' }}>Переміщення підстадій</span>
                 <div
                   onClick={() => {
                     const nextVal = !enableSubtaskMoving;
@@ -1666,7 +1664,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               </div>
 
               <div style={{ backgroundColor: '#ffffff', padding: '8px 10px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
-                <span style={{ fontSize: '11px', fontStyle: 'italic', color: '#1c1c1e' }}>Створення нових підпунктів</span>
+                <span style={{ fontSize: '11px', color: '#1c1c1e' }}>Створення нових підпунктів</span>
                 <div
                   onClick={() => {
                     const nextVal = !enableNestedItems;
@@ -1704,8 +1702,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       )}
 
       {/* 5. Save Block */}
-      <div style={{ backgroundColor: '#ffffff', padding: '12px', border: '1px solid #e5e5ea', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '8px', fontStyle: 'normal' }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontStyle: 'italic', cursor: 'pointer' }}>
+      <div style={{ backgroundColor: '#ffffff', padding: '12px', border: '1px solid #e5e5ea', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', cursor: 'pointer' }}>
           <input
             type="checkbox"
             checked={saveAsTemplate}
@@ -1765,7 +1763,6 @@ const inlineTitleInputStyle: React.CSSProperties = {
 
 const labelStyle: React.CSSProperties = {
   fontSize: '11px',
-  fontStyle: 'italic',
   color: '#636366',
   marginBottom: '2px',
   display: 'block',
@@ -1777,7 +1774,6 @@ const btnStyle: React.CSSProperties = {
   borderRadius: '6px',
   border: 'none',
   fontSize: '11px',
-  fontStyle: 'italic',
   cursor: 'pointer',
   lineHeight: 1
 };
@@ -1787,7 +1783,6 @@ const iconBtnStyle: React.CSSProperties = {
   border: 'none',
   cursor: 'pointer',
   fontSize: '11px',
-  fontStyle: 'italic',
   padding: '2px 4px',
   lineHeight: 1
 };
@@ -1799,7 +1794,6 @@ const compactPlusBtnStyle: React.CSSProperties = {
   width: '24px',
   height: '24px',
   fontSize: '14px',
-  fontStyle: 'italic',
   lineHeight: 1,
   color: '#1c1c1e',
   padding: 0,
