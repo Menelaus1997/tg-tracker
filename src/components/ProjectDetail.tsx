@@ -209,7 +209,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     const updated = [...colors];
     updated[selectedColorIndex] = newColor;
     setColors(updated);
-    triggerAutoSave();
+    triggerAutoSave({ color: newColor });
   };
 
   const handleAddRowAfter = (index: number) => {
@@ -680,7 +680,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     key={idx}
                     onClick={() => {
                       setSelectedColorIndex(idx);
-                      triggerAutoSave();
+                      triggerAutoSave({ color: c });
                     }}
                     style={{
                       width: '22px',
