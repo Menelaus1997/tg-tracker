@@ -67,24 +67,22 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
     return false;
   });
 
-  // Динамічні назви для головного селекта типів на основі збережених налаштувань проєктів
   const dynamicDataTitle = targetProjects.find(p => (p as any).dataTitle)?.dataTitle || 'Дані';
   const dynamicStructureTitle = targetProjects.find(p => (p as any).structureTitle)?.structureTitle || 'Структура';
 
-  // Отримуємо унікальні назви рядків паспорта (Дані)
   const availableDataFields = Array.from(
     new Set(
       targetProjects.flatMap(p => (p.passportRows || []).map(r => r.label).filter(Boolean))
     )
   );
 
-  // Отримуємо назви блоків структури з урахуванням кастомних назв (наприклад, "100+") та назв стадій
+  // Отримуємо тільки назви стадій (виключаючи головний заголовок блоку структури, щоб уникнути дублювання)
   const availableStructureStages = Array.from(
     new Set(
       targetProjects.flatMap(p => {
         const customStructureTitle = (p as any).structureTitle;
         const stageTitles = (p.stages || []).map(s => s.title);
-        return [customStructureTitle, ...stageTitles].filter(Boolean);
+        return stageTitles.filter(title => title && title !== customStructureTitle);
       })
     )
   );
@@ -102,7 +100,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
   const chartData = targetProjects.map((proj, index) => {
     let resultValue = 0;
     let matchCount = 0;
-    const customStructureTitle = (proj as any).structureTitle || 'Структура';
 
     if (sourceType === 'data') {
       (proj.passportRows || []).forEach(r => {
@@ -128,7 +125,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
           const stageContractors: string[] = (st as any).contractors || (st.contractor ? [st.contractor] : []);
           const contractorsStr = stageContractors.join(' ').toLowerCase();
 
-          const matchItem = !selectedItem || customStructureTitle.toLowerCase().includes(selectedItem.toLowerCase()) || title.includes(selectedItem.toLowerCase());
+          const matchItem = !selectedItem || title.includes(selectedItem.toLowerCase());
           const matchQuery = !cleanQuery || title.includes(cleanQuery) || contractorsStr.includes(cleanQuery);
 
           if (matchItem && matchQuery) {
@@ -155,7 +152,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
           const stageContractors: string[] = (st as any).contractors || (st.contractor ? [st.contractor] : []);
           const contractorsStr = stageContractors.join(' ').toLowerCase();
 
-          const matchItem = !selectedItem || customStructureTitle.toLowerCase().includes(selectedItem.toLowerCase()) || title.includes(selectedItem.toLowerCase());
+          const matchItem = !selectedItem || title.includes(selectedItem.toLowerCase());
           const matchQuery = !cleanQuery || 
             title.includes(cleanQuery) || 
             currentStatus.includes(cleanQuery) || 
@@ -263,7 +260,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px', width: '100%', boxSizing: 'border-box' }}>
           <div style={{ display: 'flex', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
-            {/* Динамічні назви в селекта з урахуванням кастомних змін */}
             <select
               value={sourceType}
               onChange={(e) => {
