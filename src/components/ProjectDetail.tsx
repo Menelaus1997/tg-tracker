@@ -101,6 +101,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   ]);
 
   const [isStructureOpen, setIsStructureOpen] = useState(true);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(true);
+
   const [stages, setStages] = useState<Stage[]>(() => (project.stages || []).map(s => ({
     ...s,
     contractors: (s as any).contractors || (s.contractor ? [s.contractor] : [])
@@ -576,7 +578,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     return `${d}.${m}`;
   };
 
-  // Розрахунок кінцевої дати здачі проєкту (дедлайн останньої стадії в масиві)
   const lastStage = stages[stages.length - 1];
   const finalProjectDeadline = lastStage ? ((lastStage as any).reviewDate || lastStage.endDate) : '';
 
@@ -644,7 +645,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               />
             </div>
 
-            {/* Вибір кольору в один компактний рядок */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '4px', marginTop: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
               {colors.slice(0, 8).map((c, idx) => {
                 const isSelected = selectedColorIndex === idx;
@@ -1390,142 +1390,154 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
 
-      {/* --- Група Перемикачів (Налаштування проєкту) --- */}
+      {/* --- Блок "Налаштування" (об'єднані перемикачі) --- */}
       {isSuperAdmin && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
-          
-          <div style={{ backgroundColor: '#f2f2f7', padding: '12px 14px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: '#1c1c1e' }}>Команда та ролі</span>
-            <div
-              onClick={() => {
-                const nextVal = !enableRoles;
-                setEnableRoles(nextVal);
-                triggerAutoSave({ enableRoles: nextVal, enableTeamRoles: nextVal });
-              }}
-              style={{
-                width: '34px',
-                height: '20px',
-                borderRadius: '10px',
-                backgroundColor: enableRoles ? '#34c759' : '#e5e5ea',
-                position: 'relative',
-                cursor: 'pointer',
-                transition: 'background-color 0.2s'
-              }}
-            >
-              <div
-                style={{
-                  width: '16px',
-                  height: '16px',
-                  borderRadius: '50%',
-                  backgroundColor: '#fff',
-                  position: 'absolute',
-                  top: '2px',
-                  left: enableRoles ? '16px' : '2px',
-                  transition: 'left 0.2s'
-                }}
-              />
-            </div>
+        <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
+          <div 
+            onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: isSettingsOpen ? '12px' : 0 }}
+          >
+            <span style={{ fontSize: '12px', color: '#8e8e93' }}>{isSettingsOpen ? '▲' : '▼'}</span>
+            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>Налаштування</h3>
           </div>
 
-          <div style={{ backgroundColor: '#f2f2f7', padding: '12px 14px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: '#1c1c1e' }}>Теги</span>
-            <div
-              onClick={() => {
-                const nextVal = !enableTags;
-                setEnableTags(nextVal);
-                triggerAutoSave({ enableTags: nextVal });
-              }}
-              style={{
-                width: '34px',
-                height: '20px',
-                borderRadius: '10px',
-                backgroundColor: enableTags ? '#34c759' : '#e5e5ea',
-                position: 'relative',
-                cursor: 'pointer',
-                transition: 'background-color 0.2s'
-              }}
-            >
-              <div
-                style={{
-                  width: '16px',
-                  height: '16px',
-                  borderRadius: '50%',
-                  backgroundColor: '#fff',
-                  position: 'absolute',
-                  top: '2px',
-                  left: enableTags ? '16px' : '2px',
-                  transition: 'left 0.2s'
-                }}
-              />
-            </div>
-          </div>
+          {isSettingsOpen && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              
+              <div style={{ backgroundColor: '#ffffff', padding: '10px 12px', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#1c1c1e' }}>Ролі</span>
+                <div
+                  onClick={() => {
+                    const nextVal = !enableRoles;
+                    setEnableRoles(nextVal);
+                    triggerAutoSave({ enableRoles: nextVal, enableTeamRoles: nextVal });
+                  }}
+                  style={{
+                    width: '34px',
+                    height: '20px',
+                    borderRadius: '10px',
+                    backgroundColor: enableRoles ? '#34c759' : '#e5e5ea',
+                    position: 'relative',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s'
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '16px',
+                      height: '16px',
+                      borderRadius: '50%',
+                      backgroundColor: '#fff',
+                      position: 'absolute',
+                      top: '2px',
+                      left: enableRoles ? '16px' : '2px',
+                      transition: 'left 0.2s'
+                    }}
+                  />
+                </div>
+              </div>
 
-          <div style={{ backgroundColor: '#f2f2f7', padding: '12px 14px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: '#1c1c1e' }}>Дані</span>
-            <div
-              onClick={() => {
-                const nextVal = !enableData;
-                setEnableData(nextVal);
-                triggerAutoSave({ enableData: nextVal });
-              }}
-              style={{
-                width: '34px',
-                height: '20px',
-                borderRadius: '10px',
-                backgroundColor: enableData ? '#34c759' : '#e5e5ea',
-                position: 'relative',
-                cursor: 'pointer',
-                transition: 'background-color 0.2s'
-              }}
-            >
-              <div
-                style={{
-                  width: '16px',
-                  height: '16px',
-                  borderRadius: '50%',
-                  backgroundColor: '#fff',
-                  position: 'absolute',
-                  top: '2px',
-                  left: enableData ? '16px' : '2px',
-                  transition: 'left 0.2s'
-                }}
-              />
-            </div>
-          </div>
+              <div style={{ backgroundColor: '#ffffff', padding: '10px 12px', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#1c1c1e' }}>Теги</span>
+                <div
+                  onClick={() => {
+                    const nextVal = !enableTags;
+                    setEnableTags(nextVal);
+                    triggerAutoSave({ enableTags: nextVal });
+                  }}
+                  style={{
+                    width: '34px',
+                    height: '20px',
+                    borderRadius: '10px',
+                    backgroundColor: enableTags ? '#34c759' : '#e5e5ea',
+                    position: 'relative',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s'
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '16px',
+                      height: '16px',
+                      borderRadius: '50%',
+                      backgroundColor: '#fff',
+                      position: 'absolute',
+                      top: '2px',
+                      left: enableTags ? '16px' : '2px',
+                      transition: 'left 0.2s'
+                    }}
+                  />
+                </div>
+              </div>
 
-          <div style={{ backgroundColor: '#f2f2f7', padding: '12px 14px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: '#1c1c1e' }}>Облік часу</span>
-            <div
-              onClick={() => {
-                const nextVal = !enableTimeTracking;
-                setEnableTimeTracking(nextVal);
-                triggerAutoSave({ enableTimeTracking: nextVal });
-              }}
-              style={{
-                width: '34px',
-                height: '20px',
-                borderRadius: '10px',
-                backgroundColor: enableTimeTracking ? '#34c759' : '#e5e5ea',
-                position: 'relative',
-                cursor: 'pointer',
-                transition: 'background-color 0.2s'
-              }}
-            >
-              <div
-                style={{
-                  width: '16px',
-                  height: '16px',
-                  borderRadius: '50%',
-                  backgroundColor: '#fff',
-                  position: 'absolute',
-                  top: '2px',
-                  left: enableTimeTracking ? '16px' : '2px',
-                  transition: 'left 0.2s'
-                }}
-              />
-            </div>
-          </div>
+              <div style={{ backgroundColor: '#ffffff', padding: '10px 12px', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#1c1c1e' }}>Дані</span>
+                <div
+                  onClick={() => {
+                    const nextVal = !enableData;
+                    setEnableData(nextVal);
+                    triggerAutoSave({ enableData: nextVal });
+                  }}
+                  style={{
+                    width: '34px',
+                    height: '20px',
+                    borderRadius: '10px',
+                    backgroundColor: enableData ? '#34c759' : '#e5e5ea',
+                    position: 'relative',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s'
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '16px',
+                      height: '16px',
+                      borderRadius: '50%',
+                      backgroundColor: '#fff',
+                      position: 'absolute',
+                      top: '2px',
+                      left: enableData ? '16px' : '2px',
+                      transition: 'left 0.2s'
+                    }}
+                  />
+                </div>
+              </div>
 
+              <div style={{ backgroundColor: '#ffffff', padding: '10px 12px', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#1c1c1e' }}>Облік часу</span>
+                <div
+                  onClick={() => {
+                    const nextVal = !enableTimeTracking;
+                    setEnableTimeTracking(nextVal);
+                    triggerAutoSave({ enableTimeTracking: nextVal });
+                  }}
+                  style={{
+                    width: '34px',
+                    height: '20px',
+                    borderRadius: '10px',
+                    backgroundColor: enableTimeTracking ? '#34c759' : '#e5e5ea',
+                    position: 'relative',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s'
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '16px',
+                      height: '16px',
+                      borderRadius: '50%',
+                      backgroundColor: '#fff',
+                      position: 'absolute',
+                      top: '2px',
+                      left: enableTimeTracking ? '16px' : '2px',
+                      transition: 'left 0.2s'
+                    }}
+                  />
+                </div>
+              </div>
+
+            </div>
+          )}
         </div>
       )}
 
