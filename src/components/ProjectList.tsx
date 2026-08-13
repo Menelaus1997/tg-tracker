@@ -34,23 +34,27 @@ export const ProjectList: React.FC<ProjectListProps> = ({
   };
 
   return (
-    <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e' }}>
+    <div style={{ padding: '16px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e', fontFamily: "'SF Pro Condensed', -apple-system, sans-serif", fontSize: '11px', lineHeight: 1 }}>
       {/* Search Bar */}
       <input
         type="text"
-        placeholder="Search"
+        placeholder="Пошук..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         style={{
           width: '100%',
-          padding: '12px',
+          height: '36px',
+          padding: '0 12px',
           backgroundColor: '#f2f2f7',
-          border: 'none',
+          border: '1px solid #d1d1d6',
           borderRadius: '10px',
-          fontSize: '14px',
+          fontSize: '11px',
+          fontStyle: 'italic',
           outline: 'none',
           marginBottom: '12px',
-          boxSizing: 'border-box'
+          boxSizing: 'border-box',
+          color: '#1c1c1e',
+          lineHeight: 1
         }}
       />
 
@@ -60,27 +64,27 @@ export const ProjectList: React.FC<ProjectListProps> = ({
           onClick={() => setFilter('active')}
           style={tabBtnStyle(filter === 'active')}
         >
-          Active ({projects.filter((p) => (p.status || 'active') === 'active').length})
+          Активні ({projects.filter((p) => (p.status || 'active') === 'active').length})
         </button>
         <button
           onClick={() => setFilter('archived')}
           style={tabBtnStyle(filter === 'archived')}
         >
-          Archive ({projects.filter((p) => p.status === 'archived').length})
+          Архів ({projects.filter((p) => p.status === 'archived').length})
         </button>
         <button
           onClick={() => setFilter('trash')}
           style={tabBtnStyle(filter === 'trash')}
         >
-          Trash ({projects.filter((p) => p.status === 'trash').length})
+          Кошик ({projects.filter((p) => p.status === 'trash').length})
         </button>
       </div>
 
       {/* Projects List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {filteredProjects.length === 0 ? (
-          <div style={{ textAlign: 'center', color: '#8e8e93', fontSize: '13px', marginTop: '20px' }}>
-            No projects found.
+          <div style={{ textAlign: 'center', color: '#8e8e93', fontSize: '11px', fontStyle: 'italic', marginTop: '20px', lineHeight: 1 }}>
+            Проєктів не знайдено.
           </div>
         ) : (
           filteredProjects.map((p, idx) => (
@@ -91,34 +95,36 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '14px 16px',
+                padding: '10px 12px',
                 backgroundColor: '#f2f2f7',
-                borderRadius: '12px',
+                borderRadius: '10px',
+                border: '1px solid #e5e5ea',
                 cursor: 'pointer'
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div
                   style={{
                     width: '14px',
                     height: '14px',
                     borderRadius: '50%',
                     backgroundColor: p.color || '#007aff',
-                    border: '1px solid #d1d1d6'
+                    border: '1px solid #d1d1d6',
+                    flexShrink: 0
                   }}
                 />
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '15px' }}>{p.name || 'Без назви'}</div>
-                  <div style={{ fontSize: '12px', color: '#8e8e93' }}>ID: {p.id || 'не вказано'}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '14px', fontStyle: 'italic', color: '#1c1c1e', lineHeight: 1 }}>{p.name || 'Без назви'}</div>
+                  <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#8e8e93', lineHeight: 1 }}>ID: {p.id || 'не вказано'}</div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '8px' }} onClick={(e) => e.stopPropagation()}>
+              <div style={{ display: 'flex', gap: '6px' }} onClick={(e) => e.stopPropagation()}>
                 {filter === 'active' && (
                   <button
                     onClick={() => handleStatusChange(p.id, 'archived')}
                     style={actionBtnStyle}
-                    title="Move to Archive"
+                    title="Перенести в архів"
                   >
                     📦
                   </button>
@@ -127,7 +133,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                   <button
                     onClick={() => handleStatusChange(p.id, 'active')}
                     style={actionBtnStyle}
-                    title="Restore to Active"
+                    title="Відновити в активні"
                   >
                     ↩️
                   </button>
@@ -136,7 +142,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                   <button
                     onClick={() => handleStatusChange(p.id, 'trash')}
                     style={actionBtnStyle}
-                    title="Move to Trash"
+                    title="Перенести в кошик"
                   >
                     🗑️
                   </button>
@@ -146,7 +152,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                     <button
                       onClick={() => handleStatusChange(p.id, 'active')}
                       style={actionBtnStyle}
-                      title="Restore"
+                      title="Відновити"
                     >
                       ↩️
                     </button>
@@ -154,7 +160,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                       <button
                         onClick={() => onPermanentDelete(p.id)}
                         style={{ ...actionBtnStyle, color: '#ff3b30' }}
-                        title="Delete Permanently"
+                        title="Видалити назавжди"
                       >
                         ❌
                       </button>
@@ -172,23 +178,32 @@ export const ProjectList: React.FC<ProjectListProps> = ({
 
 const tabBtnStyle = (active: boolean): React.CSSProperties => ({
   flex: 1,
-  padding: '10px',
+  height: '32px',
+  padding: '0 8px',
   backgroundColor: active ? '#007aff' : '#f2f2f7',
   color: active ? '#ffffff' : '#1c1c1e',
-  border: 'none',
-  borderRadius: '10px',
-  fontWeight: 600,
-  fontSize: '12px',
-  cursor: 'pointer'
+  border: '1px solid #d1d1d6',
+  borderRadius: '8px',
+  fontWeight: 'bold',
+  fontStyle: 'italic',
+  fontSize: '11px',
+  cursor: 'pointer',
+  lineHeight: 1
 });
 
 const actionBtnStyle: React.CSSProperties = {
-  background: '#ffffff',
-  border: 'none',
-  borderRadius: '8px',
-  padding: '6px 8px',
-  fontSize: '13px',
-  cursor: 'pointer'
+  backgroundColor: '#ffffff',
+  border: '1px solid #d1d1d6',
+  borderRadius: '6px',
+  width: '28px',
+  height: '28px',
+  fontSize: '12px',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 0,
+  lineHeight: 1
 };
 
 export default ProjectList;
