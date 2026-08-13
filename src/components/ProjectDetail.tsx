@@ -223,37 +223,34 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const handleUpdateGeneralRow = (id: string, field: 'label' | 'value' | 'enableSecondRow', text: any) => {
     const updated = generalRows.map(r => {
       if (r.id === id) {
-        const trimmedText = typeof text === 'string' ? text.trim() : text;
-        
-        if (
-          (field === 'label' || field === 'value') &&
-          typeof trimmedText === 'string' &&
-          (trimmedText.startsWith('http://') || trimmedText.startsWith('https://'))
-        ) {
-          let detectedName = 'Посилання на проєкт';
+        if (field === 'label' || field === 'value') {
+          const trimmedText = typeof text === 'string' ? text.trim() : text;
           
-          if (trimmedText.includes('drive.google.com') || trimmedText.includes('docs.google.com')) {
-            detectedName = 'Google Drive';
-          } else if (trimmedText.includes('t.me') || trimmedText.includes('telegram.org')) {
-            detectedName = 'Telegram';
-          } else if (trimmedText.includes('facebook.com')) {
-            detectedName = 'Facebook';
-          } else if (trimmedText.includes('instagram.com')) {
-            detectedName = 'Instagram';
-          } else if (trimmedText.includes('figma.com')) {
-            detectedName = 'Figma';
-          } else if (trimmedText.includes('notion.so')) {
-            detectedName = 'Notion';
+          if (typeof trimmedText === 'string' && (trimmedText.startsWith('http://') || trimmedText.startsWith('https://'))) {
+            let detectedName = 'Посилання на проєкт';
+            
+            if (trimmedText.includes('drive.google.com') || trimmedText.includes('docs.google.com')) {
+              detectedName = 'Google Drive';
+            } else if (trimmedText.includes('t.me') || trimmedText.includes('telegram.org')) {
+              detectedName = 'Telegram';
+            } else if (trimmedText.includes('facebook.com')) {
+              detectedName = 'Facebook';
+            } else if (trimmedText.includes('instagram.com')) {
+              detectedName = 'Instagram';
+            } else if (trimmedText.includes('figma.com')) {
+              detectedName = 'Figma';
+            } else if (trimmedText.includes('notion.so')) {
+              detectedName = 'Notion';
+            }
+
+            return {
+              ...r,
+              label: detectedName,
+              value: trimmedText,
+              enableSecondRow: false // Автоматично вимикаємо галочку, роблячи рядок однорядковим посиланням
+            };
           }
-
-          return {
-            ...r,
-            label: r.label && r.label.trim() !== '' && !r.label.startsWith('http') ? r.label : detectedName,
-            value: trimmedText,
-            enableSecondRow: true
-          };
         }
-
         return { ...r, [field]: text };
       }
       return r;
@@ -971,75 +968,76 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
           {isGeneralDataOpen && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
-              {generalRows.map((r, index) => (
-                <div 
-                  key={r.id} 
-                  draggable={isSuperAdmin}
-                  onDragStart={() => handleDataDragStart(index)}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={() => handleDataDrop(index)}
-                  style={{ display: 'flex', gap: '6px', alignItems: 'flex-start', cursor: isSuperAdmin ? 'grab' : 'default' }}
-                >
-                  <textarea
-                    placeholder="Назва рядка або вставте посилання"
-                    value={r.label || ''}
-                    onChange={(e) => handleUpdateGeneralRow(r.id, 'label', e.target.value)}
-                    disabled={!isSuperAdmin}
-                    rows={1}
-                    onInput={(e) => {
-                      const target = e.target as HTMLTextAreaElement;
-                      target.style.height = 'auto';
-                      target.style.height = `${target.scrollHeight}px`;
-                    }}
-                    style={{ 
-                      ...cardInputStyle, 
-                      flex: 1, 
-                      minHeight: '24px', 
-                      height: 'auto',
-                      padding: '4px 6px', 
-                      boxSizing: 'border-box',
-                      resize: 'none',
-                      overflow: 'hidden',
-                      lineHeight: 1.2,
-                      fontFamily: 'inherit',
-                      fontSize: '11px',
-                      fontStyle: 'italic'
-                    }}
-                  />
+              {generalRows.map((r, index) => {
+                const hasLink = r.value && (r.value.startsWith('http://') || r.value.startsWith('https://'));
+                const isSingleRowLink = hasLink && !r.enableSecondRow;
 
-                  {r.enableSecondRow && (
-                    <div style={{ flex: 'none', display: 'flex', alignItems: 'flex-start' }}>
-                      {r.value && (r.value.startsWith('http://') || r.value.startsWith('https://')) ? (
-                        <a
-                          href={r.value}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title={r.value}
-                          style={{
-                            ...cardInputStyle,
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#007aff',
-                            textDecoration: 'underline',
-                            width: 'auto',
-                            minWidth: '60px',
-                            maxWidth: '140px',
-                            minHeight: '24px',
-                            height: 'auto',
-                            padding: '4px 6px',
-                            boxSizing: 'border-box',
-                            fontSize: '11px',
-                            fontStyle: 'italic',
-                            wordBreak: 'break-all',
-                            cursor: 'pointer',
-                            textAlign: 'center',
-                            lineHeight: 1.2
-                          }}
-                        >
-                          {r.label && r.label !== 'Посилання на проєкт' ? r.label : 'Відкрити посилання'}
-                        </a>
-                      ) : (
+                return (
+                  <div 
+                    key={r.id} 
+                    draggable={isSuperAdmin}
+                    onDragStart={() => handleDataDragStart(index)}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => handleDataDrop(index)}
+                    style={{ display: 'flex', gap: '6px', alignItems: 'flex-start', cursor: isSuperAdmin ? 'grab' : 'default' }}
+                  >
+                    {isSingleRowLink ? (
+                      <a
+                        href={r.value}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={r.value}
+                        style={{
+                          ...cardInputStyle,
+                          display: 'flex',
+                          alignItems: 'center',
+                          color: '#007aff',
+                          textDecoration: 'underline',
+                          flex: 1,
+                          minHeight: '24px',
+                          height: 'auto',
+                          padding: '4px 8px',
+                          boxSizing: 'border-box',
+                          fontSize: '11px',
+                          fontWeight: 'bold',
+                          fontStyle: 'italic',
+                          cursor: 'pointer',
+                          lineHeight: 1.2
+                        }}
+                      >
+                        {r.label || 'Google Drive'}
+                      </a>
+                    ) : (
+                      <textarea
+                        placeholder="Назва рядка або вставте посилання"
+                        value={r.label || ''}
+                        onChange={(e) => handleUpdateGeneralRow(r.id, 'label', e.target.value)}
+                        disabled={!isSuperAdmin}
+                        rows={1}
+                        onInput={(e) => {
+                          const target = e.target as HTMLTextAreaElement;
+                          target.style.height = 'auto';
+                          target.style.height = `${target.scrollHeight}px`;
+                        }}
+                        style={{ 
+                          ...cardInputStyle, 
+                          flex: 1, 
+                          minHeight: '24px', 
+                          height: 'auto',
+                          padding: '4px 6px', 
+                          boxSizing: 'border-box',
+                          resize: 'none',
+                          overflow: 'hidden',
+                          lineHeight: 1.2,
+                          fontFamily: 'inherit',
+                          fontSize: '11px',
+                          fontStyle: 'italic'
+                        }}
+                      />
+                    )}
+
+                    {r.enableSecondRow && (
+                      <div style={{ flex: 'none', display: 'flex', alignItems: 'flex-start' }}>
                         <textarea
                           placeholder="Значення"
                           value={r.value}
@@ -1067,26 +1065,26 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                             lineHeight: 1.2
                           }}
                         />
-                      )}
-                    </div>
-                  )}
+                      </div>
+                    )}
 
-                  <input
-                    type="checkbox"
-                    checked={r.enableSecondRow ?? true}
-                    onChange={(e) => handleUpdateGeneralRow(r.id, 'enableSecondRow', e.target.checked)}
-                    title="Увімкнути значення"
-                    style={{ cursor: 'pointer', width: '14px', height: '14px', flexShrink: 0, marginTop: '5px' }}
-                  />
+                    <input
+                      type="checkbox"
+                      checked={r.enableSecondRow ?? true}
+                      onChange={(e) => handleUpdateGeneralRow(r.id, 'enableSecondRow', e.target.checked)}
+                      title="Увімкнути значення"
+                      style={{ cursor: 'pointer', width: '14px', height: '14px', flexShrink: 0, marginTop: '5px' }}
+                    />
 
-                  {isSuperAdmin && (
-                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center', width: '60px', justifyContent: 'center', marginTop: '2px' }}>
-                      <button onClick={() => handleAddRowAfter(index)} style={compactPlusBtnStyle}>+</button>
-                      <button onClick={() => handleDeleteGeneralRow(r.id)} style={{ ...compactPlusBtnStyle, color: '#ff3b30' }}>🗑️</button>
-                    </div>
-                  )}
-                </div>
-              ))}
+                    {isSuperAdmin && (
+                      <div style={{ display: 'flex', gap: '4px', alignItems: 'center', width: '60px', justifyContent: 'center', marginTop: '2px' }}>
+                        <button onClick={() => handleAddRowAfter(index)} style={compactPlusBtnStyle}>+</button>
+                        <button onClick={() => handleDeleteGeneralRow(r.id)} style={{ ...compactPlusBtnStyle, color: '#ff3b30' }}>🗑️</button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
