@@ -56,6 +56,11 @@ export interface Project {
   passportRows?: any[];
   totalLoggedSeconds?: number;
   projectTeam?: any[];
+  // Додано підтримку кастомних назв заголовків, щоб вони успішно зберігалися та підтягувались в аналітику
+  structureTitle?: string;
+  tagsTitle?: string;
+  dataTitle?: string;
+  settingsTitle?: string;
 }
 
 const INITIAL_ROLES: RoleConfig[] = [
@@ -167,7 +172,6 @@ export const App: React.FC = () => {
         <ProjectDetail
           project={activeProject}
           onUpdateProject={(updated) => {
-            // Виправлено: оновлюємо проєкт коректно за поточним активним ID в стані
             setProjects(projects.map((p) => (p.id === activeProject.id || p.id === updated.id ? updated : p)));
           }}
           onSaveAsTemplate={handleSaveTemplate}
