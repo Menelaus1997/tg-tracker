@@ -20,8 +20,6 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
 }) => {
   const [name, setName] = useState('');
   const [telegramId, setTelegramId] = useState('');
-  const [role, setRole] = useState('');
-  const [isTeamMember, setIsTeamMember] = useState(false);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<TeamMember>>({});
@@ -40,16 +38,14 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
     const newMember: TeamMember = {
       id: Date.now().toString(),
       fullName: name.trim(),
-      telegramId: isTeamMember && telegramId.trim() ? telegramId.trim() : undefined,
-      role: isTeamMember && role ? role : '',
+      telegramId: telegramId.trim() ? telegramId.trim() : undefined,
+      role: '',
       active: true
     };
 
     onUpdateMembers([...members, newMember]);
     setName('');
     setTelegramId('');
-    setRole('');
-    setIsTeamMember(false);
   };
 
   const handleSaveEditMember = (id: string) => {
@@ -90,94 +86,151 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
   };
 
   return (
-    <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e', paddingBottom: '80px' }}>
+    <div style={{ padding: '16px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e', paddingBottom: '80px', fontFamily: "'SF Pro Condensed', -apple-system, sans-serif", fontSize: '11px', lineHeight: 1 }}>
       
       {/* Форма створення фахівця */}
-      <form onSubmit={handleAddMember} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px', backgroundColor: '#f2f2f7', padding: '16px', borderRadius: '12px' }}>
+      <form onSubmit={handleAddMember} style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '14px', backgroundColor: '#f2f2f7', padding: '12px', borderRadius: '10px' }}>
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <label style={labelStyle}>Full Name</label>
-            <div
-              onClick={() => setIsTeamMember(!isTeamMember)}
-              style={{ width: '36px', height: '20px', borderRadius: '10px', backgroundColor: isTeamMember ? '#34c759' : '#e5e5ea', position: 'relative', cursor: 'pointer' }}
-            >
-              <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#fff', position: 'absolute', top: '2px', left: isTeamMember ? '18px' : '2px', transition: 'left 0.2s' }} />
-            </div>
-          </div>
-          <input type="text" placeholder="e.g. Ivan Ivanov" value={name} onChange={(e) => setName(e.target.value)} required style={inputStyle} />
+          <label style={labelStyle}>Повне ім'я</label>
+          <input 
+            type="text" 
+            placeholder="напр. Іван Іванов" 
+            value={name} 
+            onChange={(e) => setName(e.target.value)} 
+            required 
+            style={inputStyle} 
+          />
         </div>
 
-        {isTeamMember && (
-          <>
-            <input type="text" placeholder="Telegram User ID" value={telegramId} onChange={(e) => setTelegramId(e.target.value)} style={inputStyle} />
-            <select value={role} onChange={(e) => setRole(e.target.value)} style={inputStyle}>
-              <option value="">Select role...</option>
-              {availableRoles.map((r) => <option key={r} value={r}>{r}</option>)}
-            </select>
-          </>
-        )}
+        <div>
+          <label style={labelStyle}>Telegram ID</label>
+          <input 
+            type="text" 
+            placeholder="Telegram User ID" 
+            value={telegramId} 
+            onChange={(e) => setTelegramId(e.target.value)} 
+            style={inputStyle} 
+          />
+        </div>
 
-        <button type="submit" style={{ padding: '12px', backgroundColor: '#34c759', color: '#fff', border: 'none', borderRadius: '10px', fontWeight: 700, cursor: 'pointer' }}>Add to Database</button>
+        <button 
+          type="submit" 
+          style={{ width: '100%', padding: '10px', backgroundColor: '#007aff', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontStyle: 'italic', fontSize: '12px', cursor: 'pointer', lineHeight: 1, marginTop: '2px' }}
+        >
+          Додати до бази даних
+        </button>
       </form>
 
       {/* Список учасників */}
-      <div style={{ backgroundColor: '#f2f2f7', padding: '12px 14px', borderRadius: '12px', marginBottom: '20px' }}>
-        <div onClick={() => setIsParticipantsOpen(!isParticipantsOpen)} style={{ cursor: 'pointer', textAlign: 'center', fontSize: '14px', fontWeight: 700, color: '#8e8e93' }}>Participants</div>
-        {isParticipantsOpen && members.map((m) => (
-          <div key={m.id} style={{ padding: '12px', borderRadius: '10px', backgroundColor: '#ffffff', marginTop: '10px', border: '1px solid #e5e5ea' }}>
-            {editingId === m.id ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <input type="text" value={editForm.fullName || ''} onChange={(e) => setEditForm({...editForm, fullName: e.target.value})} style={inputStyle} />
-                <input type="text" placeholder="Telegram ID" value={editForm.telegramId || ''} onChange={(e) => setEditForm({...editForm, telegramId: e.target.value})} style={inputStyle} />
-                <select value={editForm.role || ''} onChange={(e) => setEditForm({...editForm, role: e.target.value})} style={inputStyle}>
-                  <option value="">Select role...</option>
-                  {availableRoles.map(r => <option key={r} value={r}>{r}</option>)}
-                </select>
-                <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                  <button type="button" onClick={() => handleSaveEditMember(m.id)} style={{ padding: '4px 10px', backgroundColor: '#34c759', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', cursor: 'pointer' }}>Save</button>
-                  <button type="button" onClick={() => setEditingId(null)} style={{ padding: '4px 10px', backgroundColor: '#e5e5ea', color: '#1c1c1e', border: 'none', borderRadius: '6px', fontSize: '12px', cursor: 'pointer' }}>Cancel</button>
-                </div>
+      <div style={{ backgroundColor: '#f2f2f7', padding: '12px', borderRadius: '10px', marginBottom: '14px' }}>
+        <div 
+          onClick={() => setIsParticipantsOpen(!isParticipantsOpen)} 
+          style={{ cursor: 'pointer', textAlign: 'center', fontSize: '14px', fontWeight: 'bold', fontStyle: 'italic', color: '#8e8e93', userSelect: 'none', lineHeight: 1 }}
+        >
+          Учасники {isParticipantsOpen ? '▲' : '▼'}
+        </div>
+
+        {isParticipantsOpen && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
+            {members.map((m) => (
+              <div key={m.id} style={{ padding: '10px', borderRadius: '8px', backgroundColor: '#ffffff', border: '1px solid #e5e5ea' }}>
+                {editingId === m.id ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <input 
+                      type="text" 
+                      value={editForm.fullName || ''} 
+                      onChange={(e) => setEditForm({...editForm, fullName: e.target.value})} 
+                      style={inputStyle} 
+                    />
+                    <input 
+                      type="text" 
+                      placeholder="Telegram ID" 
+                      value={editForm.telegramId || ''} 
+                      onChange={(e) => setEditForm({...editForm, telegramId: e.target.value})} 
+                      style={inputStyle} 
+                    />
+                    <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+                      <button 
+                        type="button" 
+                        onClick={() => handleSaveEditMember(m.id)} 
+                        style={{ padding: '6px 10px', backgroundColor: '#34c759', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', fontStyle: 'italic', cursor: 'pointer', lineHeight: 1 }}
+                      >
+                        Зберегти
+                      </button>
+                      <button 
+                        type="button" 
+                        onClick={() => setEditingId(null)} 
+                        style={{ padding: '6px 10px', backgroundColor: '#e5e5ea', color: '#1c1c1e', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', fontStyle: 'italic', cursor: 'pointer', lineHeight: 1 }}
+                      >
+                        Скасувати
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ flex: 1, cursor: 'pointer' }} onClick={() => { setEditingId(m.id); setEditForm(m); }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '14px', fontStyle: 'italic', color: '#1c1c1e', lineHeight: 1 }}>{m.fullName}</div>
+                      {m.telegramId && (
+                        <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#8e8e93', marginTop: '2px', lineHeight: 1 }}>ID: {m.telegramId}</div>
+                      )}
+                    </div>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <button 
+                        type="button" 
+                        onClick={() => onUpdateMembers(members.filter(i => i.id !== m.id))} 
+                        style={{ background: 'none', border: 'none', color: '#ff3b30', cursor: 'pointer', fontSize: '12px', padding: 0, lineHeight: 1 }}
+                        title="Видалити"
+                      >
+                        🗑️
+                      </button>
+
+                      <div
+                        onClick={() => toggleMemberStatus(m.id)}
+                        style={{ width: '30px', height: '16px', borderRadius: '8px', backgroundColor: m.active !== false ? '#34c759' : '#e5e5ea', position: 'relative', cursor: 'pointer', flexShrink: 0 }}
+                      >
+                        <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#fff', position: 'absolute', top: '2px', left: m.active !== false ? '16px' : '2px', transition: 'left 0.2s' }} />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ flex: 1, cursor: 'pointer' }} onClick={() => { setEditingId(m.id); setEditForm(m); }}>
-                  <div style={{ fontWeight: 600 }}>{m.fullName}</div>
-                  {(m.role || m.telegramId) && (
-                    <div style={{ fontSize: '12px', color: '#8e8e93' }}>{m.role ? `${m.role} ` : ''}{m.telegramId ? `• ID: ${m.telegramId}` : ''}</div>
-                  )}
-                </div>
-                <button type="button" onClick={() => onUpdateMembers(members.filter(i => i.id !== m.id))} style={{ background: 'none', border: 'none', color: '#ff3b30', cursor: 'pointer', marginRight: '8px' }}>🗑️</button>
-                <div
-                  onClick={() => toggleMemberStatus(m.id)}
-                  style={{ width: '36px', height: '20px', borderRadius: '10px', backgroundColor: m.active !== false ? '#34c759' : '#e5e5ea', position: 'relative', cursor: 'pointer', flexShrink: 0 }}
-                >
-                  <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#fff', position: 'absolute', top: '2px', left: m.active !== false ? '18px' : '2px', transition: 'left 0.2s' }} />
-                </div>
-              </div>
-            )}
+            ))}
           </div>
-        ))}
+        )}
       </div>
 
       {/* Управління ролями */}
-      <div style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px' }}>
-        <div onClick={() => setIsRolesOpen(!isRolesOpen)} style={{ cursor: 'pointer', textAlign: 'center', fontWeight: 700, color: '#8e8e93' }}>Roles & Permissions Management</div>
+      <div style={{ backgroundColor: '#f2f2f7', padding: '12px', borderRadius: '10px' }}>
+        <div 
+          onClick={() => setIsRolesOpen(!isRolesOpen)} 
+          style={{ cursor: 'pointer', textAlign: 'center', fontSize: '14px', fontWeight: 'bold', fontStyle: 'italic', color: '#8e8e93', userSelect: 'none', lineHeight: 1 }}
+        >
+          Управління ролями та дозволами {isRolesOpen ? '▲' : '▼'}
+        </div>
+
         {isRolesOpen && (
-          <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-              <input type="text" placeholder="New role name..." value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} style={{ ...inputStyle, padding: '8px 10px', flex: 1 }} />
+              <input 
+                type="text" 
+                placeholder="Нова назва ролі..." 
+                value={newRoleName} 
+                onChange={(e) => setNewRoleName(e.target.value)} 
+                style={{ ...inputStyle, flex: 1 }} 
+              />
               <button 
                 type="button" 
                 onClick={handleCreateNewRole} 
-                style={{ width: '28px', height: '28px', backgroundColor: '#e5e5ea', color: '#1c1c1e', border: 'none', borderRadius: '6px', fontSize: '16px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-                title="Add Role"
+                style={{ ...compactPlusBtnStyle }}
+                title="Додати роль"
               >
                 +
               </button>
             </div>
 
             {roles.map(r => (
-              <div key={r.id} style={{ backgroundColor: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid #e5e5ea' }}>
+              <div key={r.id} style={{ backgroundColor: '#fff', padding: '10px', borderRadius: '8px', border: '1px solid #e5e5ea' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   
                   {editingRoleNameId === r.id ? (
@@ -186,7 +239,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                         type="text" 
                         value={tempRoleName} 
                         onChange={(e) => setTempRoleName(e.target.value)} 
-                        style={{ ...inputStyle, padding: '4px 8px', fontSize: '13px' }} 
+                        style={{ ...inputStyle, padding: '4px 8px', fontSize: '11px', height: '24px' }} 
                       />
                       <button 
                         type="button" 
@@ -196,36 +249,45 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                           }
                           setEditingRoleNameId(null);
                         }} 
-                        style={{ padding: '4px 8px', backgroundColor: '#34c759', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}
+                        style={{ padding: '4px 8px', backgroundColor: '#34c759', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', fontStyle: 'italic', cursor: 'pointer', height: '24px', lineHeight: 1 }}
                       >
                         OK
                       </button>
                     </div>
                   ) : (
                     <span 
-                      style={{ fontWeight: 600, fontSize: '13px', cursor: 'pointer', flex: 1 }} 
+                      style={{ fontWeight: 'bold', fontSize: '14px', fontStyle: 'italic', cursor: 'pointer', flex: 1, lineHeight: 1 }} 
                       onClick={() => {
                         setEditingRoleNameId(r.id);
                         setTempRoleName(r.name);
                       }}
-                      title="Click to rename role"
+                      title="Натисніть, щоб перейменувати роль"
                     >
                       {r.name}
                     </span>
                   )}
 
                   <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    <button type="button" onClick={() => { setEditingRoleId(editingRoleId === r.id ? null : r.id); setRoleEditForm(r); }} style={{ background: 'none', border: 'none', color: '#8e8e93', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
-                      {editingRoleId === r.id ? 'Close' : 'Edit'}
+                    <button 
+                      type="button" 
+                      onClick={() => { setEditingRoleId(editingRoleId === r.id ? null : r.id); setRoleEditForm(r); }} 
+                      style={{ background: 'none', border: 'none', color: '#8e8e93', fontSize: '11px', fontWeight: 'bold', fontStyle: 'italic', cursor: 'pointer', lineHeight: 1 }}
+                    >
+                      {editingRoleId === r.id ? 'Закрити' : 'Редагувати'}
                     </button>
-                    <button type="button" onClick={() => onDeleteRole(r.id)} style={{ background: 'none', border: 'none', color: '#ff3b30', fontSize: '12px', cursor: 'pointer' }} title="Delete">
+                    <button 
+                      type="button" 
+                      onClick={() => onDeleteRole(r.id)} 
+                      style={{ background: 'none', border: 'none', color: '#ff3b30', fontSize: '12px', cursor: 'pointer', padding: 0, lineHeight: 1 }} 
+                      title="Видалити"
+                    >
                       🗑️
                     </button>
                   </div>
                 </div>
 
                 {editingRoleId === r.id && roleEditForm && (
-                  <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #f2f2f7', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12px' }}>
+                  <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #f2f2f7', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11px' }}>
                     
                     {/* Повзунки доступу */}
                     <PermissionToggle
@@ -254,7 +316,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                       onChange={(val) => setRoleEditForm({ ...roleEditForm, permissions: { ...roleEditForm.permissions, showDates: val } })}
                     />
                     <PermissionToggle
-                      label="Може виконувати дії з підзадачами (видаляти/переносити)"
+                      label="Може виконувати дії з підзадачами"
                       value={roleEditForm.permissions?.canManageSubtasks ?? true}
                       onChange={(val) => setRoleEditForm({ ...roleEditForm, permissions: { ...roleEditForm.permissions, canManageSubtasks: val } })}
                     />
@@ -264,7 +326,13 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                       onChange={(val) => setRoleEditForm({ ...roleEditForm, permissions: { ...roleEditForm.permissions, showOnlyAssignedStages: val } })}
                     />
 
-                    <button type="button" onClick={() => { onSaveRole(roleEditForm); setEditingRoleId(null); }} style={{ padding: '6px 12px', backgroundColor: '#34c759', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 600, width: 'fit-content', cursor: 'pointer', marginTop: '6px' }}>Save</button>
+                    <button 
+                      type="button" 
+                      onClick={() => { onSaveRole(roleEditForm); setEditingRoleId(null); }} 
+                      style={{ padding: '6px 12px', backgroundColor: '#34c759', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontStyle: 'italic', width: 'fit-content', cursor: 'pointer', marginTop: '4px', lineHeight: 1 }}
+                    >
+                      Зберегти
+                    </button>
                   </div>
                 )}
               </div>
@@ -278,18 +346,57 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
 
 // Допоміжний компонент для охайних тумблерів
 const PermissionToggle: React.FC<{ label: string; value: boolean; onChange: (val: boolean) => void }> = ({ label, value, onChange }) => (
-  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontStyle: 'italic' }}>
     <span>{label}</span>
     <div
       onClick={() => onChange(!value)}
-      style={{ width: '36px', height: '20px', borderRadius: '10px', backgroundColor: value ? '#34c759' : '#e5e5ea', position: 'relative', cursor: 'pointer', flexShrink: 0 }}
+      style={{ width: '30px', height: '16px', borderRadius: '8px', backgroundColor: value ? '#34c759' : '#e5e5ea', position: 'relative', cursor: 'pointer', flexShrink: 0 }}
     >
-      <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#fff', position: 'absolute', top: '2px', left: value ? '18px' : '2px', transition: 'left 0.2s' }} />
+      <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#fff', position: 'absolute', top: '2px', left: value ? '16px' : '2px', transition: 'left 0.2s' }} />
     </div>
   </div>
 );
 
-const inputStyle: React.CSSProperties = { width: '100%', padding: '10px', backgroundColor: '#ffffff', border: '1px solid #d1d1d6', borderRadius: '8px', fontSize: '13px', boxSizing: 'border-box', color: '#1c1c1e' };
-const labelStyle: React.CSSProperties = { fontSize: '12px', color: '#636366', fontWeight: 600 };
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  height: '24px',
+  padding: '2px 6px',
+  backgroundColor: '#e5e5ea',
+  border: '1px solid #d1d1d6',
+  borderRadius: '6px',
+  fontSize: '11px',
+  fontStyle: 'italic',
+  outline: 'none',
+  boxSizing: 'border-box',
+  color: '#1c1c1e',
+  lineHeight: 1
+};
+
+const labelStyle: React.CSSProperties = {
+  fontSize: '11px',
+  color: '#636366',
+  marginBottom: '2px',
+  display: 'block',
+  lineHeight: 1,
+  fontStyle: 'italic'
+};
+
+const compactPlusBtnStyle: React.CSSProperties = {
+  backgroundColor: '#e5e5ea',
+  border: '1px solid #d1d1d6',
+  borderRadius: '6px',
+  width: '24px',
+  height: '24px',
+  fontSize: '14px',
+  lineHeight: 1,
+  color: '#1c1c1e',
+  padding: 0,
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flexShrink: '0',
+  boxSizing: 'border-box'
+};
 
 export default TeamManagement;
