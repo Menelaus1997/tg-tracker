@@ -24,7 +24,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
   
   const [yearIndex, setYearIndex] = useState(1);   // 2026
   const [monthIndex, setMonthIndex] = useState(7); // Серпень
-  const [weekOffset, setWeekOffset] = useState(0); // Тиждень (зміщення відносно поточного)
+  const [weekOffset, setWeekOffset] = useState(0); 
   
   const [sourceType, setSourceType] = useState<'data' | 'structure'>('structure');
   const [selectedItem, setSelectedItem] = useState<string>('');
@@ -41,7 +41,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
   const handlePrevWeek = () => setWeekOffset(prev => prev - 1);
   const handleNextWeek = () => setWeekOffset(prev => prev + 1);
 
-  // Формування назви поточного тижня для відображення
   const getWeekRangeLabel = (offset: number) => {
     const now = new Date();
     const firstDayOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 1 + offset * 7));
@@ -68,22 +67,26 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
     return false;
   });
 
-  // Автоматичне підтягування актуальних назв заголовків (синхронізовано з проєктами)
+  // Отримуємо унікальні назви рядків паспорта (Дані)
   const availableDataFields = Array.from(
     new Set(
       targetProjects.flatMap(p => (p.passportRows || []).map(r => r.label).filter(Boolean))
     )
   );
 
+  // Отримуємо назви блоків структури з урахуванням кастомних назв (наприклад, "100+") та назв стадій
   const availableStructureStages = Array.from(
     new Set(
-      targetProjects.flatMap(p => (p.stages || []).map(s => s.title).filter(Boolean))
+      targetProjects.flatMap(p => {
+        const customStructureTitle = (p as any).structureTitle;
+        const stageTitles = (p.stages || []).map(s => s.title);
+        return [customStructureTitle, ...stageTitles].filter(Boolean);
+      })
     )
   );
 
   const currentOptions = sourceType === 'data' ? availableDataFields : availableStructureStages;
 
-  // Аналіз команд із пошукового рядка
   const queryText = searchQuery.trim();
   const isTimeOp = queryText.includes('#') || queryText.toLowerCase().includes('⏱');
   const isHoursMode = queryText.includes('# 1') || queryText.includes('#1');
@@ -95,6 +98,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
   const chartData = targetProjects.map((proj, index) => {
     let resultValue = 0;
     let matchCount = 0;
+    const customStructureTitle = (proj as any).structureTitle || 'Структура';
 
     if (sourceType === 'data') {
       (proj.passportRows || []).forEach(r => {
@@ -120,7 +124,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
           const stageContractors: string[] = (st as any).contractors || (st.contractor ? [st.contractor] : []);
           const contractorsStr = stageContractors.join(' ').toLowerCase();
 
-          const matchItem = !selectedItem || title.includes(selectedItem.toLowerCase());
+          const matchItem = !selectedItem || customStructureTitle.toLowerCase().includes(selectedItem.toLowerCase()) || title.includes(selectedItem.toLowerCase());
           const matchQuery = !cleanQuery || title.includes(cleanQuery) || contractorsStr.includes(cleanQuery);
 
           if (matchItem && matchQuery) {
@@ -147,7 +151,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
           const stageContractors: string[] = (st as any).contractors || (st.contractor ? [st.contractor] : []);
           const contractorsStr = stageContractors.join(' ').toLowerCase();
 
-          const matchItem = !selectedItem || title.includes(selectedItem.toLowerCase());
+          const matchItem = !selectedItem || customStructureTitle.toLowerCase().includes(selectedItem.toLowerCase()) || title.includes(selectedItem.toLowerCase());
           const matchQuery = !cleanQuery || 
             title.includes(cleanQuery) || 
             currentStatus.includes(cleanQuery) || 
@@ -183,10 +187,12 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
       resultValue = Number((resultValue / matchCount).toFixed(1));
     }
 
+    const projectIdDisplay = proj.id || 'без ID';
+
     return {
-      name: `${proj.name} (${proj.id || 'без ID'})`,
+      name: projectIdDisplay,
       shortName: proj.name,
-      projectId: proj.id,
+      projectId: projectIdDisplay,
       value: isHoursMode ? Number(resultValue.toFixed(1)) : Math.round(resultValue),
       color: proj.color || CHART_COLORS[index % CHART_COLORS.length]
     };
@@ -205,7 +211,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
       
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px', backgroundColor: '#f9f9fb', padding: '12px', borderRadius: '12px', border: '1px solid #e5e5ea', boxSizing: 'border-box' }}>
         
-        {/* Перемикач періодів */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: '6px' }}>
           {(['week', 'month', 'year'] as const).map(p => (
             <button
@@ -228,7 +233,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
           ))}
         </div>
 
-        {/* Навігація для Тижня */}
         {period === 'week' && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '2px 0' }}>
             <button onClick={handlePrevWeek} style={arrowBtnStyle}>◀</button>
@@ -237,7 +241,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
           </div>
         )}
 
-        {/* Навігація для Року */}
         {period === 'year' && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '2px 0' }}>
             <button onClick={handlePrevYear} style={arrowBtnStyle}>◀</button>
@@ -246,7 +249,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
           </div>
         )}
 
-        {/* Навігація для Місяця */}
         {period === 'month' && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '2px 0' }}>
             <button onClick={handlePrevMonth} style={arrowBtnStyle}>◀</button>
@@ -255,9 +257,9 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
           </div>
         )}
 
-        {/* Фільтри та селекти з фіксованим обмеженням ширини */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px', width: '100%', boxSizing: 'border-box' }}>
           <div style={{ display: 'flex', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
+            {/* Випадаючий список типів із чистими назвами без дужок */}
             <select
               value={sourceType}
               onChange={(e) => {
@@ -266,11 +268,10 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
               }}
               style={{ ...inputStyle, flex: 1, minWidth: 0 }}
             >
-              <option value="data">📊 Дані (Паспорт)</option>
-              <option value="structure">📑 Структура (Стадії)</option>
+              <option value="data">Дані</option>
+              <option value="structure">Структура</option>
             </select>
 
-            {/* Суворе обмеження ширини селекта, щоб не виходив за межі знаку ? */}
             <select
               value={selectedItem}
               onChange={(e) => setSelectedItem(e.target.value)}
@@ -337,7 +338,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
                 outerRadius={85} 
                 paddingAngle={4} 
                 dataKey="value"
-                label={({ shortName, projectId }) => `${shortName} (${projectId || 'ід відсутній'})`}
+                // Відображення на графіку виключно ID проєкту без назви та дужок
+                label={({ projectId }) => `${projectId}`}
                 labelLine={true}
               >
                 {chartData.map((entry, index) => (
@@ -376,7 +378,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
               <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: item.color }} />
               <div>
                 <div style={{ fontSize: '14px', fontWeight: 700 }}>{item.shortName}</div>
-                <div style={{ fontSize: '11px', color: '#8e8e93' }}>ID: {item.projectId || 'не вказано'}</div>
+                <div style={{ fontSize: '11px', color: '#8e8e93' }}>ID: {item.projectId}</div>
               </div>
             </div>
             <div style={{ fontSize: '14px', fontWeight: 700, color: item.color }}>
