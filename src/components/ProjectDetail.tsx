@@ -92,17 +92,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [selectedTagId, setSelectedTagId] = useState<string>(statuses[0]?.id || '');
   const [globalPickerColor, setGlobalPickerColor] = useState<string>(statuses[0]?.color || '#007aff');
 
-  const [colors, setColors] = useState<string[]>(() => {
-    const initial = [...DEFAULT_COLORS];
-    if (project.color && !initial.includes(project.color)) {
-      initial[0] = project.color;
-    }
-    return initial;
-  });
-  const [selectedColorIndex, setSelectedColorIndex] = useState<number>(() => {
-    const idx = DEFAULT_COLORS.indexOf(project.color);
-    return idx !== -1 ? idx : 0;
-  });
+  const [projectColor, setProjectColor] = useState<string>(project.color || DEFAULT_COLORS[0]);
 
   const [isGeneralDataOpen, setIsGeneralDataOpen] = useState(true);
   const [generalRows, setGeneralRows] = useState<GeneralDataRow[]>(() => project.passportRows || [
@@ -134,9 +124,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const triggerAutoSave = (overrides: Partial<Project> = {}) => {
     const updatedProject: Project = {
       ...project,
-      id: projectId.trim(),
+      // Гарантуємо унікальний ідентифікатор щоб проєкти не зливалися в один
+      id: projectId.trim() || project.id,
       name: name.trim(),
-      color: colors[selectedColorIndex],
+      color: projectColor,
       passportRows: generalRows,
       stages,
       enableRoles,
@@ -204,11 +195,14 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     triggerAutoSave({ stages: updatedStages });
   };
 
+  const handleSelectColor = (colorHex: string) => {
+    setProjectColor(colorHex);
+    triggerAutoSave({ color: colorHex });
+  };
+
   const handleCustomColorPicker = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newColor = e.target.value;
-    const updated = [...colors];
-    updated[selectedColorIndex] = newColor;
-    setColors(updated);
+    setProjectColor(newColor);
     triggerAutoSave({ color: newColor });
   };
 
@@ -371,7 +365,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     triggerAutoSave({ stages: updatedStages });
   };
 
-  // Оновлена функція вибору дат без обмежень на вихідні
   const handleUpdateStageDates = (stageId: string, field: 'startDate' | 'endDate', val: string) => {
     if (!isSuperAdmin) return;
     const updatedStages = stages.map(s => s.id === stageId ? { ...s, [field]: val } : s);
@@ -579,9 +572,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const handleFinalSave = () => {
     const updatedProject: Project = {
       ...project,
-      id: projectId.trim(),
+      id: projectId.trim() || project.id,
       name: name.trim(),
-      color: colors[selectedColorIndex],
+      color: projectColor,
       passportRows: generalRows,
       stages,
       enableRoles,
@@ -699,15 +692,12 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '4px', marginTop: '4px', overflowX: 'auto', paddingBottom: '2px' }}>
-              {colors.slice(0, 8).map((c, idx) => {
-                const isSelected = selectedColorIndex === idx;
+              {DEFAULT_COLORS.slice(0, 8).map((c, idx) => {
+                const isSelected = projectColor === c;
                 return (
                   <div
                     key={idx}
-                    onClick={() => {
-                      setSelectedColorIndex(idx);
-                      triggerAutoSave({ color: c });
-                    }}
+                    onClick={() => handleSelectColor(c)}
                     style={{
                       width: '22px',
                       height: '22px',
@@ -750,7 +740,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', lineHeight: 1 }}>+</span>
                 <input
                   type="color"
-                  value={colors[selectedColorIndex] || '#007aff'}
+                  value={projectColor}
                   onChange={handleCustomColorPicker}
                   style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer', top: 0, left: 0 }}
                 />
