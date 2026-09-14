@@ -1,271 +1,202 @@
-import React, { useState, useEffect } from 'react';
-
+import React, { useState } from 'react';
 import ProjectList from './components/ProjectList';
-import { ProjectDetail } from './components/ProjectDetail';
-import { CreateProject } from './components/CreateProject';
-import { VorCalculator } from './components/VorCalculator';
-import { Analytics } from './components/Analytics';
-import { TeamManagement } from './components/TeamManagement';
-import { Finance } from './components/Finance';
-import { Settings } from './components/Settings';
+import ProjectDetail from './components/ProjectDetail';
 
-export type RoleType = string;
-
-export interface RolePermissions {
-  canViewCreateProject: boolean;
-  canViewVor: boolean;
-  canViewAnalytics: boolean;
-  canViewTeam: boolean;
-  canViewSettings: boolean;
-  canViewFinance?: boolean;
-  canSeeAllProjects: boolean;
-  canEditProjects: boolean;
-  canDeleteProjects: boolean;
-  canManageStages: boolean;
-  canManageTimer: boolean;
-  canAssignTeam: boolean;
-  onlyAssignedStages?: boolean;
-  showDates?: boolean;
-  canManageSubtasks?: boolean;
-  showOnlyAssignedStages?: boolean;
-}
-
-export interface RoleConfig {
+export interface Stage {
   id: string;
-  name: RoleType;
-  permissions: RolePermissions;
-}
-
-export interface TeamMember {
-  id: string;
-  fullName: string;
-  telegramId?: string;
-  role: RoleType;
-  active?: boolean;
+  title: string;
+  subStages: { id: string; title: string; completed: boolean }[];
+  startDate?: string;
+  endDate?: string;
+  reviewDate?: string;
+  correctionDate?: string;
+  contractors?: string[];
+  currentStatus?: string;
 }
 
 export interface Project {
   id: string;
   name: string;
-  color: string;
-  status: 'active' | 'archived' | 'trash';
-  stages?: any[];
-  teamMembers?: TeamMember[];
-  topicLink?: string;
-  threadId?: number;
+  color?: string;
+  status?: 'active' | 'archived' | 'trash';
+  stages: Stage[];
   passportRows?: any[];
-  totalLoggedSeconds?: number;
-  projectTeam?: any[];
-  structureTitle?: string;
-  tagsTitle?: string;
-  dataTitle?: string;
-  settingsTitle?: string;
+  customStatuses?: any[];
+  [key: string]: any;
 }
 
-const INITIAL_ROLES: RoleConfig[] = [
-  {
-    id: '1',
-    name: 'Керівник',
-    permissions: { canViewCreateProject: true, canViewVor: true, canViewAnalytics: true, canViewTeam: true, canViewSettings: true, canViewFinance: true, canSeeAllProjects: true, canEditProjects: true, canDeleteProjects: true, canManageStages: true, canManageTimer: true, canAssignTeam: true, showDates: true, canManageSubtasks: true, showOnlyAssignedStages: false }
-  },
-  {
-    id: '2',
-    name: 'Кресляр',
-    permissions: { canViewCreateProject: false, canViewVor: true, canViewAnalytics: false, canViewTeam: false, canViewSettings: false, canViewFinance: false, canSeeAllProjects: false, canEditProjects: false, canDeleteProjects: false, canManageStages: true, canManageTimer: true, canAssignTeam: false, showDates: false, canManageSubtasks: true, showOnlyAssignedStages: true }
-  },
-  {
-    id: '3',
-    name: 'Візуалізатор',
-    permissions: { canViewCreateProject: false, canViewVor: true, canViewAnalytics: false, canViewTeam: false, canViewSettings: false, canViewFinance: false, canSeeAllProjects: false, canEditProjects: false, canDeleteProjects: false, canManageStages: true, canManageTimer: true, canAssignTeam: false, showDates: false, canManageSubtasks: true, showOnlyAssignedStages: true }
-  }
-];
+export interface TeamMember {
+  id: string;
+  fullName: string;
+}
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<number>(2); // 2 — Існуючі проєкти за замовчуванням
+  const [projects, setProjects] = useState<Project[]>([
+    {
+      id: 'DES-26.05-01',
+      name: 'ЖК Паркові озера',
+      color: '#34c759',
+      status: 'active',
+      stages: [
+        {
+          id: 's1',
+          title: 'Концепція',
+          startDate: '2026-05-10',
+          endDate: '2026-06-30',
+          subStages: [
+            { id: 'sub1', title: 'Збір референсів', completed: true },
+            { id: 'sub2', title: 'Первинне планування', completed: false }
+          ],
+          contractors: ['Олександр (Дизайнер)']
+        }
+      ]
+    }
+  ]);
+
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'create' | 'projects' | 'team' | 'settings'>('create');
   
-  const [currentRoleName, setCurrentRoleName] = useState<string>('Керівник');
+  // Стани для створення нового проєкту
+  const [newProjectName, setNewProjectName] = useState('');
+  const [newProjectId, setNewProjectId] = useState('');
+  const [newProjectColor, setNewProjectColor] = useState('#34c759');
 
-  const [projects, setProjects] = useState<Project[]>(() => {
-    const saved = localStorage.getItem('app_projects');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const teamDatabase: TeamMember[] = [
+    { id: '1', fullName: 'Олександр' },
+    { id: '2', fullName: 'Марія' }
+  ];
+  const availableRoles = ['Дизайнер', 'Архітектор', 'Керівник'];
 
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(() => {
-    const saved = localStorage.getItem('app_team');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const selectedProject = projects.find(p => p.id === selectedProjectId);
 
-  const [roles, setRoles] = useState<RoleConfig[]>(() => {
-    const saved = localStorage.getItem('app_roles');
-    return saved ? JSON.parse(saved) : INITIAL_ROLES;
-  });
-
-  const [templates, setTemplates] = useState<any[]>(() => {
-    const saved = localStorage.getItem('app_templates');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [botToken, setBotToken] = useState<string>(() => localStorage.getItem('app_bot_token') || '');
-  const [groupId, setGroupId] = useState<string>(() => localStorage.getItem('app_group_id') || '');
-  const [fontFamily, setFontFamily] = useState<string>(() => localStorage.getItem('app_font') || "'SF Pro Condensed', -apple-system, sans-serif");
-
-  const [adminCredentials, setAdminCredentials] = useState(() => {
-    const saved = localStorage.getItem('app_admin_credentials');
-    return saved ? JSON.parse(saved) : { login: 'admin', passwordHash: 'admin', secretWord: 'дизайн' };
-  });
-
-  useEffect(() => localStorage.setItem('app_projects', JSON.stringify(projects)), [projects]);
-  useEffect(() => localStorage.setItem('app_team', JSON.stringify(teamMembers)), [teamMembers]);
-  useEffect(() => localStorage.setItem('app_roles', JSON.stringify(roles)), [roles]);
-  useEffect(() => localStorage.setItem('app_templates', JSON.stringify(templates)), [templates]);
-  useEffect(() => localStorage.setItem('app_admin_credentials', JSON.stringify(adminCredentials)), [adminCredentials]);
-
-  const handleSaveSettings = (token: string, group: string, font: string) => {
-    setBotToken(token);
-    setGroupId(group);
-    setFontFamily(font);
-    localStorage.setItem('app_bot_token', token);
-    localStorage.setItem('app_group_id', group);
-    localStorage.setItem('app_font', font);
+  const handleUpdateProject = (updated: Project) => {
+    setProjects(projects.map(p => p.id === updated.id ? updated : p));
   };
 
-  const handleUpdateCredentials = (login: string, pass: string, secret: string) => {
-    setAdminCredentials({ login, passwordHash: pass, secretWord: secret });
-  };
+  const handleCreateProject = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProjectName.trim()) return;
 
-  const handleCreateProject = (newProject: Project) => {
-    setProjects([newProject, ...projects]);
-    setActiveTab(2); // Переходимо на вкладку існуючих проєктів
-  };
-
-  const handleSaveTemplate = (project: Project, templateName: string) => {
-    if (!templateName || !templateName.trim()) return;
-
-    const cleanStages = (project.stages || []).map((st: any) => ({
-      title: st.title,
-      subStages: (st.subStages || []).map((sub: any) => ({
-        title: sub.title,
-        completed: false
-      }))
-    }));
-
-    const newTemplate = {
-      id: Date.now().toString(),
-      name: templateName.trim(),
-      stages: cleanStages
+    const createdProject: Project = {
+      id: newProjectId.trim() || `DES-${Date.now().toString().slice(-6)}`,
+      name: newProjectName.trim(),
+      color: newProjectColor,
+      status: 'active',
+      stages: [
+        {
+          id: Date.now().toString(),
+          title: 'Етап 1',
+          subStages: [{ id: 'sub-1', title: 'Головна задача', completed: false }],
+          contractors: []
+        }
+      ]
     };
 
-    setTemplates((prev) => [...prev, newTemplate]);
-    alert(`Шаблон "${templateName.trim()}" успішно створено!`);
+    setProjects([createdProject, ...projects]);
+    setNewProjectName('');
+    setNewProjectId('');
+    setSelectedProjectId(createdProject.id);
   };
 
-  const activeProject = projects.find((p) => p.id === selectedProjectId);
-
-  const ProjectListComponent = (ProjectList as any).ProjectList || ProjectList;
-  const CreateProjectComponent = (CreateProject as any).CreateProject || CreateProject;
-
   return (
-    <div style={{ paddingBottom: '70px', minHeight: '100vh', backgroundColor: '#ffffff', fontFamily }}>
-      {selectedProjectId && activeProject ? (
-        <ProjectDetail
-          project={activeProject}
-          onUpdateProject={(updated) => {
-            setProjects(projects.map((p) => (p.id === activeProject.id || p.id === updated.id ? updated : p)));
-          }}
-          onSaveAsTemplate={handleSaveTemplate}
-          onBack={() => setSelectedProjectId(null)}
-          teamDatabase={teamMembers}
-          availableRoles={roles.map((r) => r.name)}
-          currentUserRole={currentRoleName}
-          rolesConfig={roles}
-        />
-      ) : (
-        <>
-          {activeTab === 1 && (
-            <CreateProjectComponent
-              onCreateProject={handleCreateProject}
-              templates={templates}
-              onUpdateTemplates={setTemplates}
-            />
-          )}
-          {activeTab === 2 && (
-            <ProjectListComponent
+    <div style={{ minHeight: '100vh', backgroundColor: '#ffffff', paddingBottom: '70px', boxSizing: 'border-box', fontFamily: "'SF Pro Condensed', -apple-system, sans-serif" }}>
+      {/* Header */}
+      <div style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e5e5ea' }}>
+        <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', fontStyle: 'italic', color: '#1c1c1e' }}>
+          Design Tracker Bot
+        </h2>
+      </div>
+
+      {/* Content */}
+      <div style={{ paddingBottom: '20px' }}>
+        {selectedProjectId && selectedProject ? (
+          <ProjectDetail
+            project={selectedProject}
+            onUpdateProject={handleUpdateProject}
+            onSaveAsTemplate={() => {}}
+            onBack={() => setSelectedProjectId(null)}
+            teamDatabase={teamDatabase}
+            availableRoles={availableRoles}
+          />
+        ) : activeTab === 'create' ? (
+          <div style={{ padding: '16px', maxWidth: '400px', margin: '0 auto' }}>
+            <form onSubmit={handleCreateProject} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '11px', color: '#636366', marginBottom: '2px', display: 'block', fontStyle: 'italic' }}>
+                  Назва проекту
+                </label>
+                <input
+                  type="text"
+                  placeholder="Введіть назву проекту"
+                  value={newProjectName}
+                  onChange={(e) => setNewProjectName(e.target.value)}
+                  style={{ width: '100%', padding: '8px', backgroundColor: '#e5e5ea', border: '1px solid #d1d1d6', borderRadius: '6px', fontSize: '12px', fontStyle: 'italic', boxSizing: 'border-box', outline: 'none' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11px', color: '#636366', marginBottom: '2px', display: 'block', fontStyle: 'italic' }}>
+                  ID проекту
+                </label>
+                <input
+                  type="text"
+                  placeholder="Введіть ID проекту"
+                  value={newProjectId}
+                  onChange={(e) => setNewProjectId(e.target.value)}
+                  style={{ width: '100%', padding: '8px', backgroundColor: '#e5e5ea', border: '1px solid #d1d1d6', borderRadius: '6px', fontSize: '12px', fontStyle: 'italic', boxSizing: 'border-box', outline: 'none' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11px', color: '#636366', marginBottom: '2px', display: 'block', fontStyle: 'italic' }}>
+                  Шаблон
+                </label>
+                <select
+                  style={{ width: '100%', padding: '8px', backgroundColor: '#e5e5ea', border: '1px solid #d1d1d6', borderRadius: '6px', fontSize: '12px', fontStyle: 'italic', boxSizing: 'border-box', outline: 'none', cursor: 'pointer' }}
+                >
+                  <option value="general">Загальний шаблон (кастомний)</option>
+                </select>
+              </div>
+
+              <button
+                type="submit"
+                style={{ width: '100%', padding: '10px', backgroundColor: '#007aff', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontStyle: 'italic', fontSize: '12px', cursor: 'pointer', marginTop: '8px' }}
+              >
+                Додати проект
+              </button>
+
+              <div style={{ textAlign: 'center', marginTop: '4px' }}>
+                <span style={{ fontSize: '11px', color: '#007aff', cursor: 'pointer', fontStyle: 'italic', textDecoration: 'underline' }}>
+                  Архів шаблонів
+                </span>
+              </div>
+            </form>
+          </div>
+        ) : activeTab === 'projects' ? (
+          <div style={{ padding: '16px', maxWidth: '500px', margin: '0 auto' }}>
+            <ProjectList
               projects={projects}
-              onSelectProject={(id: string) => setSelectedProjectId(id)}
-              onUpdateProjects={setProjects}
-              isSuperAdmin={true}
-              onPermanentDelete={(id: string) => setProjects(projects.filter((p) => p.id !== id))}
+              onSelectProject={(id) => setSelectedProjectId(id)}
+              onUpdateProjects={(updatedList) => setProjects(updatedList)}
+              onPermanentDelete={(id) => setProjects(projects.filter(p => p.id !== id))}
             />
-          )}
-          {activeTab === 3 && <VorCalculator />}
-          {activeTab === 4 && <Analytics projects={projects} teamDatabase={teamMembers} />}
-          
-          {activeTab === 5 && (
-            <TeamManagement
-              members={teamMembers}
-              onUpdateMembers={setTeamMembers}
-              roles={roles}
-              onSaveRole={(r) => {
-                const exists = roles.some((ro) => ro.id === r.id);
-                setRoles(exists ? roles.map((ro) => (ro.id === r.id ? r : ro)) : [...roles, r]);
-              }}
-              onDeleteRole={(id) => setRoles(roles.filter((r) => r.id !== id))}
-              availableRoles={roles.map((r) => r.name)}
-            />
-          )}
+          </div>
+        ) : (
+          <div style={{ padding: '20px', textAlign: 'center', color: '#8e8e93', fontStyle: 'italic' }}>
+            Розділ в розробці...
+          </div>
+        )}
+      </div>
 
-          {activeTab === 6 && <Finance projects={projects} />}
-
-          {activeTab === 7 && (
-            <Settings
-              botToken={botToken}
-              groupId={groupId}
-              fontFamily={fontFamily}
-              onSaveSettings={handleSaveSettings}
-              adminCredentials={adminCredentials}
-              onUpdateCredentials={handleUpdateCredentials}
-            />
-          )}
-        </>
-      )}
-
-      {!selectedProjectId && (
-        <div style={navBarStyle}>
-          <button onClick={() => setActiveTab(1)} style={navBtnStyle(activeTab === 1)} title="Створити проєкт">➕</button>
-          <button onClick={() => setActiveTab(2)} style={navBtnStyle(activeTab === 2)} title="Проєкти">📁</button>
-          <button onClick={() => setActiveTab(3)} style={navBtnStyle(activeTab === 3)} title="Калькулятор VOR">📊</button>
-          <button onClick={() => setActiveTab(4)} style={navBtnStyle(activeTab === 4)} title="Аналітика">📈</button>
-          <button onClick={() => setActiveTab(5)} style={navBtnStyle(activeTab === 5)} title="Команда">👥</button>
-          <button onClick={() => setActiveTab(6)} style={navBtnStyle(activeTab === 6)} title="Фінанси">💰</button>
-          <button onClick={() => setActiveTab(7)} style={navBtnStyle(activeTab === 7)} title="Налаштування">⚙️</button>
-        </div>
-      )}
+      {/* Нижній навігаційний бар (як на скріншоті) */}
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: '60px', backgroundColor: '#ffffff', borderTop: '1px solid #e5e5ea', display: 'flex', justifyContent: 'space-around', alignItems: 'center', zIndex: 1000 }}>
+        <button onClick={() => setActiveTab('create')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: activeTab === 'create' ? '#007aff' : '#8e8e93' }}>➕</button>
+        <button onClick={() => setActiveTab('projects')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: activeTab === 'projects' ? '#007aff' : '#8e8e93' }}>📁</button>
+        <button onClick={() => setActiveTab('team')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: '#8e8e93' }}>👥</button>
+        <button onClick={() => setActiveTab('settings')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: '#8e8e93' }}>⚙️</button>
+      </div>
     </div>
   );
 };
-
-const navBarStyle: React.CSSProperties = {
-  position: 'fixed',
-  bottom: 0,
-  left: 0,
-  right: 0,
-  height: '60px',
-  backgroundColor: '#ffffff',
-  borderTop: '1px solid #e5e5ea',
-  display: 'flex',
-  justifyContent: 'space-around',
-  alignItems: 'center',
-  zIndex: 1000
-};
-
-const navBtnStyle = (active: boolean): React.CSSProperties => ({
-  background: 'none',
-  border: 'none',
-  fontSize: '18px',
-  opacity: active ? 1 : 0.4,
-  cursor: 'pointer',
-  padding: '10px'
-});
 
 export default App;
