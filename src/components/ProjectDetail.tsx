@@ -75,11 +75,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [enableTags, setEnableTags] = useState<boolean>((project as any).enableTags ?? true);
   const [showStageTags, setShowStageTags] = useState<boolean>((project as any).showStageTags ?? true);
   const [enableData, setEnableData] = useState<boolean>((project as any).enableData ?? true);
-  const [enableTimeTracking, setEnableTimeTracking] = useState<boolean>((project as any).enableTimeTracking ?? true);
   const [showDates, setShowDates] = useState<boolean>((project as any).showDates ?? (permissions.showDates ?? true));
   
   const [enableSubtaskMoving, setEnableSubtaskMoving] = useState<boolean>((project as any).enableSubtaskMoving ?? true);
-  const [enableNestedItems, setEnableNestedItems] = useState<boolean>((project as any).enableNestedItems ?? true);
 
   const [statuses, setStatuses] = useState<ProjectStatus[]>(
     (project.customStatuses || DEFAULT_STATUSES).map((s: any) => ({
@@ -112,10 +110,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [newStageTitle, setNewStageTitle] = useState('');
   const [newSubStageTitle, setNewSubStageTitle] = useState<{ [key: string]: string }>({});
 
-  const [editingTimeStageId, setEditingTimeStageId] = useState<string | null>(null);
-  const [manualHours, setManualHours] = useState('0');
-  const [manualMinutes, setManualMinutes] = useState('0');
-
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const [templateNameInput, setTemplateNameInput] = useState(project.name);
 
@@ -134,10 +128,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       enableTags,
       showStageTags,
       enableData,
-      enableTimeTracking,
       showDates,
       enableSubtaskMoving,
-      enableNestedItems,
       enableStructure: true,
       customStatuses: statuses,
       tagsTitle,
@@ -280,9 +272,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       id: Date.now().toString(),
       title: newStageTitle.trim(),
       subStages: [],
-      trackTime: true,
-      loggedSeconds: 0,
-      isTimerRunning: false,
       startDate: '',
       endDate: '',
       reviewDate: '',
@@ -339,31 +328,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     triggerAutoSave({ stages: updatedStages });
   };
 
-  const handleToggleStageTrackTime = (stageId: string) => {
-    const updatedStages = stages.map(s => s.id === stageId ? { ...s, trackTime: s.trackTime === false } : s);
-    setStages(updatedStages);
-    triggerAutoSave({ stages: updatedStages });
-  };
-
-  const handleToggleStageTimer = (stageId: string) => {
-    const updatedStages = stages.map(s => {
-      if (s.id === stageId) {
-        return { ...s, isTimerRunning: !s.isTimerRunning };
-      }
-      return s;
-    });
-    setStages(updatedStages);
-    triggerAutoSave({ stages: updatedStages });
-  };
-
-  const handleSaveManualTime = (stageId: string) => {
-    const sec = (parseInt(manualHours) || 0) * 3600 + (parseInt(manualMinutes) || 0) * 60;
-    const updatedStages = stages.map(s => s.id === stageId ? { ...s, loggedSeconds: sec } : s);
-    setStages(updatedStages);
-    setEditingTimeStageId(null);
-    triggerAutoSave({ stages: updatedStages });
-  };
-
   const handleUpdateStageDates = (stageId: string, field: 'startDate' | 'endDate', val: string) => {
     if (!isSuperAdmin) return;
     const updatedStages = stages.map(s => s.id === stageId ? { ...s, [field]: val } : s);
@@ -380,8 +344,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         const newSub: SubStage = {
           id: Date.now().toString(),
           title: title.trim(),
-          completed: false,
-          nestedItems: []
+          completed: false
         } as any;
         return { ...s, subStages: [...s.subStages, newSub] };
       }
@@ -450,124 +413,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     triggerAutoSave({ stages: updatedStages });
   };
 
-  const handleAddNestedItem = (stageId: string, subStageId: string) => {
-    if (!canManageSubtasks || !enableNestedItems) return;
-
-    const updatedStages = stages.map(s => {
-      if (s.id === stageId) {
-        return {
-          ...s,
-          subStages: s.subStages.map(sub => {
-            if (sub.id === subStageId) {
-              const nested = (sub as any).nestedItems || [];
-              const newItem = { id: Date.now().toString(), title: '', completed: false };
-              return { ...sub, nestedItems: [...nested, newItem] };
-            }
-            return sub;
-          })
-        };
-      }
-      return s;
-    });
-    setStages(updatedStages);
-    triggerAutoSave({ stages: updatedStages });
-  };
-
-  const handleMoveNestedItem = (stageId: string, subStageId: string, index: number, direction: 'up' | 'down') => {
-    if (!canManageSubtasks || !enableSubtaskMoving) return;
-    const updatedStages = stages.map(s => {
-      if (s.id === stageId) {
-        return {
-          ...s,
-          subStages: s.subStages.map(sub => {
-            if (sub.id === subStageId) {
-              const nested = [...((sub as any).nestedItems || [])];
-              const targetIndex = direction === 'up' ? index - 1 : index + 1;
-              if (targetIndex < 0 || targetIndex >= nested.length) return sub;
-              const [moved] = nested.splice(index, 1);
-              nested.splice(targetIndex, 0, moved);
-              return { ...sub, nestedItems: nested };
-            }
-            return sub;
-          })
-        };
-      }
-      return s;
-    });
-    setStages(updatedStages);
-    triggerAutoSave({ stages: updatedStages });
-  };
-
-  const handleUpdateNestedItemTitle = (stageId: string, subStageId: string, itemId: string, newTitle: string) => {
-    const updatedStages = stages.map(s => {
-      if (s.id === stageId) {
-        return {
-          ...s,
-          subStages: s.subStages.map(sub => {
-            if (sub.id === subStageId) {
-              const nested = (sub as any).nestedItems || [];
-              return {
-                ...sub,
-                nestedItems: nested.map((item: any) => item.id === itemId ? { ...item, title: newTitle } : item)
-              };
-            }
-            return sub;
-          })
-        };
-      }
-      return s;
-    });
-    setStages(updatedStages);
-    triggerAutoSave({ stages: updatedStages });
-  };
-
-  const handleToggleNestedItem = (stageId: string, subStageId: string, itemId: string) => {
-    const updatedStages = stages.map(s => {
-      if (s.id === stageId) {
-        return {
-          ...s,
-          subStages: s.subStages.map(sub => {
-            if (sub.id === subStageId) {
-              const nested = (sub as any).nestedItems || [];
-              return {
-                ...sub,
-                nestedItems: nested.map((item: any) => item.id === itemId ? { ...item, completed: !item.completed } : item)
-              };
-            }
-            return sub;
-          })
-        };
-      }
-      return s;
-    });
-    setStages(updatedStages);
-    triggerAutoSave({ stages: updatedStages });
-  };
-
-  const handleDeleteNestedItem = (stageId: string, subStageId: string, itemId: string) => {
-    if (!canManageSubtasks) return;
-    const updatedStages = stages.map(s => {
-      if (s.id === stageId) {
-        return {
-          ...s,
-          subStages: s.subStages.map(sub => {
-            if (sub.id === subStageId) {
-              const nested = (sub as any).nestedItems || [];
-              return {
-                ...sub,
-                nestedItems: nested.filter((item: any) => item.id !== itemId)
-              };
-            }
-            return sub;
-          })
-        };
-      }
-      return s;
-    });
-    setStages(updatedStages);
-    triggerAutoSave({ stages: updatedStages });
-  };
-
   const handleFinalSave = () => {
     const updatedProject: Project = {
       ...project,
@@ -581,10 +426,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       enableTags,
       showStageTags,
       enableData,
-      enableTimeTracking,
       showDates,
       enableSubtaskMoving,
-      enableNestedItems,
       enableStructure: true,
       customStatuses: statuses,
       tagsTitle,
@@ -601,12 +444,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
     alert('Зміни успішно збережено!');
     onBack();
-  };
-
-  const formatTime = (sec: number = 0) => {
-    const h = Math.floor(sec / 3600);
-    const m = Math.floor((sec % 3600) / 60);
-    return `${h}г ${m}хв`;
   };
 
   const displayedStages = stages.filter(st => {
@@ -1095,7 +932,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             />
           </div>
 
-          {/* Виведення дати початку та дедлайну проекту біля назви Структура */}
           {showDates && (projectStartDate || finalProjectDeadline) && (
             <div style={dateBoxStyle}>
               📅 {formatDateShort(projectStartDate)} {projectStartDate && finalProjectDeadline ? '-' : ''} {formatDateShort(finalProjectDeadline)}
@@ -1123,7 +959,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {displayedStages.map((st) => {
                 const isCollapsed = collapsedStages[st.id];
-                const isTrackTimeOn = st.trackTime !== false;
                 const stageContractors: string[] = (st as any).contractors || (st.contractor ? [st.contractor] : []);
                 
                 const currentStageStatusLabel = (st as any).currentStatus || statuses[0]?.label || 'В процесі';
@@ -1202,34 +1037,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       </div>
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        {enableRoles && enableTimeTracking && isTrackTimeOn && !isCompletedStatus && (
-                          <>
-                            <button
-                              onClick={() => handleToggleStageTimer(st.id)}
-                              style={{
-                                ...btnStyle,
-                                backgroundColor: st.isTimerRunning ? '#ff3b30' : '#34c759',
-                                color: '#fff',
-                                fontSize: '10px',
-                                padding: '2px 6px'
-                              }}
-                            >
-                              {st.isTimerRunning ? `⏸ [ ${formatTime(st.loggedSeconds)} ]` : `▶ [ ${formatTime(st.loggedSeconds)} ]`}
-                            </button>
-
-                            <button
-                              onClick={() => {
-                                setEditingTimeStageId(editingTimeStageId === st.id ? null : st.id);
-                                setManualHours(Math.floor((st.loggedSeconds || 0) / 3600).toString());
-                                setManualMinutes(Math.floor(((st.loggedSeconds || 0) % 3600) / 60).toString());
-                              }}
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '11px' }}
-                            >
-                              ⏱️
-                            </button>
-                          </>
-                        )}
-
                         {isSuperAdmin && !isCompletedStatus && (
                           <div style={{ width: '32px', display: 'flex', justifyContent: 'center' }}>
                             <button onClick={() => handleDeleteStage(st.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '11px' }}>
@@ -1240,59 +1047,12 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       </div>
                     </div>
 
-                    {editingTimeStageId === st.id && !isCompletedStatus && (
-                      <div style={{ display: 'flex', gap: '4px', alignItems: 'center', marginBottom: '6px', padding: '4px', backgroundColor: '#f2f2f7', borderRadius: '6px', fontSize: '11px' }}>
-                        <span>Годин:</span>
-                        <input type="number" value={manualHours} onChange={(e) => setManualHours(e.target.value)} style={{ ...cardInputStyle, width: '40px', padding: '2px 4px', height: '24px', boxSizing: 'border-box', fontSize: '11px', fontStyle: 'italic' }} />
-                        <span>Хвил:</span>
-                        <input type="number" value={manualMinutes} onChange={(e) => setManualMinutes(e.target.value)} style={{ ...cardInputStyle, width: '40px', padding: '2px 4px', height: '24px', boxSizing: 'border-box', fontSize: '11px', fontStyle: 'italic' }} />
-                        <button onClick={() => handleSaveManualTime(st.id)} style={{ ...btnStyle, backgroundColor: '#34c759', color: '#fff', padding: '2px 4px', fontSize: '10px' }}>✓</button>
-                      </div>
-                    )}
-
                     {!isCollapsed && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px', paddingTop: '6px', borderTop: '1px solid #e5e5ea' }}>
                         
-                        {enableRoles && enableTimeTracking && (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px' }}>
-                            <span>Облік часу</span>
-                            <div style={{ width: '32px', display: 'flex', justifyContent: 'center' }}>
-                              <div
-                                onClick={() => {
-                                  if (!isCompletedStatus) handleToggleStageTrackTime(st.id);
-                                }}
-                                style={{
-                                  width: '30px',
-                                  height: '16px',
-                                  borderRadius: '8px',
-                                  backgroundColor: isTrackTimeOn ? '#34c759' : '#e5e5ea',
-                                  position: 'relative',
-                                  cursor: isCompletedStatus ? 'default' : 'pointer'
-                                }}
-                              >
-                                <div
-                                  style={{
-                                    width: '12px',
-                                    height: '12px',
-                                    borderRadius: '50%',
-                                    backgroundColor: '#fff',
-                                    position: 'absolute',
-                                    top: '2px',
-                                    left: isTrackTimeOn ? '16px' : '2px',
-                                    transition: 'left 0.2s'
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
                         {/* Підстадії */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
                           {st.subStages.map((sub, idx) => {
-                            const nestedItems = (sub as any).nestedItems || [];
-                            const isSubCollapsed = collapsedSubStages[sub.id];
-
                             return (
                               <div key={sub.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px', backgroundColor: '#f9f9fb', padding: '6px', borderRadius: '6px', border: '1px solid #e5e5ea' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11px' }}>
@@ -1315,15 +1075,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                           ▼
                                         </button>
                                       </div>
-                                    )}
-
-                                    {enableNestedItems && (
-                                      <span 
-                                        onClick={() => setCollapsedSubStages({ ...collapsedSubStages, [sub.id]: !isSubCollapsed })}
-                                        style={{ fontSize: '10px', color: '#8e8e93', cursor: 'pointer', userSelect: 'none', width: '10px', textAlign: 'center' }}
-                                      >
-                                        {isSubCollapsed ? '▶' : '▼'}
-                                      </span>
                                     )}
 
                                     <input
@@ -1352,87 +1103,12 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
                                   {canManageSubtasks && !isCompletedStatus && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                      {enableNestedItems && (
-                                        <button 
-                                          onClick={() => {
-                                            if (isSubCollapsed) {
-                                              setCollapsedSubStages({ ...collapsedSubStages, [sub.id]: false });
-                                            }
-                                            handleAddNestedItem(st.id, sub.id);
-                                          }} 
-                                          style={{ ...compactPlusBtnStyle, width: '20px', height: '20px', fontSize: '11px' }}
-                                        >
-                                          +
-                                        </button>
-                                      )}
                                       <div style={{ width: '24px', display: 'flex', justifyContent: 'center' }}>
                                         <button onClick={() => handleDeleteSubStage(st.id, sub.id)} style={{ ...iconBtnStyle, color: '#ff3b30' }}>🗑️</button>
                                       </div>
                                     </div>
                                   )}
                                 </div>
-
-                                {enableNestedItems && !isSubCollapsed && nestedItems.length > 0 && (
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '22px', marginTop: '2px' }}>
-                                    {nestedItems.map((item: any, itemIdx: number) => (
-                                      <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1 }}>
-                                          
-                                          {canManageSubtasks && enableSubtaskMoving && !isCompletedStatus && (
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', marginRight: '2px' }}>
-                                              <button 
-                                                onClick={() => handleMoveNestedItem(st.id, sub.id, itemIdx, 'up')}
-                                                disabled={itemIdx === 0}
-                                                style={{ background: 'none', border: 'none', cursor: itemIdx === 0 ? 'default' : 'pointer', fontSize: '7px', padding: 0, color: itemIdx === 0 ? '#d1d1d6' : '#636366', lineHeight: 1 }}
-                                              >
-                                                ▲
-                                              </button>
-                                              <button 
-                                                onClick={() => handleMoveNestedItem(st.id, sub.id, itemIdx, 'down')}
-                                                disabled={itemIdx === nestedItems.length - 1}
-                                                style={{ background: 'none', border: 'none', cursor: itemIdx === nestedItems.length - 1 ? 'default' : 'pointer', fontSize: '7px', padding: 0, color: itemIdx === nestedItems.length - 1 ? '#d1d1d6' : '#636366', lineHeight: 1 }}
-                                              >
-                                                ▼
-                                              </button>
-                                            </div>
-                                          )}
-
-                                          <input
-                                            type="checkbox"
-                                            checked={item.completed}
-                                            disabled={isCompletedStatus}
-                                            onChange={() => handleToggleNestedItem(st.id, sub.id, item.id)}
-                                            style={{ width: '12px', height: '12px' }}
-                                          />
-                                          <span style={{ color: '#636366', userSelect: 'none', minWidth: '20px', fontStyle: 'italic' }}>{idx + 1}.{itemIdx + 1}</span>
-
-                                          <input
-                                            type="text"
-                                            value={item.title}
-                                            disabled={!canManageSubtasks || isCompletedStatus}
-                                            onChange={(e) => handleUpdateNestedItemTitle(st.id, sub.id, item.id, e.target.value)}
-                                            style={{
-                                              ...inlineTitleInputStyle,
-                                              fontSize: '11px',
-                                              fontStyle: 'italic',
-                                              textDecoration: item.completed ? 'line-through' : 'none',
-                                              color: item.completed ? '#8e8e93' : '#3a3a3c'
-                                            }}
-                                          />
-                                        </div>
-
-                                        {canManageSubtasks && !isCompletedStatus && (
-                                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                            <div style={{ width: '20px' }} />
-                                            <div style={{ width: '24px', display: 'flex', justifyContent: 'center' }}>
-                                              <button onClick={() => handleDeleteNestedItem(st.id, sub.id, item.id)} style={{ ...iconBtnStyle, color: '#ff3b30' }}>🗑️</button>
-                                            </div>
-                                          </div>
-                                        )}
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
                               </div>
                             );
                           })}
@@ -1720,39 +1396,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               </div>
 
               <div style={{ backgroundColor: '#ffffff', padding: '8px 10px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
-                <span style={{ fontSize: '11px', color: '#1c1c1e', fontStyle: 'italic' }}>Облік часу</span>
-                <div
-                  onClick={() => {
-                    const nextVal = !enableTimeTracking;
-                    setEnableTimeTracking(nextVal);
-                    triggerAutoSave({ enableTimeTracking: nextVal });
-                  }}
-                  style={{
-                    width: '30px',
-                    height: '16px',
-                    borderRadius: '8px',
-                    backgroundColor: enableTimeTracking ? '#34c759' : '#e5e5ea',
-                    position: 'relative',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.2s'
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '12px',
-                      height: '12px',
-                      borderRadius: '50%',
-                      backgroundColor: '#fff',
-                      position: 'absolute',
-                      top: '2px',
-                      left: enableTimeTracking ? '16px' : '2px',
-                      transition: 'left 0.2s'
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ backgroundColor: '#ffffff', padding: '8px 10px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
                 <span style={{ fontSize: '11px', color: '#1c1c1e', fontStyle: 'italic' }}>Терміни</span>
                 <div
                   onClick={() => {
@@ -1812,39 +1455,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       position: 'absolute',
                       top: '2px',
                       left: enableSubtaskMoving ? '16px' : '2px',
-                      transition: 'left 0.2s'
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ backgroundColor: '#ffffff', padding: '8px 10px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5ea' }}>
-                <span style={{ fontSize: '11px', color: '#1c1c1e', fontStyle: 'italic' }}>Створення нових підпунктів</span>
-                <div
-                  onClick={() => {
-                    const nextVal = !enableNestedItems;
-                    setEnableNestedItems(nextVal);
-                    triggerAutoSave({ enableNestedItems: nextVal });
-                  }}
-                  style={{
-                    width: '30px',
-                    height: '16px',
-                    borderRadius: '8px',
-                    backgroundColor: enableNestedItems ? '#34c759' : '#e5e5ea',
-                    position: 'relative',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.2s'
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '12px',
-                      height: '12px',
-                      borderRadius: '50%',
-                      backgroundColor: '#fff',
-                      position: 'absolute',
-                      top: '2px',
-                      left: enableNestedItems ? '16px' : '2px',
                       transition: 'left 0.2s'
                     }}
                   />
@@ -1921,16 +1531,6 @@ const labelStyle: React.CSSProperties = {
   color: '#636366',
   marginBottom: '2px',
   display: 'block',
-  LineHeight: 1,
-  fontStyle: 'italic'
-};
-
-const btnStyle: React.CSSProperties = {
-  padding: '6px 10px',
-  borderRadius: '6px',
-  border: 'none',
-  fontSize: '11px',
-  cursor: 'pointer',
   lineHeight: 1,
   fontStyle: 'italic'
 };
