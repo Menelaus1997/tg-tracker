@@ -26,10 +26,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
   const [companyProfitPercent, setCompanyProfitPercent] = useState<string>('20');
   const [personalProfitPercent, setPersonalProfitPercent] = useState<string>('50');
 
-  // Знаходимо актуальний проєкт
   const selectedProject = projects.find(p => p.id === selectedProjectId);
-  
-  // Безпечно витягуємо витрати саме з вибраного проєкту
   const expenses: ExpenseItem[] = (selectedProject as any)?.expenses || [];
 
   const getProjectArea = (proj: Project): number => {
@@ -46,23 +43,26 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
 
   const projectArea = selectedProject ? getProjectArea(selectedProject) : 0;
 
-  // Функція збереження витрат з оновленням стану проєкту
+  // Попередній розрахунок для 5 пункту у формі
+  const currentInputAmount = parseFloat(newExpenseAmount) || 0;
+  const calculatedPreviewAmount = newExpenseCalcType === 'm2' 
+    ? currentInputAmount * (projectArea > 0 ? projectArea : 1) 
+    : currentInputAmount;
+
   const handleAddExpense = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newExpenseTitle.trim() || !newExpenseAmount || !selectedProject) return;
 
-    const numericAmount = parseFloat(newExpenseAmount) || 0;
     const newItem: ExpenseItem = {
       id: Date.now().toString(),
       title: newExpenseTitle.trim(),
-      amount: numericAmount,
+      amount: currentInputAmount,
       currency: newExpenseCurrency,
       calcType: newExpenseCalcType
     };
 
     const updatedExpenses = [newItem, ...expenses];
 
-    // Оновлюємо проєкт і передаємо наверх у батьківський App
     const updatedProject: Project = {
       ...selectedProject,
       expenses: updatedExpenses as any
@@ -72,7 +72,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
       onUpdateProject(updatedProject);
     }
 
-    // Очищаємо поля форми
+    // Очищення форми та закриття меню
     setNewExpenseTitle('');
     setNewExpenseAmount('');
     setIsAddExpenseOpen(false);
@@ -92,7 +92,6 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
     }
   };
 
-  // Розрахунок загальних витрат (з урахуванням площі для м.кв або фіксованої суми)
   const totalExpenses = expenses.reduce((acc, item) => {
     const baseVal = Number(item.amount) || 0;
     if (item.calcType === 'm2') {
@@ -286,6 +285,14 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                 </div>
               </div>
 
+              {/* 5 пункт: Загальна вартість витрати (розрахунок на льоту у формі) */}
+              <div style={{ padding: '8px 10px', backgroundColor: '#e5e5ea', borderRadius: '8px', fontSize: '12px', fontStyle: 'italic', color: '#3a3a3c', display: 'flex', justifyContent: 'space-between' }}>
+                <span>5. Загальна вартість витрати:</span>
+                <span style={{ fontWeight: 'bold', color: '#007aff' }}>
+                  {calculatedPreviewAmount.toFixed(2)} {newExpenseCurrency}
+                </span>
+              </div>
+
               <button
                 type="submit"
                 style={{ width: '100%', padding: '10px', backgroundColor: '#34c759', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontStyle: 'italic', cursor: 'pointer', marginTop: '6px' }}
@@ -295,7 +302,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
             </form>
           )}
 
-          {/* Список витрат з 5 пунктом (детальним розрахунком) */}
+          {/* Список витрат */}
           <div>
             <h3 style={{ fontSize: '14px', fontStyle: 'italic', color: '#636366', marginBottom: '10px' }}>Список витрат проєкту:</h3>
             {expenses.length === 0 ? (
@@ -308,7 +315,6 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                     <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', backgroundColor: '#f9f9fb', border: '1px solid #e5e5ea', borderRadius: '8px' }}>
                       <div>
                         <div style={{ fontSize: '13px', fontStyle: 'italic', fontWeight: 500 }}>{item.title}</div>
-                        {/* 5 пункт у списку з розрахунком загальної вартості витрати */}
                         <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#8e8e93' }}>
                           5. Загальна вартість: {item.calcType === 'm2' ? `${item.amount} * ${projectArea} м²` : 'Фіксована сума'} = {calculatedAmount.toFixed(2)} {item.currency}
                         </div>
