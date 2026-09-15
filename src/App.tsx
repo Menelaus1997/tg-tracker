@@ -57,6 +57,7 @@ export interface Project {
   tagsTitle?: string;
   dataTitle?: string;
   settingsTitle?: string;
+  expenses?: any[]; // Додано поле для збереження витрат
 }
 
 const INITIAL_ROLES: RoleConfig[] = [
@@ -211,7 +212,15 @@ export const App: React.FC = () => {
             />
           )}
 
-          {activeTab === 6 && <Finance projects={projects} />}
+          {/* Передаємо оновлену функцію onUpdateProject у вкладку Фінанси */}
+          {activeTab === 6 && (
+            <Finance
+              projects={projects}
+              onUpdateProject={(updatedProject) => {
+                setProjects(projects.map((p) => (p.id === updatedProject.id ? updatedProject : p)));
+              }}
+            />
+          )}
 
           {activeTab === 7 && (
             <Settings
