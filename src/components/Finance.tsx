@@ -29,7 +29,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
   const selectedProject = projects.find(p => p.id === selectedProjectId);
   const expenses: ExpenseItem[] = (selectedProject as any)?.expenses || [];
 
-  // Повне витягування площі без округлення (наприклад, 67.18)
+  // Повне витягування площі (наприклад, 67.18)
   const getProjectArea = (proj: Project): number => {
     if (!proj.passportRows) return 0;
     for (const row of proj.passportRows) {
@@ -44,11 +44,12 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
 
   const projectArea = selectedProject ? getProjectArea(selectedProject) : 0;
 
+  // Виправлене збереження витрат (оновлюємо проєкт у батьківському компоненті App)
   const handleSaveExpenses = (updatedExpenses: ExpenseItem[]) => {
     if (!selectedProject || !onUpdateProject) return;
-    const updated = {
+    const updated: Project = {
       ...selectedProject,
-      expenses: updatedExpenses
+      expenses: updatedExpenses as any
     };
     onUpdateProject(updated);
   };
@@ -79,11 +80,11 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
     handleSaveExpenses(updatedExpenses);
   };
 
-  // Розрахунок загальних витрат
+  // Розрахунок загальних витрат: якщо м.кв., то вартість * площу проєкту; якщо фіксована — просто сума
   const totalExpenses = expenses.reduce((acc, item) => {
     const baseVal = Number(item.amount) || 0;
     if (item.calcType === 'm2') {
-      return acc + (baseVal * projectArea);
+      return acc + (baseVal * (projectArea > 0 ? projectArea : 1));
     }
     return acc + baseVal;
   }, 0);
@@ -234,10 +235,10 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                 />
               </div>
 
-              {/* 2. Вартість витрати та 3. Валюта в один рядок */}
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <div style={{ flex: 2 }}>
-                  <label style={{ fontSize: '11px', fontStyle: 'italic', color: '#636366', display: 'block', marginBottom: '2px' }}>2. Вартість витрати</label>
+              {/* Вміст в один рядок: 2. Вартість, 3. Валюта, 4. Одиниці */}
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <div style={{ flex: 1.5 }}>
+                  <label style={{ fontSize: '11px', fontStyle: 'italic', color: '#636366', display: 'block', marginBottom: '2px' }}>2. Вартість</label>
                   <input
                     type="number"
                     placeholder="0.00"
@@ -260,18 +261,17 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                     <option value="EUR">EUR</option>
                   </select>
                 </div>
-              </div>
-
-              <div>
-                <label style={{ fontSize: '11px', fontStyle: 'italic', color: '#636366', display: 'block', marginBottom: '2px' }}>4. Одиниці</label>
-                <select
-                  value={newExpenseCalcType}
-                  onChange={(e) => setNewExpenseCalcType(e.target.value as any)}
-                  style={inputStyle}
-                >
-                  <option value="fixed">Фіксована сума</option>
-                  <option value="m2">м. кв.</option>
-                </select>
+                <div style={{ flex: 1.3 }}>
+                  <label style={{ fontSize: '11px', fontStyle: 'italic', color: '#636366', display: 'block', marginBottom: '2px' }}>4. Одиниці</label>
+                  <select
+                    value={newExpenseCalcType}
+                    onChange={(e) => setNewExpenseCalcType(e.target.value as any)}
+                    style={inputStyle}
+                  >
+                    <option value="fixed">Фіксована</option>
+                    <option value="m2">м. кв.</option>
+                  </select>
+                </div>
               </div>
 
               <button
@@ -291,13 +291,13 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {expenses.map((item) => {
-                  const calculatedAmount = item.calcType === 'm2' ? item.amount * projectArea : item.amount;
+                  const calculatedAmount = item.calcType === 'm2' ? item.amount * (projectArea > 0 ? projectArea : 1) : item.amount;
                   return (
                     <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', backgroundColor: '#f9f9fb', border: '1px solid #e5e5ea', borderRadius: '8px' }}>
                       <div>
                         <div style={{ fontSize: '13px', fontStyle: 'italic', fontWeight: 500 }}>{item.title}</div>
                         <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#8e8e93' }}>
-                          Одиниці: {item.calcType === 'm2' ? `м.кв. (${item.amount} * ${projectArea} м²)` : 'Фіксована сума'}
+                          {item.calcType === 'm2' ? `м.кв. (${item.amount} * ${projectArea} м²)` : 'Фіксована сума'}
                         </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -347,7 +347,7 @@ const cardValueStyle: React.CSSProperties = {
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  padding: '8px 10px',
+  padding: '8px 8px',
   backgroundColor: '#ffffff',
   border: '1px solid #d1d1d6',
   borderRadius: '6px',
