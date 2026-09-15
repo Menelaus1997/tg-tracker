@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Project } from '../App';
 
 interface FinanceProps {
@@ -26,8 +26,16 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
   const [companyProfitPercent, setCompanyProfitPercent] = useState<string>('20');
   const [personalProfitPercent, setPersonalProfitPercent] = useState<string>('50');
 
+  // Ручне введення вартості за м.кв. для зворотного перерахунку
+  const [customPricePerM2, setCustomPricePerM2] = useState<string>('');
+
   const selectedProject = projects.find(p => p.id === selectedProjectId);
   const expenses: ExpenseItem[] = (selectedProject as any)?.expenses || [];
+
+  // При зміні проєкту скидаємо кастомне поле м2
+  useEffect(() => {
+    setCustomPricePerM2('');
+  }, [selectedProjectId]);
 
   const getProjectArea = (proj: Project): number => {
     if (!proj.passportRows) return 0;
@@ -61,7 +69,6 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
     };
 
     const updatedExpenses = [newItem, ...expenses];
-
     const updatedProject: Project = {
       ...selectedProject,
       expenses: updatedExpenses as any
@@ -97,13 +104,36 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
     }
     return acc + baseVal;
   }, 0);
-  
-  const companyProfitVal = totalExpenses * ((parseFloat(companyProfitPercent) || 0) / 100);
-  const personalProfitVal = companyProfitVal * ((parseFloat(personalProfitPercent) || 0) / 100);
-  const totalProjectCost = totalExpenses + companyProfitVal;
 
-  // Розрахунок вартості проєкту за 1 м. кв.
-  const costPerSquareMeter = projectArea > 0 ? totalProjectCost / projectArea : 0;
+  // Стандартний розрахунок загальної вартості на основі поточного відсотка прибутку компанії
+  const defaultCompanyProfitVal = totalExpenses * ((parseFloat(companyProfitPercent) || 0) / 100);
+  const defaultTotalProjectCost = totalExpenses + defaultCompanyProfitVal;
+  const defaultPricePerM2 = projectArea > 0 ? defaultTotalProjectCost / projectArea : 0;
+
+  // Якщо користувач ввів кастомну вартість за м.кв., вираховуємо загальну вартість і підганяємо відсоток прибутку
+  let finalTotalProjectCost = defaultTotalProjectCost;
+  let finalPricePerM2 = defaultPricePerM2;
+
+  if (customPricePerM2 !== '' && !isNaN(parseFloat(customPricePerM2)) && projectArea > 0) {
+    finalPricePerM2 = parseFloat(customPricePerM2);
+    finalTotalProjectCost = finalPricePerM2 * projectArea;
+    
+    // Автоматичний перерахунок % прибутку компанії під нову загальну вартість
+    if (totalExpenses > 0) {
+      const calculatedProfitVal = finalTotalProjectCost - totalExpenses;
+      const calculatedPercent = (calculatedProfitVal / totalExpenses) * 100;
+      // Оновлюємо відсоток у стані, якщо він відрізняється
+      if (Math.abs(calculatedPercent - parseFloat(companyProfitPercent)) > 0.01) {
+        // Використовуємо setTimeout щоб уникнути зациклення рендерингу
+        setTimeout(() => {
+          setCompanyProfitPercent(calculatedPercent.toFixed(2));
+        }, 0);
+      }
+    }
+  }
+
+  const companyProfitVal = finalTotalProjectCost - totalExpenses;
+  const personalProfitVal = companyProfitVal * ((parseFloat(personalProfitPercent) || 0) / 100);
 
   const getProjectDates = (proj: Project) => {
     if (!proj.stages || proj.stages.length === 0) return 'Дата не вказана';
@@ -133,35 +163,45 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {projects.map((proj) => (
-                <div
-                  key={proj.id}
-                  onClick={() => setSelectedProjectId(proj.id)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '12px 14px',
-                    backgroundColor: '#f2f2f7',
-                    border: '1px solid #e5e5ea',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: proj.color || '#007aff', flexShrink: 0 }} />
-                    <div>
-                      <div style={{ fontSize: '14px', fontWeight: 'bold', fontStyle: 'italic' }}>{proj.name}</div>
-                      <div style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366' }}>ID: {proj.id}</div>
-                      <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#8e8e93', marginTop: '2px', display: 'inline-block', backgroundColor: '#ffffff', padding: '2px 6px', borderRadius: '4px', border: '1px solid #e5e5ea' }}>
-                        📅 {getProjectDates(proj)}
+              {projects.map((proj) => {
+                const area = getProjectArea(proj);
+                return (
+                  <div
+                    key={proj.id}
+                    onClick={() => setSelectedProjectId(proj.id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px 14px',
+                      backgroundColor: '#f2f2f7',
+                      border: '1px solid #e5e5ea',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: proj.color || '#007aff', flexShrink: 0 }} />
+                      <div>
+                        <div style={{ fontSize: '14px', fontWeight: 'bold', fontStyle: 'italic' }}>{proj.name}</div>
+                        <div style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366' }}>ID: {proj.id}</div>
+                        <div style={{ display: 'flex', gap: '6px', marginTop: '2px' }}>
+                          <span style={{ fontSize: '11px', fontStyle: 'italic', color: '#8e8e93', backgroundColor: '#ffffff', padding: '2px 6px', borderRadius: '4px', border: '1px solid #e5e5ea' }}>
+                            📅 {getProjectDates(proj)}
+                          </span>
+                          {area > 0 && (
+                            <span style={{ fontSize: '11px', fontStyle: 'italic', color: '#007aff', backgroundColor: '#ffffff', padding: '2px 6px', borderRadius: '4px', border: '1px solid #e5e5ea' }}>
+                              📐 {area} м²
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
+                    <span style={{ fontSize: '16px', color: '#8e8e93' }}>➡️</span>
                   </div>
-                  <span style={{ fontSize: '16px', color: '#8e8e93' }}>➡️</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -184,15 +224,24 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
 
           {/* Блок показників бюджету */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+            
+            {/* Загальна вартість та редаговане поле за м2 */}
             <div style={cardStyle}>
               <span style={cardLabelStyle}>Загальна вартість проекту:</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 {projectArea > 0 && (
-                  <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366', backgroundColor: '#e5e5ea', padding: '2px 6px', borderRadius: '6px' }}>
-                    {costPerSquareMeter.toFixed(2)} USD/м²
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#e5e5ea', padding: '2px 6px', borderRadius: '6px', border: '1px solid #d1d1d6' }}>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={customPricePerM2 !== '' ? customPricePerM2 : defaultPricePerM2.toFixed(2)}
+                      onChange={(e) => setCustomPricePerM2(e.target.value)}
+                      style={{ width: '55px', background: 'transparent', border: 'none', fontSize: '12px', fontStyle: 'italic', textAlign: 'right', outline: 'none', fontWeight: 'bold' }}
+                    />
+                    <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366', marginLeft: '2px' }}>USD/м²</span>
+                  </div>
                 )}
-                <span style={cardValueStyle}>{totalProjectCost.toFixed(2)} USD</span>
+                <span style={cardValueStyle}>{finalTotalProjectCost.toFixed(2)} USD</span>
               </div>
             </div>
 
@@ -207,7 +256,10 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                 <input
                   type="number"
                   value={companyProfitPercent}
-                  onChange={(e) => setCompanyProfitPercent(e.target.value)}
+                  onChange={(e) => {
+                    setCompanyProfitPercent(e.target.value);
+                    setCustomPricePerM2(''); // Скидаємо кастомний м2 при ручній зміні %
+                  }}
                   style={{ width: '50px', padding: '4px', fontSize: '12px', fontStyle: 'italic', textAlign: 'center', borderRadius: '6px', border: '1px solid #d1d1d6' }}
                 />
                 <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366' }}>%</span>
