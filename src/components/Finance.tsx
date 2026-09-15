@@ -17,24 +17,25 @@ interface ExpenseItem {
 export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) => {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
-  // Стани для додавання витрати всередині обраного проєкту
+  // Форма додавання витрати (у стилі редагування проєктів)
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [newExpenseTitle, setNewExpenseTitle] = useState('');
   const [newExpenseAmount, setNewExpenseAmount] = useState<string>('');
   const [newExpenseCurrency, setNewExpenseCurrency] = useState('$');
   const [newExpenseCalcType, setNewExpenseCalcType] = useState<'m2' | 'fixed' | 'net'>('fixed');
 
-  const selectedProject = projects.find(p => p.id === selectedProjectId);
+  // Відсотки для прибутків
+  const [companyProfitPercent, setCompanyProfitPercent] = useState<string>('20');
+  const [personalProfitPercent, setPersonalProfitPercent] = useState<string>('50');
 
-  // Отримуємо витрати з проєкту (або пустий масив)
+  const selectedProject = projects.find(p => p.id === selectedProjectId);
   const expenses: ExpenseItem[] = (selectedProject as any)?.expenses || [];
 
-  // Допоміжна функція для збереження оновлених витрат у проєкт
-  const handleSaveExpenses = (updatedExpenses: ExpenseItem[]) => {
+  const handleSaveProjectData = (updatedData: any) => {
     if (!selectedProject || !onUpdateProject) return;
     const updated = {
       ...selectedProject,
-      expenses: updatedExpenses
+      ...updatedData
     };
     onUpdateProject(updated);
   };
@@ -51,23 +52,27 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
       calcType: newExpenseCalcType
     };
 
-    handleSaveExpenses([newItem, ...expenses]);
+    const updatedExpenses = [newItem, ...expenses];
+    handleSaveProjectData({ expenses: updatedExpenses });
+    
     setNewExpenseTitle('');
     setNewExpenseAmount('');
     setIsAddExpenseOpen(false);
   };
 
   const handleDeleteExpense = (id: string) => {
-    handleSaveExpenses(expenses.filter(item => item.id !== id));
+    const updatedExpenses = expenses.filter(item => item.id !== id);
+    handleSaveProjectData({ expenses: updatedExpenses });
   };
 
-  // Розрахунки для обраного проєкту
-  const totalProjectCost = Number((selectedProject as any)?.totalCost) || 1500; 
+  // Динамічні розрахунки
   const totalExpenses = expenses.reduce((acc, item) => acc + (Number(item.amount) || 0), 0);
-  const companyNetProfit = totalProjectCost - totalExpenses;
-  const personalNetProfit = companyNetProfit * 0.7;
+  
+  const companyProfitVal = totalExpenses * ((parseFloat(companyProfitPercent) || 0) / 100);
+  const personalProfitVal = companyProfitVal * ((parseFloat(personalProfitPercent) || 0) / 100);
+  
+  const totalProjectCost = totalExpenses + companyProfitVal;
 
-  // Витягуємо дати етапів для відображення як у списку проєктів
   const getProjectDates = (proj: Project) => {
     if (!proj.stages || proj.stages.length === 0) return 'Дата не вказана';
     const firstStage = proj.stages[0];
@@ -85,7 +90,6 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
         Фінанси та бюджет
       </h2>
 
-      {/* Якщо проєкт не вибрано — показуємо список проєктів з ID та датами */}
       {!selectedProjectId ? (
         <div>
           <div style={{ fontSize: '13px', fontStyle: 'italic', color: '#636366', marginBottom: '12px' }}>
@@ -114,22 +118,10 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div
-                      style={{
-                        width: '12px',
-                        height: '12px',
-                        borderRadius: '50%',
-                        backgroundColor: proj.color || '#007aff',
-                        flexShrink: 0
-                      }}
-                    />
+                    <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: proj.color || '#007aff', flexShrink: 0 }} />
                     <div>
-                      <div style={{ fontSize: '14px', fontWeight: 'bold', fontStyle: 'italic' }}>
-                        {proj.name}
-                      </div>
-                      <div style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366' }}>
-                        ID: {proj.id}
-                      </div>
+                      <div style={{ fontSize: '14px', fontWeight: 'bold', fontStyle: 'italic' }}>{proj.name}</div>
+                      <div style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366' }}>ID: {proj.id}</div>
                       <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#8e8e93', marginTop: '2px', display: 'inline-block', backgroundColor: '#ffffff', padding: '2px 6px', borderRadius: '4px', border: '1px solid #e5e5ea' }}>
                         📅 {getProjectDates(proj)}
                       </div>
@@ -142,80 +134,75 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
           )}
         </div>
       ) : (
-        /* Якщо проєкт вибрано — показуємо його фінансову інформацію та витрати */
         <div>
           <button
             onClick={() => setSelectedProjectId(null)}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#007aff',
-              fontSize: '13px',
-              fontStyle: 'italic',
-              cursor: 'pointer',
-              marginBottom: '14px',
-              padding: 0,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}
+            style={{ background: 'none', border: 'none', color: '#007aff', fontSize: '13px', fontStyle: 'italic', cursor: 'pointer', marginBottom: '14px', padding: 0, display: 'flex', alignItems: 'center', gap: '4px' }}
           >
             ← Назад до списку проєктів
           </button>
 
-          {/* Плашка із даними вибраного проєкту */}
           <div style={{ padding: '12px 14px', backgroundColor: '#e5e5ea', borderRadius: '10px', marginBottom: '16px', border: '1px solid #d1d1d6' }}>
             <div style={{ fontSize: '15px', fontWeight: 'bold', fontStyle: 'italic' }}>{selectedProject?.name}</div>
             <div style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366' }}>ID: {selectedProject?.id}</div>
             <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#8e8e93', marginTop: '2px' }}>📅 {getProjectDates(selectedProject!)}</div>
           </div>
 
-          {/* Основні показники бюджету */}
+          {/* Блок показників бюджету */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
             <div style={cardStyle}>
               <span style={cardLabelStyle}>Загальна вартість проекту:</span>
-              <span style={cardValueStyle}>{totalProjectCost} $</span>
+              <span style={cardValueStyle}>{totalProjectCost.toFixed(2)} $</span>
             </div>
+
             <div style={cardStyle}>
               <span style={cardLabelStyle}>Загальна витрата проекту:</span>
-              <span style={{ ...cardValueStyle, color: '#ff3b30' }}>{totalExpenses} $</span>
+              <span style={{ ...cardValueStyle, color: '#ff3b30' }}>{totalExpenses.toFixed(2)} $</span>
             </div>
+
             <div style={cardStyle}>
-              <span style={cardLabelStyle}>Загальний чистий прибуток компанії:</span>
-              <span style={{ ...cardValueStyle, color: '#34c759' }}>{companyNetProfit} $</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
+                <span style={cardLabelStyle}>Загальний чистий прибуток компанії:</span>
+                <input
+                  type="number"
+                  value={companyProfitPercent}
+                  onChange={(e) => setCompanyProfitPercent(e.target.value)}
+                  style={{ width: '50px', padding: '4px', fontSize: '12px', fontStyle: 'italic', textAlign: 'center', borderRadius: '6px', border: '1px solid #d1d1d6' }}
+                />
+                <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366' }}>%</span>
+              </div>
+              <span style={{ ...cardValueStyle, color: '#34c759' }}>{companyProfitVal.toFixed(2)} $</span>
             </div>
+
             <div style={cardStyle}>
-              <span style={cardLabelStyle}>Загальний чистий власний прибуток:</span>
-              <span style={{ ...cardValueStyle, color: '#007aff' }}>{personalNetProfit} $</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
+                <span style={cardLabelStyle}>Загальний чистий власний прибуток:</span>
+                <input
+                  type="number"
+                  value={personalProfitPercent}
+                  onChange={(e) => setPersonalProfitPercent(e.target.value)}
+                  style={{ width: '50px', padding: '4px', fontSize: '12px', fontStyle: 'italic', textAlign: 'center', borderRadius: '6px', border: '1px solid #d1d1d6' }}
+                />
+                <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366' }}>%</span>
+              </div>
+              <span style={{ ...cardValueStyle, color: '#007aff' }}>{personalProfitVal.toFixed(2)} $</span>
             </div>
           </div>
 
-          {/* Кнопка відкриття меню витрат */}
+          {/* Кнопка та форма додавання витрат */}
           <div style={{ marginBottom: '16px' }}>
             <button
               onClick={() => setIsAddExpenseOpen(!isAddExpenseOpen)}
-              style={{
-                width: '100%',
-                padding: '12px',
-                backgroundColor: '#007aff',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '10px',
-                fontWeight: 'bold',
-                fontStyle: 'italic',
-                fontSize: '14px',
-                cursor: 'pointer'
-              }}
+              style={{ width: '100%', padding: '12px', backgroundColor: '#007aff', color: '#ffffff', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontStyle: 'italic', fontSize: '14px', cursor: 'pointer' }}
             >
               {isAddExpenseOpen ? 'Закрити меню витрат' : '+ Додати витрату'}
             </button>
           </div>
 
-          {/* Спадне меню додавання витрати */}
           {isAddExpenseOpen && (
             <form onSubmit={handleAddExpense} style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div>
-                <label style={{ fontSize: '11px', fontStyle: 'italic', color: '#636366', display: 'block', marginBottom: '2px' }}>Назва витрати</label>
+                <label style={{ fontSize: '11px', fontStyle: 'italic', color: '#636366', display: 'block', marginBottom: '2px' }}>1. Назва витрати</label>
                 <input
                   type="text"
                   placeholder="Введіть назву витрати..."
@@ -228,7 +215,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
 
               <div style={{ display: 'flex', gap: '8px' }}>
                 <div style={{ flex: 2 }}>
-                  <label style={{ fontSize: '11px', fontStyle: 'italic', color: '#636366', display: 'block', marginBottom: '2px' }}>Вартість (число)</label>
+                  <label style={{ fontSize: '11px', fontStyle: 'italic', color: '#636366', display: 'block', marginBottom: '2px' }}>2. Вартість витрати</label>
                   <input
                     type="number"
                     placeholder="0.00"
@@ -239,7 +226,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                   />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '11px', fontStyle: 'italic', color: '#636366', display: 'block', marginBottom: '2px' }}>Валюта</label>
+                  <label style={{ fontSize: '11px', fontStyle: 'italic', color: '#636366', display: 'block', marginBottom: '2px' }}>3. Валюта</label>
                   <select
                     value={newExpenseCurrency}
                     onChange={(e) => setNewExpenseCurrency(e.target.value)}
@@ -254,7 +241,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
               </div>
 
               <div>
-                <label style={{ fontSize: '11px', fontStyle: 'italic', color: '#636366', display: 'block', marginBottom: '2px' }}>Тип розрахунку</label>
+                <label style={{ fontSize: '11px', fontStyle: 'italic', color: '#636366', display: 'block', marginBottom: '2px' }}>4. В чому рахувати витрату</label>
                 <select
                   value={newExpenseCalcType}
                   onChange={(e) => setNewExpenseCalcType(e.target.value as any)}
@@ -275,7 +262,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
             </form>
           )}
 
-          {/* Список витрат проєкту */}
+          {/* Список витрат */}
           <div>
             <h3 style={{ fontSize: '14px', fontStyle: 'italic', color: '#636366', marginBottom: '10px' }}>Список витрат проєкту:</h3>
             {expenses.length === 0 ? (
@@ -287,7 +274,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                     <div>
                       <div style={{ fontSize: '13px', fontStyle: 'italic', fontWeight: 500 }}>{item.title}</div>
                       <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#8e8e93' }}>
-                        Тип: {item.calcType === 'm2' ? 'м.кв.' : item.calcType === 'fixed' ? 'Фіксована сума' : 'Чиста вартість'}
+                        Розрахунок: {item.calcType === 'm2' ? 'м.кв.' : item.calcType === 'fixed' ? 'Фіксована сума' : 'Чиста вартість'}
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
