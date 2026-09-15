@@ -20,7 +20,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [newExpenseTitle, setNewExpenseTitle] = useState('');
   const [newExpenseAmount, setNewExpenseAmount] = useState<string>('');
-  const [newExpenseCurrency, setNewExpenseCurrency] = useState('$');
+  const [newExpenseCurrency, setNewExpenseCurrency] = useState('USD');
   const [newExpenseCalcType, setNewExpenseCalcType] = useState<'m2' | 'fixed'>('fixed');
 
   const [companyProfitPercent, setCompanyProfitPercent] = useState<string>('20');
@@ -29,13 +29,13 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
   const selectedProject = projects.find(p => p.id === selectedProjectId);
   const expenses: ExpenseItem[] = (selectedProject as any)?.expenses || [];
 
-  // Шукаємо площу проєкту з passportRows (де є "Загальна площа" або подібне)
+  // Повне витягування площі без округлення (наприклад, 67.18)
   const getProjectArea = (proj: Project): number => {
     if (!proj.passportRows) return 0;
     for (const row of proj.passportRows) {
       const label = (row.label || row.title || '').toLowerCase();
       if (label.includes('площа') || label.includes('м2') || label.includes('м.кв')) {
-        const val = parseFloat(row.value || row.val || '0');
+        const val = parseFloat(String(row.value || row.val || '0').replace(',', '.'));
         if (!isNaN(val)) return val;
       }
     }
@@ -79,7 +79,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
     handleSaveExpenses(updatedExpenses);
   };
 
-  // Розрахунок загальних витрат з урахуванням типу (фіксована чи за м2 * площу)
+  // Розрахунок загальних витрат
   const totalExpenses = expenses.reduce((acc, item) => {
     const baseVal = Number(item.amount) || 0;
     if (item.calcType === 'm2') {
@@ -173,12 +173,12 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
             <div style={cardStyle}>
               <span style={cardLabelStyle}>Загальна вартість проекту:</span>
-              <span style={cardValueStyle}>{totalProjectCost.toFixed(2)} $</span>
+              <span style={cardValueStyle}>{totalProjectCost.toFixed(2)} USD</span>
             </div>
 
             <div style={cardStyle}>
               <span style={cardLabelStyle}>Загальна витрата проекту:</span>
-              <span style={{ ...cardValueStyle, color: '#ff3b30' }}>{totalExpenses.toFixed(2)} $</span>
+              <span style={{ ...cardValueStyle, color: '#ff3b30' }}>{totalExpenses.toFixed(2)} USD</span>
             </div>
 
             <div style={cardStyle}>
@@ -192,7 +192,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                 />
                 <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366' }}>%</span>
               </div>
-              <span style={{ ...cardValueStyle, color: '#34c759' }}>{companyProfitVal.toFixed(2)} $</span>
+              <span style={{ ...cardValueStyle, color: '#34c759' }}>{companyProfitVal.toFixed(2)} USD</span>
             </div>
 
             <div style={cardStyle}>
@@ -206,7 +206,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                 />
                 <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366' }}>%</span>
               </div>
-              <span style={{ ...cardValueStyle, color: '#007aff' }}>{personalProfitVal.toFixed(2)} $</span>
+              <span style={{ ...cardValueStyle, color: '#007aff' }}>{personalProfitVal.toFixed(2)} USD</span>
             </div>
           </div>
 
@@ -234,6 +234,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                 />
               </div>
 
+              {/* 2. Вартість витрати та 3. Валюта в один рядок */}
               <div style={{ display: 'flex', gap: '8px' }}>
                 <div style={{ flex: 2 }}>
                   <label style={{ fontSize: '11px', fontStyle: 'italic', color: '#636366', display: 'block', marginBottom: '2px' }}>2. Вартість витрати</label>
@@ -246,22 +247,23 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                     required
                   />
                 </div>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1.2 }}>
                   <label style={{ fontSize: '11px', fontStyle: 'italic', color: '#636366', display: 'block', marginBottom: '2px' }}>3. Валюта</label>
                   <select
                     value={newExpenseCurrency}
                     onChange={(e) => setNewExpenseCurrency(e.target.value)}
                     style={inputStyle}
                   >
-                    <option value="$">$</option>
-                    <option value="грн">грн</option>
+                    <option value="UAH">UAH</option>
+                    <option value="USD">USD</option>
+                    <option value="USDT">USDT</option>
                     <option value="EUR">EUR</option>
                   </select>
                 </div>
               </div>
 
               <div>
-                <label style={{ fontSize: '11px', fontStyle: 'italic', color: '#636366', display: 'block', marginBottom: '2px' }}>4. В чому рахувати витрату</label>
+                <label style={{ fontSize: '11px', fontStyle: 'italic', color: '#636366', display: 'block', marginBottom: '2px' }}>4. Одиниці</label>
                 <select
                   value={newExpenseCalcType}
                   onChange={(e) => setNewExpenseCalcType(e.target.value as any)}
@@ -295,7 +297,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                       <div>
                         <div style={{ fontSize: '13px', fontStyle: 'italic', fontWeight: 500 }}>{item.title}</div>
                         <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#8e8e93' }}>
-                          Розрахунок: {item.calcType === 'm2' ? `м.кв. (${item.amount} * ${projectArea} м²)` : 'Фіксована сума'}
+                          Одиниці: {item.calcType === 'm2' ? `м.кв. (${item.amount} * ${projectArea} м²)` : 'Фіксована сума'}
                         </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
