@@ -26,10 +26,10 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
   const [companyProfitPercent, setCompanyProfitPercent] = useState<string>('20');
   const [personalProfitPercent, setPersonalProfitPercent] = useState<string>('50');
 
+  // Завжди беремо актуальний проєкт із загального масиву projects за ID
   const selectedProject = projects.find(p => p.id === selectedProjectId);
   const expenses: ExpenseItem[] = (selectedProject as any)?.expenses || [];
 
-  // Повне витягування площі (наприклад, 67.18)
   const getProjectArea = (proj: Project): number => {
     if (!proj.passportRows) return 0;
     for (const row of proj.passportRows) {
@@ -44,7 +44,6 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
 
   const projectArea = selectedProject ? getProjectArea(selectedProject) : 0;
 
-  // Виправлене збереження витрат (оновлюємо проєкт у батьківському компоненті App)
   const handleSaveExpenses = (updatedExpenses: ExpenseItem[]) => {
     if (!selectedProject || !onUpdateProject) return;
     const updated: Project = {
@@ -80,7 +79,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
     handleSaveExpenses(updatedExpenses);
   };
 
-  // Розрахунок загальних витрат: якщо м.кв., то вартість * площу проєкту; якщо фіксована — просто сума
+  // Розрахунок загальних витрат (5 пункт: вартість * м.кв. або фіксована сума)
   const totalExpenses = expenses.reduce((acc, item) => {
     const baseVal = Number(item.amount) || 0;
     if (item.calcType === 'm2') {
@@ -283,7 +282,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
             </form>
           )}
 
-          {/* Список витрат */}
+          {/* Список витрат з 5 пунктом (розрахунком) */}
           <div>
             <h3 style={{ fontSize: '14px', fontStyle: 'italic', color: '#636366', marginBottom: '10px' }}>Список витрат проєкту:</h3>
             {expenses.length === 0 ? (
@@ -297,7 +296,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                       <div>
                         <div style={{ fontSize: '13px', fontStyle: 'italic', fontWeight: 500 }}>{item.title}</div>
                         <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#8e8e93' }}>
-                          {item.calcType === 'm2' ? `м.кв. (${item.amount} * ${projectArea} м²)` : 'Фіксована сума'}
+                          5. Загальна вартість: {item.calcType === 'm2' ? `${item.amount} * ${projectArea} м²` : 'Фіксована сума'} = {calculatedAmount.toFixed(2)} {item.currency}
                         </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
