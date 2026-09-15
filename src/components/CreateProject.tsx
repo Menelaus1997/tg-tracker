@@ -74,7 +74,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
 
   const handleDeleteTemplate = (id: string) => {
     if (!onUpdateTemplates) return;
-    if (confirm('Delete this template?')) {
+    if (confirm('Видалити цей шаблон?')) {
       const updated = templates.filter((t) => t.id !== id);
       onUpdateTemplates(updated);
       if (selectedTemplateId === id) setSelectedTemplateId('');
@@ -95,7 +95,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e' }}>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div>
-          <label style={labelStyle}>Project Name</label>
+          <label style={labelStyle}>Назва проєкту</label>
           <input
             type="text"
             value={name}
@@ -106,7 +106,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
         </div>
 
         <div>
-          <label style={labelStyle}>Project ID</label>
+          <label style={labelStyle}>ID проєкту</label>
           <input
             type="text"
             value={projectId}
@@ -117,13 +117,13 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
         </div>
 
         <div>
-          <label style={labelStyle}>Template</label>
+          <label style={labelStyle}>Шаблон</label>
           <select
             value={selectedTemplateId}
             onChange={(e) => setSelectedTemplateId(e.target.value)}
             style={formInputStyle}
           >
-            <option value="">General template (custom)</option>
+            <option value="">Загальний шаблон (кастомний)</option>
             {validTemplates.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name}
@@ -132,7 +132,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
           </select>
         </div>
 
-        {/* Ідеально відцентрований плюс у палітрі */}
+        {/* Палітра кольорів */}
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
           {colors.map((c, idx) => {
             const isSelected = selectedColorIndex === idx;
@@ -203,7 +203,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
             marginTop: '10px'
           }}
         >
-          Add Project
+          Додати проєкт
         </button>
       </form>
 
@@ -220,14 +220,14 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
             textDecoration: 'underline'
           }}
         >
-          {isTemplateManagerOpen ? 'Hide archive' : 'Template Archive'}
+          {isTemplateManagerOpen ? 'Сховати архів' : 'Архів шаблонів'}
         </button>
       </div>
 
       {isTemplateManagerOpen && (
         <div style={{ marginTop: '16px', padding: '14px', backgroundColor: '#f2f2f7', borderRadius: '12px' }}>
           {validTemplates.length === 0 ? (
-            <div style={{ fontSize: '12px', color: '#8e8e93' }}>No templates saved.</div>
+            <div style={{ fontSize: '12px', color: '#8e8e93' }}>Немає збережених шаблонів.</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {validTemplates.map((t) => (
