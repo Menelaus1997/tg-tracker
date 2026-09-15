@@ -43,7 +43,6 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
 
   const projectArea = selectedProject ? getProjectArea(selectedProject) : 0;
 
-  // Попередній розрахунок для 5 пункту у формі
   const currentInputAmount = parseFloat(newExpenseAmount) || 0;
   const calculatedPreviewAmount = newExpenseCalcType === 'm2' 
     ? currentInputAmount * (projectArea > 0 ? projectArea : 1) 
@@ -72,7 +71,6 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
       onUpdateProject(updatedProject);
     }
 
-    // Очищення форми та закриття меню
     setNewExpenseTitle('');
     setNewExpenseAmount('');
     setIsAddExpenseOpen(false);
@@ -103,6 +101,9 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
   const companyProfitVal = totalExpenses * ((parseFloat(companyProfitPercent) || 0) / 100);
   const personalProfitVal = companyProfitVal * ((parseFloat(personalProfitPercent) || 0) / 100);
   const totalProjectCost = totalExpenses + companyProfitVal;
+
+  // Розрахунок вартості проєкту за 1 м. кв.
+  const costPerSquareMeter = projectArea > 0 ? totalProjectCost / projectArea : 0;
 
   const getProjectDates = (proj: Project) => {
     if (!proj.stages || proj.stages.length === 0) return 'Дата не вказана';
@@ -185,7 +186,14 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
             <div style={cardStyle}>
               <span style={cardLabelStyle}>Загальна вартість проекту:</span>
-              <span style={cardValueStyle}>{totalProjectCost.toFixed(2)} USD</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {projectArea > 0 && (
+                  <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366', backgroundColor: '#e5e5ea', padding: '2px 6px', borderRadius: '6px' }}>
+                    {costPerSquareMeter.toFixed(2)} USD/м²
+                  </span>
+                )}
+                <span style={cardValueStyle}>{totalProjectCost.toFixed(2)} USD</span>
+              </div>
             </div>
 
             <div style={cardStyle}>
@@ -246,7 +254,6 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                 />
               </div>
 
-              {/* 2. Вартість, 3. Валюта, 4. Одиниці в один рядок */}
               <div style={{ display: 'flex', gap: '6px' }}>
                 <div style={{ flex: 1.5 }}>
                   <label style={{ fontSize: '11px', fontStyle: 'italic', color: '#636366', display: 'block', marginBottom: '2px' }}>2. Вартість</label>
@@ -285,7 +292,6 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                 </div>
               </div>
 
-              {/* 5 пункт: Загальна вартість витрати (розрахунок на льоту у формі) */}
               <div style={{ padding: '8px 10px', backgroundColor: '#e5e5ea', borderRadius: '8px', fontSize: '12px', fontStyle: 'italic', color: '#3a3a3c', display: 'flex', justifyContent: 'space-between' }}>
                 <span>5. Загальна вартість витрати:</span>
                 <span style={{ fontWeight: 'bold', color: '#007aff' }}>
