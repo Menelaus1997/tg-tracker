@@ -26,13 +26,11 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
   const [companyProfitPercent, setCompanyProfitPercent] = useState<string>('20');
   const [personalProfitPercent, setPersonalProfitPercent] = useState<string>('50');
 
-  // Ручне введення вартості за м.кв. для зворотного перерахунку
   const [customPricePerM2, setCustomPricePerM2] = useState<string>('');
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
   const expenses: ExpenseItem[] = (selectedProject as any)?.expenses || [];
 
-  // При зміні проєкту скидаємо кастомне поле м2
   useEffect(() => {
     setCustomPricePerM2('');
   }, [selectedProjectId]);
@@ -105,12 +103,10 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
     return acc + baseVal;
   }, 0);
 
-  // Стандартний розрахунок загальної вартості на основі поточного відсотка прибутку компанії
   const defaultCompanyProfitVal = totalExpenses * ((parseFloat(companyProfitPercent) || 0) / 100);
   const defaultTotalProjectCost = totalExpenses + defaultCompanyProfitVal;
   const defaultPricePerM2 = projectArea > 0 ? defaultTotalProjectCost / projectArea : 0;
 
-  // Якщо користувач ввів кастомну вартість за м.кв., вираховуємо загальну вартість і підганяємо відсоток прибутку
   let finalTotalProjectCost = defaultTotalProjectCost;
   let finalPricePerM2 = defaultPricePerM2;
 
@@ -118,13 +114,10 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
     finalPricePerM2 = parseFloat(customPricePerM2);
     finalTotalProjectCost = finalPricePerM2 * projectArea;
     
-    // Автоматичний перерахунок % прибутку компанії під нову загальну вартість
     if (totalExpenses > 0) {
       const calculatedProfitVal = finalTotalProjectCost - totalExpenses;
       const calculatedPercent = (calculatedProfitVal / totalExpenses) * 100;
-      // Оновлюємо відсоток у стані, якщо він відрізняється
       if (Math.abs(calculatedPercent - parseFloat(companyProfitPercent)) > 0.01) {
-        // Використовуємо setTimeout щоб уникнути зациклення рендерингу
         setTimeout(() => {
           setCompanyProfitPercent(calculatedPercent.toFixed(2));
         }, 0);
@@ -134,6 +127,11 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
 
   const companyProfitVal = finalTotalProjectCost - totalExpenses;
   const personalProfitVal = companyProfitVal * ((parseFloat(personalProfitPercent) || 0) / 100);
+
+  // Перерахунок на м. кв. для інших показників
+  const expensesPerM2 = projectArea > 0 ? totalExpenses / projectArea : 0;
+  const companyProfitPerM2 = projectArea > 0 ? companyProfitVal / projectArea : 0;
+  const personalProfitPerM2 = projectArea > 0 ? personalProfitVal / projectArea : 0;
 
   const getProjectDates = (proj: Project) => {
     if (!proj.stages || proj.stages.length === 0) return 'Дата не вказана';
@@ -225,10 +223,11 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
           {/* Блок показників бюджету */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
             
-            {/* Загальна вартість та редаговане поле за м2 */}
+            {/* 1. Загальна вартість проєкту (спочатку сума, справа інпут м2) */}
             <div style={cardStyle}>
               <span style={cardLabelStyle}>Загальна вартість проекту:</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={cardValueStyle}>{finalTotalProjectCost.toFixed(2)} USD</span>
                 {projectArea > 0 && (
                   <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#e5e5ea', padding: '2px 6px', borderRadius: '6px', border: '1px solid #d1d1d6' }}>
                     <input
@@ -241,15 +240,26 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                     <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366', marginLeft: '2px' }}>USD/м²</span>
                   </div>
                 )}
-                <span style={cardValueStyle}>{finalTotalProjectCost.toFixed(2)} USD</span>
               </div>
             </div>
 
+            {/* 2. Загальна витрата проєкту (текст у два рядки, зліва показник за м2) */}
             <div style={cardStyle}>
-              <span style={cardLabelStyle}>Загальна витрата проекту:</span>
-              <span style={{ ...cardValueStyle, color: '#ff3b30' }}>{totalExpenses.toFixed(2)} USD</span>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={cardLabelStyle}>Загальна витрата</span>
+                <span style={cardLabelStyle}>проєкту:</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {projectArea > 0 && (
+                  <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366', backgroundColor: '#e5e5ea', padding: '2px 6px', borderRadius: '6px', border: '1px solid #d1d1d6' }}>
+                    {expensesPerM2.toFixed(2)} USD/м²
+                  </span>
+                )}
+                <span style={{ ...cardValueStyle, color: '#ff3b30' }}>{totalExpenses.toFixed(2)} USD</span>
+              </div>
             </div>
 
+            {/* 3. Загальний чистий прибуток компанії (з перерахунком на м2) */}
             <div style={cardStyle}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
                 <span style={cardLabelStyle}>Загальний чистий прибуток компанії:</span>
@@ -258,15 +268,23 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                   value={companyProfitPercent}
                   onChange={(e) => {
                     setCompanyProfitPercent(e.target.value);
-                    setCustomPricePerM2(''); // Скидаємо кастомний м2 при ручній зміні %
+                    setCustomPricePerM2('');
                   }}
                   style={{ width: '50px', padding: '4px', fontSize: '12px', fontStyle: 'italic', textAlign: 'center', borderRadius: '6px', border: '1px solid #d1d1d6' }}
                 />
                 <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366' }}>%</span>
               </div>
-              <span style={{ ...cardValueStyle, color: '#34c759' }}>{companyProfitVal.toFixed(2)} USD</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {projectArea > 0 && (
+                  <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366', backgroundColor: '#e5e5ea', padding: '2px 6px', borderRadius: '6px', border: '1px solid #d1d1d6' }}>
+                    {companyProfitPerM2.toFixed(2)} USD/м²
+                  </span>
+                )}
+                <span style={{ ...cardValueStyle, color: '#34c759' }}>{companyProfitVal.toFixed(2)} USD</span>
+              </div>
             </div>
 
+            {/* 4. Загальний чистий власний прибуток (з перерахунком на м2) */}
             <div style={cardStyle}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
                 <span style={cardLabelStyle}>Загальний чистий власний прибуток:</span>
@@ -278,8 +296,16 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                 />
                 <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366' }}>%</span>
               </div>
-              <span style={{ ...cardValueStyle, color: '#007aff' }}>{personalProfitVal.toFixed(2)} USD</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {projectArea > 0 && (
+                  <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366', backgroundColor: '#e5e5ea', padding: '2px 6px', borderRadius: '6px', border: '1px solid #d1d1d6' }}>
+                    {personalProfitPerM2.toFixed(2)} USD/м²
+                  </span>
+                )}
+                <span style={{ ...cardValueStyle, color: '#007aff' }}>{personalProfitVal.toFixed(2)} USD</span>
+              </div>
             </div>
+
           </div>
 
           {/* Кнопка та форма додавання витрат */}
