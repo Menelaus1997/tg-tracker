@@ -26,7 +26,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
 
-  // Отримуємо витрати з проєкту (або пустий масив, якщо ще немає)
+  // Отримуємо витрати з проєкту (або пустий масив)
   const expenses: ExpenseItem[] = (selectedProject as any)?.expenses || [];
 
   // Допоміжна функція для збереження оновлених витрат у проєкт
@@ -62,12 +62,12 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
   };
 
   // Розрахунки для обраного проєкту
-  const totalProjectCost = Number((selectedProject as any)?.totalCost) || 1500; // Можна брати з полів проєкту
+  const totalProjectCost = Number((selectedProject as any)?.totalCost) || 1500; 
   const totalExpenses = expenses.reduce((acc, item) => acc + (Number(item.amount) || 0), 0);
   const companyNetProfit = totalProjectCost - totalExpenses;
   const personalNetProfit = companyNetProfit * 0.7;
 
-  // Витягуємо дати етапів для красивого відображення (як у списку проєктів)
+  // Витягуємо дати етапів для відображення як у списку проєктів
   const getProjectDates = (proj: Project) => {
     if (!proj.stages || proj.stages.length === 0) return 'Дата не вказана';
     const firstStage = proj.stages[0];
@@ -142,9 +142,8 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
           )}
         </div>
       ) : (
-        /* Якщо проєкт вибрано — показуємо його бюджетні дані */
+        /* Якщо проєкт вибрано — показуємо його фінансову інформацію та витрати */
         <div>
-          {/* Кнопка назад до списку */}
           <button
             onClick={() => setSelectedProjectId(null)}
             style={{
@@ -164,8 +163,8 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
             ← Назад до списку проєктів
           </button>
 
-          {/* Плашка з інформацією про поточний проєкт (дублює дані) */}
-          <div style={{ padding: '12px 14px', backgroundColor: '#e5e5ea', borderRadius: '10px', marginBottom: '16px' }}>
+          {/* Плашка із даними вибраного проєкту */}
+          <div style={{ padding: '12px 14px', backgroundColor: '#e5e5ea', borderRadius: '10px', marginBottom: '16px', border: '1px solid #d1d1d6' }}>
             <div style={{ fontSize: '15px', fontWeight: 'bold', fontStyle: 'italic' }}>{selectedProject?.name}</div>
             <div style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366' }}>ID: {selectedProject?.id}</div>
             <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#8e8e93', marginTop: '2px' }}>📅 {getProjectDates(selectedProject!)}</div>
@@ -219,7 +218,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                 <label style={{ fontSize: '11px', fontStyle: 'italic', color: '#636366', display: 'block', marginBottom: '2px' }}>Назва витрати</label>
                 <input
                   type="text"
-                  placeholder="Введіть назву..."
+                  placeholder="Введіть назву витрати..."
                   value={newExpenseTitle}
                   onChange={(e) => setNewExpenseTitle(e.target.value)}
                   style={inputStyle}
@@ -276,7 +275,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
             </form>
           )}
 
-          {/* Список витрат конкретного проєкту */}
+          {/* Список витрат проєкту */}
           <div>
             <h3 style={{ fontSize: '14px', fontStyle: 'italic', color: '#636366', marginBottom: '10px' }}>Список витрат проєкту:</h3>
             {expenses.length === 0 ? (
