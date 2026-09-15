@@ -199,6 +199,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
             borderRadius: '12px',
             fontWeight: 700,
             fontSize: '15px',
+            fontStyle: 'italic',
             cursor: 'pointer',
             marginTop: '10px'
           }}
@@ -216,6 +217,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
             border: 'none',
             color: '#8e8e93',
             fontSize: '13px',
+            fontStyle: 'italic',
             cursor: 'pointer',
             textDecoration: 'underline'
           }}
@@ -227,7 +229,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
       {isTemplateManagerOpen && (
         <div style={{ marginTop: '16px', padding: '14px', backgroundColor: '#f2f2f7', borderRadius: '12px' }}>
           {validTemplates.length === 0 ? (
-            <div style={{ fontSize: '12px', color: '#8e8e93' }}>Немає збережених шаблонів.</div>
+            <div style={{ fontSize: '12px', fontStyle: 'italic', color: '#8e8e93' }}>Немає збережених шаблонів.</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {validTemplates.map((t) => (
@@ -254,7 +256,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
                       />
                       <button
                         onClick={() => handleSaveTemplateName(t.id)}
-                        style={{ padding: '4px 8px', backgroundColor: '#34c759', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}
+                        style={{ padding: '4px 8px', backgroundColor: '#34c759', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontStyle: 'italic' }}
                       >
                         ✓
                       </button>
@@ -265,7 +267,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
                         setEditingTemplateId(t.id);
                         setEditingTemplateName(t.name);
                       }}
-                      style={{ fontWeight: 500, cursor: 'pointer', flex: 1 }}
+                      style={{ fontWeight: 500, fontStyle: 'italic', cursor: 'pointer', flex: 1 }}
                     >
                       {t.name}
                     </span>
@@ -294,6 +296,7 @@ const formInputStyle: React.CSSProperties = {
   border: '1px solid #d1d1d6',
   borderRadius: '10px',
   fontSize: '14px',
+  fontStyle: 'italic',
   outline: 'none',
   boxSizing: 'border-box',
   color: '#1c1c1e'
@@ -303,6 +306,7 @@ const labelStyle: React.CSSProperties = {
   fontSize: '12px',
   color: '#636366',
   marginBottom: '4px',
+  fontStyle: 'italic',
   display: 'block'
 };
 
