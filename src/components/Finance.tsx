@@ -18,6 +18,8 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
+  const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
+  
   const [newExpenseTitle, setNewExpenseTitle] = useState('');
   const [newExpenseAmount, setNewExpenseAmount] = useState<string>('');
   const [newExpenseCurrency, setNewExpenseCurrency] = useState('USD');
@@ -52,19 +54,49 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
     ? currentInputAmount * (projectArea > 0 ? projectArea : 1) 
     : currentInputAmount;
 
-  const handleAddExpense = (e: React.FormEvent) => {
+  const handleOpenAddForm = () => {
+    setEditingExpenseId(null);
+    setNewExpenseTitle('');
+    setNewExpenseAmount('');
+    setNewExpenseCurrency('USD');
+    setNewExpenseCalcType('fixed');
+    setIsAddExpenseOpen(true);
+  };
+
+  const handleEditExpenseClick = (item: ExpenseItem) => {
+    setEditingExpenseId(item.id);
+    setNewExpenseTitle(item.title);
+    setNewExpenseAmount(String(item.amount));
+    setNewExpenseCurrency(item.currency);
+    setNewExpenseCalcType(item.calcType);
+    setIsAddExpenseOpen(true);
+  };
+
+  const handleSaveExpense = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newExpenseTitle.trim() || !newExpenseAmount || !selectedProject) return;
 
-    const newItem: ExpenseItem = {
-      id: Date.now().toString(),
-      title: newExpenseTitle.trim(),
-      amount: currentInputAmount,
-      currency: newExpenseCurrency,
-      calcType: newExpenseCalcType
-    };
+    let updatedExpenses: ExpenseItem[];
 
-    const updatedExpenses = [newItem, ...expenses];
+    if (editingExpenseId) {
+      // Редагування існуючої витрати
+      updatedExpenses = expenses.map(item => 
+        item.id === editingExpenseId 
+          ? { ...item, title: newExpenseTitle.trim(), amount: currentInputAmount, currency: newExpenseCurrency, calcType: newExpenseCalcType }
+          : item
+      );
+    } else {
+      // Створення нової витрати
+      const newItem: ExpenseItem = {
+        id: Date.now().toString(),
+        title: newExpenseTitle.trim(),
+        amount: currentInputAmount,
+        currency: newExpenseCurrency,
+        calcType: newExpenseCalcType
+      };
+      updatedExpenses = [newItem, ...expenses];
+    }
+
     const updatedProject: Project = {
       ...selectedProject,
       expenses: updatedExpenses as any
@@ -76,10 +108,12 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
 
     setNewExpenseTitle('');
     setNewExpenseAmount('');
+    setEditingExpenseId(null);
     setIsAddExpenseOpen(false);
   };
 
-  const handleDeleteExpense = (id: string) => {
+  const handleDeleteExpense = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation(); // Щоб не відкривало форму редагування при кліку на кошик
     if (!selectedProject) return;
     const updatedExpenses = expenses.filter(item => item.id !== id);
     
@@ -290,10 +324,16 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
 
           </div>
 
-          {/* Кнопка та форма додавання витрат */}
+          {/* Кнопка та форма додавання/редагування витрат */}
           <div style={{ marginBottom: '16px' }}>
             <button
-              onClick={() => setIsAddExpenseOpen(!isAddExpenseOpen)}
+              onClick={() => {
+                if (isAddExpenseOpen) {
+                  setIsAddExpenseOpen(false);
+                } else {
+                  handleOpenAddForm();
+                }
+              }}
               style={{ width: '100%', padding: '12px', backgroundColor: '#007aff', color: '#ffffff', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontStyle: 'italic', fontSize: '14px', cursor: 'pointer' }}
             >
               {isAddExpenseOpen ? 'Закрити меню витрат' : '+ Додати витрату'}
@@ -301,7 +341,10 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
           </div>
 
           {isAddExpenseOpen && (
-            <form onSubmit={handleAddExpense} style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <form onSubmit={handleSaveExpense} style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ fontSize: '13px', fontWeight: 'bold', fontStyle: 'italic', color: '#007aff', marginBottom: '2px' }}>
+                {editingExpenseId ? 'Редагування витрати' : 'Нова витрата'}
+              </div>
               <div>
                 <label style={{ fontSize: '11px', fontStyle: 'italic', color: '#636366', display: 'block', marginBottom: '2px' }}>1. Назва витрати</label>
                 <input
@@ -360,16 +403,30 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                 </span>
               </div>
 
-              <button
-                type="submit"
-                style={{ width: '100%', padding: '10px', backgroundColor: '#34c759', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontStyle: 'italic', cursor: 'pointer', marginTop: '6px' }}
-              >
-                Зберегти витрату
-              </button>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                <button
+                  type="submit"
+                  style={{ flex: 1, padding: '10px', backgroundColor: '#34c759', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontStyle: 'italic', cursor: 'pointer' }}
+                >
+                  {editingExpenseId ? 'Оновити витрату' : 'Зберегти витрату'}
+                </button>
+                {editingExpenseId && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingExpenseId(null);
+                      setIsAddExpenseOpen(false);
+                    }}
+                    style={{ padding: '10px 14px', backgroundColor: '#8e8e93', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontStyle: 'italic', cursor: 'pointer' }}
+                  >
+                    Скасувати
+                  </button>
+                )}
+              </div>
             </form>
           )}
 
-          {/* Список витрат з можливістю видалення */}
+          {/* Список витрат з можливістю кліку для редагування */}
           <div>
             <h3 style={{ fontSize: '14px', fontStyle: 'italic', color: '#636366', marginBottom: '10px' }}>Список витрат проєкту (Собівартість):</h3>
             {expenses.length === 0 ? (
@@ -379,7 +436,21 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                 {expenses.map((item) => {
                   const calculatedAmount = item.calcType === 'm2' ? item.amount * (projectArea > 0 ? projectArea : 1) : item.amount;
                   return (
-                    <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', backgroundColor: '#f9f9fb', border: '1px solid #e5e5ea', borderRadius: '8px' }}>
+                    <div 
+                      key={item.id} 
+                      onClick={() => handleEditExpenseClick(item)}
+                      style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center', 
+                        padding: '10px 12px', 
+                        backgroundColor: '#f9f9fb', 
+                        border: editingExpenseId === item.id ? '2px solid #007aff' : '1px solid #e5e5ea', 
+                        borderRadius: '8px',
+                        cursor: 'pointer'
+                      }}
+                      title="Натисніть, щоб редагувати витрату"
+                    >
                       <div>
                         <div style={{ fontSize: '13px', fontStyle: 'italic', fontWeight: 500 }}>{item.title}</div>
                         <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#8e8e93' }}>
@@ -391,8 +462,9 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                           -{calculatedAmount.toFixed(2)} {item.currency}
                         </span>
                         <button
-                          onClick={() => handleDeleteExpense(item.id)}
+                          onClick={(e) => handleDeleteExpense(e, item.id)}
                           style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}
+                          title="Видалити"
                         >
                           🗑️
                         </button>
@@ -451,7 +523,6 @@ const colTotalStyle: React.CSSProperties = {
   fontStyle: 'italic'
 };
 
-// Повністю безшовне поле без підкреслення та без рамки
 const seamlessInputStyle: React.CSSProperties = {
   width: '56px',
   padding: '1px 2px',
