@@ -214,7 +214,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
             </div>
           </div>
 
-          {/* Таблиця з 4 колонками на основі Grid для ідеального вирівнювання */}
+          {/* Таблиця з 4 колонками на основі Grid */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
             
             {/* Рядок 1: Загальна вартість */}
@@ -409,7 +409,6 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
   );
 };
 
-// Застосовуємо CSS Grid для ідеального вертикального вирівнювання колонок
 const gridRowStyle: React.CSSProperties = {
   display: 'grid',
   gridTemplateColumns: '1.5fr 0.9fr 1.6fr 1.3fr',
@@ -420,14 +419,12 @@ const gridRowStyle: React.CSSProperties = {
   border: '1px solid #e5e5ea'
 };
 
-// Колонка 1: Назва
 const colNameStyle: React.CSSProperties = {
   fontSize: '13px',
   fontStyle: 'italic',
   fontWeight: 500
 };
 
-// Колонка 2: Відсотки
 const colPercentStyle: React.CSSProperties = {
   textAlign: 'center',
   fontSize: '13px',
@@ -435,7 +432,6 @@ const colPercentStyle: React.CSSProperties = {
   color: '#636366'
 };
 
-// Колонка 3: USD/м² (вирівнювання праворуч із фіксованим простором)
 const colM2Style: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
@@ -448,7 +444,6 @@ const colM2Style: React.CSSProperties = {
   paddingRight: '4px'
 };
 
-// Колонка 4: Загальна вартість
 const colTotalStyle: React.CSSProperties = {
   textAlign: 'right',
   fontWeight: 'bold',
@@ -456,13 +451,13 @@ const colTotalStyle: React.CSSProperties = {
   fontStyle: 'italic'
 };
 
-// Повністю прозоре поле вводу без стрілочок (тип text замість number)
+// Повністю безшовне поле без підкреслення та без рамки
 const seamlessInputStyle: React.CSSProperties = {
   width: '56px',
   padding: '1px 2px',
   backgroundColor: 'transparent',
   border: 'none',
-  borderBottom: '1px dashed #b0b0b5',
+  borderBottom: 'none',
   borderRadius: '0px',
   fontSize: '12px',
   fontStyle: 'italic',
