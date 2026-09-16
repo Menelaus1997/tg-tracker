@@ -20,6 +20,9 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
   
+  // Стан для згортання/розгортання списку витрат
+  const [isExpensesListOpen, setIsExpensesListOpen] = useState(true);
+  
   const [newExpenseTitle, setNewExpenseTitle] = useState('');
   const [newExpenseAmount, setNewExpenseAmount] = useState<string>('');
   const [newExpenseCurrency, setNewExpenseCurrency] = useState('USD');
@@ -27,8 +30,6 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
 
   const [taxPercent, setTaxPercent] = useState<string>('8');
   const [customPricePerM2, setCustomPricePerM2] = useState<string>('');
-  
-  // Додаємо стан для курсу долара (за замовчуванням, наприклад, 41.50)
   const [usdRate, setUsdRate] = useState<string>('41.50');
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
@@ -251,7 +252,6 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
               </div>
             </div>
             
-            {/* Блок встановлення курсу долара */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#ffffff', padding: '6px 10px', borderRadius: '8px', border: '1px solid #d1d1d6' }}>
               <span style={{ fontSize: '11px', fontStyle: 'italic', color: '#636366' }}>Курс USD/UAH:</span>
               <input
@@ -264,10 +264,9 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
             </div>
           </div>
 
-          {/* Таблиця з 4 колонками (з дублюванням в UAH) */}
+          {/* Таблиця з 4 колонками */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
             
-            {/* Рядок 1: Загальна вартість */}
             <div style={gridRowStyle}>
               <div style={colNameStyle}>Загальна вартість:</div>
               <div style={colPercentStyle}>{costPercent}%</div>
@@ -293,7 +292,6 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
               </div>
             </div>
 
-            {/* Рядок 2: Собівартість */}
             <div style={gridRowStyle}>
               <div style={colNameStyle}>Собівартість</div>
               <div style={colPercentStyle}>{expensesPercent.toFixed(1)}%</div>
@@ -309,7 +307,6 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
               </div>
             </div>
 
-            {/* Рядок 3: Націнка */}
             <div style={gridRowStyle}>
               <div style={colNameStyle}>Націнка</div>
               <div style={{ ...colPercentStyle, color: '#34c759' }}>{markupPercent.toFixed(1)}%</div>
@@ -325,7 +322,6 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
               </div>
             </div>
 
-            {/* Рядок 4: Податки */}
             <div style={gridRowStyle}>
               <div style={colNameStyle}>Податки</div>
               <div style={{ ...colPercentStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}>
@@ -454,57 +450,79 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
             </form>
           )}
 
-          {/* Список витрат з можливістю кліку для редагування */}
+          {/* Список витрат з випадаючим меню (аккордеоном) */}
           <div>
-            <h3 style={{ fontSize: '14px', fontStyle: 'italic', color: '#636366', marginBottom: '10px' }}>Список витрат проєкту (Собівартість):</h3>
-            {expenses.length === 0 ? (
-              <div style={{ fontSize: '12px', fontStyle: 'italic', color: '#8e8e93', textAlign: 'center' }}>Немає доданих витрат для цього проєкту.</div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {expenses.map((item) => {
-                  const calculatedAmount = item.calcType === 'm2' ? item.amount * (projectArea > 0 ? projectArea : 1) : item.amount;
-                  return (
-                    <div 
-                      key={item.id} 
-                      onClick={() => handleEditExpenseClick(item)}
-                      style={{ 
-                        display: 'flex', 
-                        justifyContent: 'space-between', 
-                        alignItems: 'center', 
-                        padding: '10px 12px', 
-                        backgroundColor: '#f9f9fb', 
-                        border: editingExpenseId === item.id ? '2px solid #007aff' : '1px solid #e5e5ea', 
-                        borderRadius: '8px',
-                        cursor: 'pointer'
-                      }}
-                      title="Натисніть, щоб редагувати витрату"
-                    >
-                      <div>
-                        <div style={{ fontSize: '13px', fontStyle: 'italic', fontWeight: 500 }}>{item.title}</div>
-                        <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#8e8e93' }}>
-                          {item.calcType === 'm2' ? `${item.amount} * ${projectArea} м²` : 'Фіксована сума'} = {calculatedAmount.toFixed(2)} {item.currency}
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ textAlign: 'right' }}>
-                          <span style={{ fontSize: '13px', fontStyle: 'italic', fontWeight: 'bold', color: '#ff3b30' }}>
-                            -{calculatedAmount.toFixed(2)} {item.currency}
-                          </span>
-                          <div style={{ fontSize: '10px', color: '#8e8e93' }}>
-                            -{(calculatedAmount * (item.currency === 'USD' ? currentRate : 1)).toFixed(2)} UAH
+            <div 
+              onClick={() => setIsExpensesListOpen(!isExpensesListOpen)}
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between', 
+                cursor: 'pointer', 
+                marginBottom: '10px',
+                userSelect: 'none'
+              }}
+            >
+              <h3 style={{ fontSize: '14px', fontStyle: 'italic', color: '#636366', margin: 0 }}>
+                Список витрат проєкту (Собівартість):
+              </h3>
+              <span style={{ fontSize: '13px', color: '#007aff', fontWeight: 'bold', fontStyle: 'italic' }}>
+                {isExpensesListOpen ? '▲ Приховати' : '▼ Показати'}
+              </span>
+            </div>
+
+            {isExpensesListOpen && (
+              <div>
+                {expenses.length === 0 ? (
+                  <div style={{ fontSize: '12px', fontStyle: 'italic', color: '#8e8e93', textAlign: 'center' }}>Немає доданих витрат для цього проєкту.</div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {expenses.map((item) => {
+                      const calculatedAmount = item.calcType === 'm2' ? item.amount * (projectArea > 0 ? projectArea : 1) : item.amount;
+                      return (
+                        <div 
+                          key={item.id} 
+                          onClick={() => handleEditExpenseClick(item)}
+                          style={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center', 
+                            padding: '10px 12px', 
+                            backgroundColor: '#f9f9fb', 
+                            border: editingExpenseId === item.id ? '2px solid #007aff' : '1px solid #e5e5ea', 
+                            borderRadius: '8px',
+                            cursor: 'pointer'
+                          }}
+                          title="Натисніть, щоб редагувати витрату"
+                        >
+                          <div>
+                            <div style={{ fontSize: '13px', fontStyle: 'italic', fontWeight: 500 }}>{item.title}</div>
+                            <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#8e8e93' }}>
+                              {item.calcType === 'm2' ? `${item.amount} * ${projectArea} м²` : 'Фіксована сума'} = {calculatedAmount.toFixed(2)} {item.currency}
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ textAlign: 'right' }}>
+                              <span style={{ fontSize: '13px', fontStyle: 'italic', fontWeight: 'bold', color: '#ff3b30' }}>
+                                -{calculatedAmount.toFixed(2)} {item.currency}
+                              </span>
+                              <div style={{ fontSize: '10px', color: '#8e8e93' }}>
+                                -{(calculatedAmount * (item.currency === 'USD' ? currentRate : 1)).toFixed(2)} UAH
+                              </div>
+                            </div>
+                            <button
+                              onClick={(e) => handleDeleteExpense(e, item.id)}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}
+                              title="Видалити"
+                            >
+                              🗑️
+                            </button>
                           </div>
                         </div>
-                        <button
-                          onClick={(e) => handleDeleteExpense(e, item.id)}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}
-                          title="Видалити"
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </div>
