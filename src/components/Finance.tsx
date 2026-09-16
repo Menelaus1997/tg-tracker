@@ -139,7 +139,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
   };
 
   return (
-    <div style={{ padding: '16px', maxWidth: '600px', margin: '0 auto', color: '#1c1c1e', fontFamily: "'SF Pro Condensed', -apple-system, sans-serif" }}>
+    <div style={{ padding: '16px', maxWidth: '650px', margin: '0 auto', color: '#1c1c1e', fontFamily: "'SF Pro Condensed', -apple-system, sans-serif" }}>
       <h2 style={{ fontSize: '18px', fontWeight: 'bold', fontStyle: 'italic', marginBottom: '16px', textAlign: 'center' }}>
         Фінанси та бюджет
       </h2>
@@ -214,14 +214,14 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
             </div>
           </div>
 
-          {/* Таблиця з 4 колонками */}
+          {/* Таблиця з 4 вирівняними колонками */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
             
             {/* Рядок 1: Загальна вартість */}
             <div style={rowStyle}>
-              <div style={{ flex: 1.8, fontSize: '13px', fontStyle: 'italic', fontWeight: 500 }}>Загальна вартість:</div>
-              <div style={{ flex: 1, textAlign: 'center', fontSize: '13px', fontStyle: 'italic', color: '#636366' }}>{costPercent}%</div>
-              <div style={{ flex: 1.4, textAlign: 'right', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '2px' }}>
+              <div style={colNameStyle}>Загальна вартість:</div>
+              <div style={colPercentStyle}>{costPercent}%</div>
+              <div style={colM2Style}>
                 {projectArea > 0 ? (
                   <input
                     type="number"
@@ -235,41 +235,41 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                 )}
                 <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366' }}>USD/м²</span>
               </div>
-              <div style={{ flex: 1.4, textAlign: 'right', fontWeight: 'bold', fontSize: '13px', fontStyle: 'italic' }}>
+              <div style={colTotalStyle}>
                 {finalTotalProjectCost.toFixed(2)} USD
               </div>
             </div>
 
             {/* Рядок 2: Собівартість */}
             <div style={rowStyle}>
-              <div style={{ flex: 1.8, fontSize: '13px', fontStyle: 'italic', fontWeight: 500 }}>Собівартість</div>
-              <div style={{ flex: 1, textAlign: 'center', fontSize: '13px', fontStyle: 'italic', color: '#636366' }}>{expensesPercent.toFixed(1)}%</div>
-              <div style={{ flex: 1.4, textAlign: 'right', fontSize: '12px', fontStyle: 'italic', color: '#3a3a3c' }}>
-                {expensesPerM2.toFixed(2)} USD/м²
+              <div style={colNameStyle}>Собівартість</div>
+              <div style={colPercentStyle}>{expensesPercent.toFixed(1)}%</div>
+              <div style={colM2Style}>
+                <span>{expensesPerM2.toFixed(2)}</span>
+                <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366' }}>USD/м²</span>
               </div>
-              <div style={{ flex: 1.4, textAlign: 'right', fontWeight: 'bold', fontSize: '13px', fontStyle: 'italic', color: '#ff3b30' }}>
+              <div style={{ ...colTotalStyle, color: '#ff3b30' }}>
                 {totalExpenses.toFixed(2)} USD
               </div>
             </div>
 
             {/* Рядок 3: Націнка */}
             <div style={rowStyle}>
-              <div style={{ flex: 1.8, fontSize: '13px', fontStyle: 'italic', fontWeight: 500 }}>Націнка</div>
-              <div style={{ flex: 1, textAlign: 'center', fontSize: '13px', fontStyle: 'italic', color: '#34c759' }}>
-                {markupPercent.toFixed(1)}%
+              <div style={colNameStyle}>Націнка</div>
+              <div style={{ ...colPercentStyle, color: '#34c759' }}>{markupPercent.toFixed(1)}%</div>
+              <div style={colM2Style}>
+                <span>{markupPerM2.toFixed(2)}</span>
+                <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366' }}>USD/м²</span>
               </div>
-              <div style={{ flex: 1.4, textAlign: 'right', fontSize: '12px', fontStyle: 'italic', color: '#3a3a3c' }}>
-                {markupPerM2.toFixed(2)} USD/м²
-              </div>
-              <div style={{ flex: 1.4, textAlign: 'right', fontWeight: 'bold', fontSize: '13px', fontStyle: 'italic', color: '#34c759' }}>
+              <div style={{ ...colTotalStyle, color: '#34c759' }}>
                 {markupTotal.toFixed(2)} USD
               </div>
             </div>
 
             {/* Рядок 4: Податки */}
             <div style={rowStyle}>
-              <div style={{ flex: 1.8, fontSize: '13px', fontStyle: 'italic', fontWeight: 500 }}>Податки</div>
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}>
+              <div style={colNameStyle}>Податки</div>
+              <div style={{ ...colPercentStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}>
                 <input
                   type="number"
                   value={taxPercent}
@@ -278,10 +278,11 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                 />
                 <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366' }}>%</span>
               </div>
-              <div style={{ flex: 1.4, textAlign: 'right', fontSize: '12px', fontStyle: 'italic', color: '#3a3a3c' }}>
-                {taxPerM2.toFixed(2)} USD/м²
+              <div style={colM2Style}>
+                <span>{taxPerM2.toFixed(2)}</span>
+                <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366' }}>USD/м²</span>
               </div>
-              <div style={{ flex: 1.4, textAlign: 'right', fontWeight: 'bold', fontSize: '13px', fontStyle: 'italic', color: '#007aff' }}>
+              <div style={{ ...colTotalStyle, color: '#007aff' }}>
                 {taxTotal.toFixed(2)} USD
               </div>
             </div>
@@ -416,9 +417,48 @@ const rowStyle: React.CSSProperties = {
   border: '1px solid #e5e5ea'
 };
 
-// Стилі для сірого поля без стрілочок з вирівнюванням
+// Колонка 1: Назва
+const colNameStyle: React.CSSProperties = {
+  flex: '1.6',
+  fontSize: '13px',
+  fontStyle: 'italic',
+  fontWeight: 500
+};
+
+// Колонка 2: Відсотки
+const colPercentStyle: React.CSSProperties = {
+  flex: '0.9',
+  textAlign: 'center',
+  fontSize: '13px',
+  fontStyle: 'italic',
+  color: '#636366'
+};
+
+// Колонка 3: USD/м² (збільшено ширину для ідеального вирівнювання)
+const colM2Style: React.CSSProperties = {
+  flex: '1.6',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'flex-end',
+  gap: '3px',
+  fontSize: '12px',
+  fontStyle: 'italic',
+  color: '#3a3a3c',
+  textAlign: 'right'
+};
+
+// Колонка 4: Загальна вартість
+const colTotalStyle: React.CSSProperties = {
+  flex: '1.4',
+  textAlign: 'right',
+  fontWeight: 'bold',
+  fontSize: '13px',
+  fontStyle: 'italic'
+};
+
+// Сіре поле вводу для м² без стрілочок
 const tableInputStyle: React.CSSProperties = {
-  width: '55px',
+  width: '62px',
   padding: '2px 4px',
   backgroundColor: '#e5e5ea',
   border: '1px solid #d1d1d6',
