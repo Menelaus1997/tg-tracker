@@ -214,27 +214,26 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
             </div>
           </div>
 
-          {/* Таблиця з 4 вирівняними колонками */}
+          {/* Таблиця з 4 колонками на основі Grid для ідеального вирівнювання */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
             
             {/* Рядок 1: Загальна вартість */}
-            <div style={rowStyle}>
+            <div style={gridRowStyle}>
               <div style={colNameStyle}>Загальна вартість:</div>
               <div style={colPercentStyle}>{costPercent}%</div>
               <div style={colM2Style}>
                 {projectArea > 0 ? (
                   <input
-                    type="number"
-                    step="0.01"
+                    type="text"
+                    inputMode="decimal"
                     value={customPricePerM2 !== '' ? customPricePerM2 : defaultPricePerM2.toFixed(2)}
                     onChange={(e) => setCustomPricePerM2(e.target.value)}
                     style={seamlessInputStyle}
-                    title="Натисніть, щоб змінити значення"
                   />
                 ) : (
                   <span>0.00</span>
                 )}
-                <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366' }}>USD/м²</span>
+                <span style={{ color: '#636366', marginLeft: '2px' }}>USD/м²</span>
               </div>
               <div style={colTotalStyle}>
                 {finalTotalProjectCost.toFixed(2)} USD
@@ -242,12 +241,12 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
             </div>
 
             {/* Рядок 2: Собівартість */}
-            <div style={rowStyle}>
+            <div style={gridRowStyle}>
               <div style={colNameStyle}>Собівартість</div>
               <div style={colPercentStyle}>{expensesPercent.toFixed(1)}%</div>
               <div style={colM2Style}>
                 <span>{expensesPerM2.toFixed(2)}</span>
-                <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366' }}>USD/м²</span>
+                <span style={{ color: '#636366', marginLeft: '2px' }}>USD/м²</span>
               </div>
               <div style={{ ...colTotalStyle, color: '#ff3b30' }}>
                 {totalExpenses.toFixed(2)} USD
@@ -255,12 +254,12 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
             </div>
 
             {/* Рядок 3: Націнка */}
-            <div style={rowStyle}>
+            <div style={gridRowStyle}>
               <div style={colNameStyle}>Націнка</div>
               <div style={{ ...colPercentStyle, color: '#34c759' }}>{markupPercent.toFixed(1)}%</div>
               <div style={colM2Style}>
                 <span>{markupPerM2.toFixed(2)}</span>
-                <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366' }}>USD/м²</span>
+                <span style={{ color: '#636366', marginLeft: '2px' }}>USD/м²</span>
               </div>
               <div style={{ ...colTotalStyle, color: '#34c759' }}>
                 {markupTotal.toFixed(2)} USD
@@ -268,11 +267,12 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
             </div>
 
             {/* Рядок 4: Податки */}
-            <div style={rowStyle}>
+            <div style={gridRowStyle}>
               <div style={colNameStyle}>Податки</div>
               <div style={{ ...colPercentStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   value={taxPercent}
                   onChange={(e) => setTaxPercent(e.target.value)}
                   style={taxInputStyle}
@@ -281,7 +281,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
               </div>
               <div style={colM2Style}>
                 <span>{taxPerM2.toFixed(2)}</span>
-                <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366' }}>USD/м²</span>
+                <span style={{ color: '#636366', marginLeft: '2px' }}>USD/м²</span>
               </div>
               <div style={{ ...colTotalStyle, color: '#007aff' }}>
                 {taxTotal.toFixed(2)} USD
@@ -318,11 +318,12 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                 <div style={{ flex: 1.5 }}>
                   <label style={{ fontSize: '11px', fontStyle: 'italic', color: '#636366', display: 'block', marginBottom: '2px' }}>2. Вартість</label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
                     placeholder="0.00"
                     value={newExpenseAmount}
                     onChange={(e) => setNewExpenseAmount(e.target.value)}
-                    style={noArrowInputStyle}
+                    style={inputStyle}
                     required
                   />
                 </div>
@@ -408,9 +409,10 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
   );
 };
 
-const rowStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
+// Застосовуємо CSS Grid для ідеального вертикального вирівнювання колонок
+const gridRowStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '1.5fr 0.9fr 1.6fr 1.3fr',
   alignItems: 'center',
   padding: '10px 12px',
   backgroundColor: '#f2f2f7',
@@ -420,7 +422,6 @@ const rowStyle: React.CSSProperties = {
 
 // Колонка 1: Назва
 const colNameStyle: React.CSSProperties = {
-  flex: '1.6',
   fontSize: '13px',
   fontStyle: 'italic',
   fontWeight: 500
@@ -428,16 +429,14 @@ const colNameStyle: React.CSSProperties = {
 
 // Колонка 2: Відсотки
 const colPercentStyle: React.CSSProperties = {
-  flex: '0.9',
   textAlign: 'center',
   fontSize: '13px',
   fontStyle: 'italic',
   color: '#636366'
 };
 
-// Колонка 3: USD/м² (ідеально вирівняна сума зліва від USD/м²)
+// Колонка 3: USD/м² (вирівнювання праворуч із фіксованим простором)
 const colM2Style: React.CSSProperties = {
-  flex: '1.6',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'flex-end',
@@ -445,25 +444,25 @@ const colM2Style: React.CSSProperties = {
   fontSize: '12px',
   fontStyle: 'italic',
   color: '#3a3a3c',
-  textAlign: 'right'
+  textAlign: 'right',
+  paddingRight: '4px'
 };
 
 // Колонка 4: Загальна вартість
 const colTotalStyle: React.CSSProperties = {
-  flex: '1.4',
   textAlign: 'right',
   fontWeight: 'bold',
   fontSize: '13px',
   fontStyle: 'italic'
 };
 
-// Повністю безшовне прозоре поле для вводу без рамки та фону (виглядає як текст)
+// Повністю прозоре поле вводу без стрілочок (тип text замість number)
 const seamlessInputStyle: React.CSSProperties = {
-  width: '58px',
+  width: '56px',
   padding: '1px 2px',
   backgroundColor: 'transparent',
   border: 'none',
-  borderBottom: '1px dashed #b0b0b5', // Легке підкреслення, щоб помічати поле
+  borderBottom: '1px dashed #b0b0b5',
   borderRadius: '0px',
   fontSize: '12px',
   fontStyle: 'italic',
@@ -483,19 +482,6 @@ const taxInputStyle: React.CSSProperties = {
   fontStyle: 'italic',
   textAlign: 'center',
   outline: 'none'
-};
-
-const noArrowInputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '8px 8px',
-  backgroundColor: '#ffffff',
-  border: '1px solid #d1d1d6',
-  borderRadius: '6px',
-  fontSize: '12px',
-  fontStyle: 'italic',
-  outline: 'none',
-  boxSizing: 'border-box',
-  color: '#1c1c1e'
 };
 
 const inputStyle: React.CSSProperties = {
