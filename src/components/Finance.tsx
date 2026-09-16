@@ -228,10 +228,11 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                     step="0.01"
                     value={customPricePerM2 !== '' ? customPricePerM2 : defaultPricePerM2.toFixed(2)}
                     onChange={(e) => setCustomPricePerM2(e.target.value)}
-                    style={tableInputStyle}
+                    style={seamlessInputStyle}
+                    title="Натисніть, щоб змінити значення"
                   />
                 ) : (
-                  <span style={{ fontSize: '12px', fontStyle: 'italic' }}>0.00</span>
+                  <span>0.00</span>
                 )}
                 <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366' }}>USD/м²</span>
               </div>
@@ -434,7 +435,7 @@ const colPercentStyle: React.CSSProperties = {
   color: '#636366'
 };
 
-// Колонка 3: USD/м² (збільшено ширину для ідеального вирівнювання)
+// Колонка 3: USD/м² (ідеально вирівняна сума зліва від USD/м²)
 const colM2Style: React.CSSProperties = {
   flex: '1.6',
   display: 'flex',
@@ -456,13 +457,14 @@ const colTotalStyle: React.CSSProperties = {
   fontStyle: 'italic'
 };
 
-// Сіре поле вводу для м² без стрілочок
-const tableInputStyle: React.CSSProperties = {
-  width: '62px',
-  padding: '2px 4px',
-  backgroundColor: '#e5e5ea',
-  border: '1px solid #d1d1d6',
-  borderRadius: '4px',
+// Повністю безшовне прозоре поле для вводу без рамки та фону (виглядає як текст)
+const seamlessInputStyle: React.CSSProperties = {
+  width: '58px',
+  padding: '1px 2px',
+  backgroundColor: 'transparent',
+  border: 'none',
+  borderBottom: '1px dashed #b0b0b5', // Легке підкреслення, щоб помічати поле
+  borderRadius: '0px',
   fontSize: '12px',
   fontStyle: 'italic',
   textAlign: 'right',
