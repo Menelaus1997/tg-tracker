@@ -27,6 +27,9 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
 
   const [taxPercent, setTaxPercent] = useState<string>('8');
   const [customPricePerM2, setCustomPricePerM2] = useState<string>('');
+  
+  // Додаємо стан для курсу долара (за замовчуванням, наприклад, 41.50)
+  const [usdRate, setUsdRate] = useState<string>('41.50');
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
   const expenses: ExpenseItem[] = (selectedProject as any)?.expenses || [];
@@ -48,6 +51,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
   };
 
   const projectArea = selectedProject ? getProjectArea(selectedProject) : 0;
+  const currentRate = parseFloat(usdRate) || 1;
 
   const currentInputAmount = parseFloat(newExpenseAmount) || 0;
   const calculatedPreviewAmount = newExpenseCalcType === 'm2' 
@@ -79,14 +83,12 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
     let updatedExpenses: ExpenseItem[];
 
     if (editingExpenseId) {
-      // Редагування існуючої витрати
       updatedExpenses = expenses.map(item => 
         item.id === editingExpenseId 
           ? { ...item, title: newExpenseTitle.trim(), amount: currentInputAmount, currency: newExpenseCurrency, calcType: newExpenseCalcType }
           : item
       );
     } else {
-      // Створення нової витрати
       const newItem: ExpenseItem = {
         id: Date.now().toString(),
         title: newExpenseTitle.trim(),
@@ -113,7 +115,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
   };
 
   const handleDeleteExpense = (e: React.MouseEvent, id: string) => {
-    e.stopPropagation(); // Щоб не відкривало форму редагування при кліку на кошик
+    e.stopPropagation();
     if (!selectedProject) return;
     const updatedExpenses = expenses.filter(item => item.id !== id);
     
@@ -240,15 +242,29 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
             ← Назад до списку проєктів
           </button>
 
-          <div style={{ padding: '12px 14px', backgroundColor: '#e5e5ea', borderRadius: '10px', marginBottom: '16px', border: '1px solid #d1d1d6' }}>
-            <div style={{ fontSize: '15px', fontWeight: 'bold', fontStyle: 'italic' }}>{selectedProject?.name}</div>
-            <div style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366' }}>ID: {selectedProject?.id}</div>
-            <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#8e8e93', marginTop: '2px' }}>
-              📅 {getProjectDates(selectedProject!)} {projectArea > 0 ? `| 📐 Площа: ${projectArea} м²` : ''}
+          <div style={{ padding: '12px 14px', backgroundColor: '#e5e5ea', borderRadius: '10px', marginBottom: '16px', border: '1px solid #d1d1d6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontSize: '15px', fontWeight: 'bold', fontStyle: 'italic' }}>{selectedProject?.name}</div>
+              <div style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366' }}>ID: {selectedProject?.id}</div>
+              <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#8e8e93', marginTop: '2px' }}>
+                📅 {getProjectDates(selectedProject!)} {projectArea > 0 ? `| 📐 Площа: ${projectArea} м²` : ''}
+              </div>
+            </div>
+            
+            {/* Блок встановлення курсу долара */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#ffffff', padding: '6px 10px', borderRadius: '8px', border: '1px solid #d1d1d6' }}>
+              <span style={{ fontSize: '11px', fontStyle: 'italic', color: '#636366' }}>Курс USD/UAH:</span>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={usdRate}
+                onChange={(e) => setUsdRate(e.target.value)}
+                style={{ width: '45px', border: 'none', fontSize: '12px', fontStyle: 'italic', fontWeight: 'bold', textAlign: 'center', outline: 'none' }}
+              />
             </div>
           </div>
 
-          {/* Таблиця з 4 колонками на основі Grid */}
+          {/* Таблиця з 4 колонками (з дублюванням в UAH) */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
             
             {/* Рядок 1: Загальна вартість */}
@@ -270,7 +286,10 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                 <span style={{ color: '#636366', marginLeft: '2px' }}>USD/м²</span>
               </div>
               <div style={colTotalStyle}>
-                {finalTotalProjectCost.toFixed(2)} USD
+                <div>{finalTotalProjectCost.toFixed(2)} USD</div>
+                <div style={{ fontSize: '11px', color: '#636366', fontWeight: 'normal' }}>
+                  {(finalTotalProjectCost * currentRate).toFixed(2)} UAH
+                </div>
               </div>
             </div>
 
@@ -283,7 +302,10 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                 <span style={{ color: '#636366', marginLeft: '2px' }}>USD/м²</span>
               </div>
               <div style={{ ...colTotalStyle, color: '#ff3b30' }}>
-                {totalExpenses.toFixed(2)} USD
+                <div>{totalExpenses.toFixed(2)} USD</div>
+                <div style={{ fontSize: '11px', color: '#8e8e93', fontWeight: 'normal' }}>
+                  {(totalExpenses * currentRate).toFixed(2)} UAH
+                </div>
               </div>
             </div>
 
@@ -296,7 +318,10 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                 <span style={{ color: '#636366', marginLeft: '2px' }}>USD/м²</span>
               </div>
               <div style={{ ...colTotalStyle, color: '#34c759' }}>
-                {markupTotal.toFixed(2)} USD
+                <div>{markupTotal.toFixed(2)} USD</div>
+                <div style={{ fontSize: '11px', color: '#8e8e93', fontWeight: 'normal' }}>
+                  {(markupTotal * currentRate).toFixed(2)} UAH
+                </div>
               </div>
             </div>
 
@@ -318,7 +343,10 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                 <span style={{ color: '#636366', marginLeft: '2px' }}>USD/м²</span>
               </div>
               <div style={{ ...colTotalStyle, color: '#007aff' }}>
-                {taxTotal.toFixed(2)} USD
+                <div>{taxTotal.toFixed(2)} USD</div>
+                <div style={{ fontSize: '11px', color: '#8e8e93', fontWeight: 'normal' }}>
+                  {(taxTotal * currentRate).toFixed(2)} UAH
+                </div>
               </div>
             </div>
 
@@ -399,7 +427,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
               <div style={{ padding: '8px 10px', backgroundColor: '#e5e5ea', borderRadius: '8px', fontSize: '12px', fontStyle: 'italic', color: '#3a3a3c', display: 'flex', justifyContent: 'space-between' }}>
                 <span>5. Загальна вартість витрати:</span>
                 <span style={{ fontWeight: 'bold', color: '#007aff' }}>
-                  {calculatedPreviewAmount.toFixed(2)} {newExpenseCurrency}
+                  {calculatedPreviewAmount.toFixed(2)} {newExpenseCurrency} {newExpenseCurrency !== 'UAH' ? `(~ ${(calculatedPreviewAmount * (newExpenseCurrency === 'USD' ? currentRate : 1)).toFixed(2)} UAH)` : ''}
                 </span>
               </div>
 
@@ -458,9 +486,14 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                         </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ fontSize: '13px', fontStyle: 'italic', fontWeight: 'bold', color: '#ff3b30' }}>
-                          -{calculatedAmount.toFixed(2)} {item.currency}
-                        </span>
+                        <div style={{ textAlign: 'right' }}>
+                          <span style={{ fontSize: '13px', fontStyle: 'italic', fontWeight: 'bold', color: '#ff3b30' }}>
+                            -{calculatedAmount.toFixed(2)} {item.currency}
+                          </span>
+                          <div style={{ fontSize: '10px', color: '#8e8e93' }}>
+                            -{(calculatedAmount * (item.currency === 'USD' ? currentRate : 1)).toFixed(2)} UAH
+                          </div>
+                        </div>
                         <button
                           onClick={(e) => handleDeleteExpense(e, item.id)}
                           style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}
