@@ -23,10 +23,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
   const [newExpenseCurrency, setNewExpenseCurrency] = useState('USD');
   const [newExpenseCalcType, setNewExpenseCalcType] = useState<'m2' | 'fixed'>('fixed');
 
-  // Податки у відсотках (наприклад, 8%: 6% прихід + 2% буфер)
   const [taxPercent, setTaxPercent] = useState<string>('8');
-
-  // Кастомна вартість за м.кв. для Вартість проєкту (Колонка 3)
   const [customPricePerM2, setCustomPricePerM2] = useState<string>('');
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
@@ -96,7 +93,6 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
     }
   };
 
-  // 1. Собівартість (загальна сума з урахуванням витрат і м.кв.)
   const totalExpenses = expenses.reduce((acc, item) => {
     const baseVal = Number(item.amount) || 0;
     if (item.calcType === 'm2') {
@@ -105,9 +101,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
     return acc + baseVal;
   }, 0);
 
-  // 2. Вартість проєкту (загальна сума та ціна за м.кв.)
-  // За замовчуванням стартуємо від собівартості + націнки, або якщо є ручне введення в колонці 3:
-  const defaultTotalProjectCost = totalExpenses > 0 ? totalExpenses * 1.5 : 0; // умовний дефолт, якщо немає введення
+  const defaultTotalProjectCost = totalExpenses > 0 ? totalExpenses * 1.5 : 0;
   const defaultPricePerM2 = projectArea > 0 ? defaultTotalProjectCost / projectArea : 0;
 
   let finalTotalProjectCost = defaultTotalProjectCost;
@@ -121,20 +115,16 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
     finalTotalProjectCost = 0;
   }
 
-  // 3. Податки (на основі введеного % від загальної вартості проєкту)
   const taxRate = parseFloat(taxPercent) || 0;
   const taxTotal = finalTotalProjectCost * (taxRate / 100);
   const taxPerM2 = projectArea > 0 ? taxTotal / projectArea : 0;
 
-  // 4. Націнка (як залишок: Загальна вартість - Податки - Собівартість)
   const markupTotal = finalTotalProjectCost - taxTotal - totalExpenses;
   const markupPerM2 = projectArea > 0 ? markupTotal / projectArea : 0;
   const markupPercent = finalTotalProjectCost > 0 ? (markupTotal / finalTotalProjectCost) * 100 : 0;
 
-  // Відсоткові вираження для інших рядків
   const costPercent = 100;
   const expensesPercent = finalTotalProjectCost > 0 ? (totalExpenses / finalTotalProjectCost) * 100 : 0;
-
   const expensesPerM2 = projectArea > 0 ? totalExpenses / projectArea : 0;
 
   const getProjectDates = (proj: Project) => {
@@ -227,11 +217,11 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
           {/* Таблиця з 4 колонками */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
             
-            {/* Рядок 1: Вартість проєкту */}
+            {/* Рядок 1: Загальна вартість */}
             <div style={rowStyle}>
-              <div style={{ flex: 1.8, fontSize: '13px', fontStyle: 'italic', fontWeight: 500 }}>Вартість проєкту:</div>
+              <div style={{ flex: 1.8, fontSize: '13px', fontStyle: 'italic', fontWeight: 500 }}>Загальна вартість:</div>
               <div style={{ flex: 1, textAlign: 'center', fontSize: '13px', fontStyle: 'italic', color: '#636366' }}>{costPercent}%</div>
-              <div style={{ flex: 1.4, textAlign: 'right' }}>
+              <div style={{ flex: 1.4, textAlign: 'right', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '2px' }}>
                 {projectArea > 0 ? (
                   <input
                     type="number"
@@ -243,7 +233,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                 ) : (
                   <span style={{ fontSize: '12px', fontStyle: 'italic' }}>0.00</span>
                 )}
-                <span style={{ fontSize: '11px', fontStyle: 'italic', color: '#636366', marginLeft: '2px' }}> USD/м²</span>
+                <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366' }}>USD/м²</span>
               </div>
               <div style={{ flex: 1.4, textAlign: 'right', fontWeight: 'bold', fontSize: '13px', fontStyle: 'italic' }}>
                 {finalTotalProjectCost.toFixed(2)} USD
@@ -284,7 +274,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                   type="number"
                   value={taxPercent}
                   onChange={(e) => setTaxPercent(e.target.value)}
-                  style={{ width: '40px', padding: '2px', fontSize: '12px', fontStyle: 'italic', textAlign: 'center', borderRadius: '4px', border: '1px solid #d1d1d6' }}
+                  style={taxInputStyle}
                 />
                 <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366' }}>%</span>
               </div>
@@ -330,7 +320,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                     placeholder="0.00"
                     value={newExpenseAmount}
                     onChange={(e) => setNewExpenseAmount(e.target.value)}
-                    style={inputStyle}
+                    style={noArrowInputStyle}
                     required
                   />
                 </div>
@@ -426,10 +416,11 @@ const rowStyle: React.CSSProperties = {
   border: '1px solid #e5e5ea'
 };
 
+// Стилі для сірого поля без стрілочок з вирівнюванням
 const tableInputStyle: React.CSSProperties = {
   width: '55px',
   padding: '2px 4px',
-  backgroundColor: '#ffffff',
+  backgroundColor: '#e5e5ea',
   border: '1px solid #d1d1d6',
   borderRadius: '4px',
   fontSize: '12px',
@@ -437,6 +428,31 @@ const tableInputStyle: React.CSSProperties = {
   textAlign: 'right',
   outline: 'none',
   fontWeight: 'bold',
+  color: '#1c1c1e'
+};
+
+const taxInputStyle: React.CSSProperties = {
+  width: '40px',
+  padding: '2px',
+  backgroundColor: '#ffffff',
+  border: '1px solid #d1d1d6',
+  borderRadius: '4px',
+  fontSize: '12px',
+  fontStyle: 'italic',
+  textAlign: 'center',
+  outline: 'none'
+};
+
+const noArrowInputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '8px 8px',
+  backgroundColor: '#ffffff',
+  border: '1px solid #d1d1d6',
+  borderRadius: '6px',
+  fontSize: '12px',
+  fontStyle: 'italic',
+  outline: 'none',
+  boxSizing: 'border-box',
   color: '#1c1c1e'
 };
 
