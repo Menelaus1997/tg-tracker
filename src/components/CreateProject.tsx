@@ -118,16 +118,13 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e' }}>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
         
-        {/* Блок формування шифру */}
+        {/* Блок формування шифру (без зайвого заголовка) */}
         <div style={{ backgroundColor: '#f2f2f7', padding: '12px', borderRadius: '12px', border: '1px solid #e5e5ea', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <div style={{ fontSize: '12px', fontWeight: 'bold', fontStyle: 'italic', color: '#007aff' }}>
-            Формування унікального шифру (ID проєкту):
-          </div>
-
-          {/* Всі 4 рядки об'єднані в один сіточний рядок (grid-template-columns на 4 частини) */}
+          
+          {/* Всі 4 рядки в один ряд */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
             <div>
-              <label style={labelStyle}>Порядковий номер об'єкта</label>
+              <label style={labelStyle}>№ об'єкту</label>
               <input
                 type="text"
                 value={objectIndex}
@@ -175,7 +172,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
             </div>
           </div>
 
-          {/* Підсумковий Шифр */}
+          {/* Підсумковий Шифр (чорний текст) */}
           <div>
             <label style={labelStyle}>Шифр:</label>
             <input
@@ -187,13 +184,13 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
                 ...formInputStyle,
                 backgroundColor: '#ffffff',
                 fontWeight: 'bold',
-                color: '#007aff'
+                color: '#1c1c1e'
               }}
             />
           </div>
         </div>
 
-        {/* Найменування проєкту (опущено під шифр, текст всередині приховано) */}
+        {/* Найменування проєкту */}
         <div>
           <label style={labelStyle}>Найменування проєкту</label>
           <input
