@@ -31,7 +31,43 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
   const [taxPercent, setTaxPercent] = useState<string>('8');
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
-  const expenses: ExpenseItem[] = (selectedProject as any)?.expenses || [];
+  
+  // 1. Автоматично збираємо виконавців та їхні ролі зі стадій проєкту (якщо вони там призначені)
+  const getProjectTeamExpenses = (): ExpenseItem[] => {
+    if (!selectedProject || !selectedProject.stages) return [];
+    
+    const teamMap = new Map<string, ExpenseItem>();
+
+    selectedProject.stages.forEach((stage: any) => {
+      // Перевіряємо, чи в стадії вказано виконавця/роль (адаптуємо під можливі поля в структурі стадії)
+      const assignee = stage.assignee || stage.executor || stage.teamMember;
+      const role = stage.role || stage.position || 'Виконавець';
+
+      if (assignee) {
+        const title = `${assignee} (${role})`;
+        if (!teamMap.has(title)) {
+          teamMap.set(title, {
+            id: `auto-${stage.id || Math.random()}`,
+            title: title,
+            amount: 0, // Суму можна налаштувати або залишити за замовчуванням
+            currency: 'USD',
+            calcType: 'fixed'
+          });
+        }
+      }
+    });
+
+    return Array.from(teamMap.values());
+  };
+
+  // Ручні витрати, які користувач додав самостійно через форму
+  const manualExpenses: ExpenseItem[] = (selectedProject as any)?.expenses || [];
+
+  // Об'єднуємо автоматичні витрати з команди та ручні витрати
+  const autoTeamExpenses = getProjectTeamExpenses();
+  // Щоб не було дублікатів за назвою
+  const manualFiltered = manualExpenses.filter(m => !autoTeamExpenses.some(a => a.title === m.title));
+  const expenses: ExpenseItem[] = [...autoTeamExpenses, ...manualFiltered];
   
   const usdRate = (selectedProject as any)?.usdRate ?? '41.50';
   const customPricePerM2 = (selectedProject as any)?.customPricePerM2 ?? '';
@@ -105,7 +141,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
     let updatedExpenses: ExpenseItem[];
 
     if (editingExpenseId) {
-      updatedExpenses = expenses.map(item => 
+      updatedExpenses = manualExpenses.map(item => 
         item.id === editingExpenseId 
           ? { ...item, title: newExpenseTitle.trim(), amount: currentInputAmount, currency: newExpenseCurrency, calcType: newExpenseCalcType }
           : item
@@ -118,7 +154,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
         currency: newExpenseCurrency,
         calcType: newExpenseCalcType
       };
-      updatedExpenses = [newItem, ...expenses];
+      updatedExpenses = [newItem, ...manualExpenses];
     }
 
     const updatedProject: Project = {
@@ -139,7 +175,8 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
   const handleDeleteExpense = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (!selectedProject) return;
-    const updatedExpenses = expenses.filter(item => item.id !== id);
+    // Видаляємо лише з ручних витрат (автоматичні прив'язані до команди проєкту)
+    const updatedExpenses = manualExpenses.filter(item => item.id !== id);
     
     const updatedProject: Project = {
       ...selectedProject,
@@ -355,7 +392,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
               </div>
             </div>
 
-            {/* Рядок 4: Собівартість (тепер внизу під податками зі стрілочкою) */}
+            {/* Рядок 4: Собівартість (зі списком учасників та витрат) */}
             <div style={{ backgroundColor: '#f2f2f7', border: '1px solid #e5e5ea', borderRadius: '10px', overflow: 'hidden' }}>
               <div 
                 onClick={() => setIsExpensesListOpen(!isExpensesListOpen)}
@@ -380,7 +417,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                 </div>
               </div>
 
-              {/* Випадаюче меню витрат всередині Собівартості */}
+              {/* Випадаюче меню витрат та команди всередині Собівартості */}
               {isExpensesListOpen && (
                 <div style={{ padding: '0 12px 12px 12px', borderTop: '1px solid #e5e5ea', marginTop: '4px', paddingTop: '10px' }}>
                   
@@ -487,17 +524,18 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                     </form>
                   )}
 
-                  {/* Список самих витрат */}
+                  {/* Список витрат та мігрованих членів команди проєкту */}
                   {expenses.length === 0 ? (
-                    <div style={{ fontSize: '12px', fontStyle: 'italic', color: '#8e8e93', textAlign: 'center', padding: '8px' }}>Немає доданих витрат для цього проєкту.</div>
+                    <div style={{ fontSize: '12px', fontStyle: 'italic', color: '#8e8e93', textAlign: 'center', padding: '8px' }}>Немає призначених виконавців чи витрат для цього проєкту.</div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       {expenses.map((item) => {
                         const calculatedAmount = item.calcType === 'm2' ? item.amount * (projectArea > 0 ? projectArea : 1) : item.amount;
+                        const isAutoTeam = item.id.startsWith('auto-');
                         return (
                           <div 
                             key={item.id} 
-                            onClick={() => handleEditExpenseClick(item)}
+                            onClick={() => !isAutoTeam && handleEditExpenseClick(item)}
                             style={{ 
                               display: 'flex', 
                               justifyContent: 'space-between', 
@@ -506,14 +544,17 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                               backgroundColor: '#ffffff', 
                               border: editingExpenseId === item.id ? '2px solid #007aff' : '1px solid #e5e5ea', 
                               borderRadius: '8px',
-                              cursor: 'pointer'
+                              cursor: isAutoTeam ? 'default' : 'pointer'
                             }}
-                            title="Натисніть, щоб редагувати витрату"
+                            title={isAutoTeam ? "Автоматично підтягнуто з команди проєкту" : "Натисніть, щоб редагувати витрату"}
                           >
                             <div>
-                              <div style={{ fontSize: '12px', fontStyle: 'italic', fontWeight: 500 }}>{item.title}</div>
+                              <div style={{ fontSize: '12px', fontStyle: 'italic', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                {isAutoTeam && <span style={{ fontSize: '10px', color: '#007aff', backgroundColor: '#e5e5ea', padding: '1px 4px', borderRadius: '4px' }}>Команда</span>}
+                                {item.title}
+                              </div>
                               <div style={{ fontSize: '10px', fontStyle: 'italic', color: '#8e8e93' }}>
-                                {item.calcType === 'm2' ? `${item.amount} * ${projectArea} м²` : 'Фіксована сума'} = {calculatedAmount.toFixed(2)} {item.currency}
+                                {item.calcType === 'm2' ? `${item.amount} * ${projectArea} м²` : (isAutoTeam && item.amount === 0 ? 'Виконавець проєкту (сума не вказана)' : 'Фіксована сума')} {item.amount > 0 ? `= ${calculatedAmount.toFixed(2)} ${item.currency}` : ''}
                               </div>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -525,13 +566,15 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                                   -{formatUAH(calculatedAmount * (item.currency === 'USD' ? currentRate : 1))}
                                 </div>
                               </div>
-                              <button
-                                onClick={(e) => handleDeleteExpense(e, item.id)}
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px' }}
-                                title="Видалити"
-                              >
-                                🗑️
-                              </button>
+                              {!isAutoTeam && (
+                                <button
+                                  onClick={(e) => handleDeleteExpense(e, item.id)}
+                                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px' }}
+                                  title="Видалити"
+                                >
+                                  🗑️
+                                </button>
+                              )}
                             </div>
                           </div>
                         );
