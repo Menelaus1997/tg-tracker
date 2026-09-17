@@ -100,7 +100,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [isStructureOpen, setIsStructureOpen] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(true);
 
-  // Автоматична синхронізація імен виконавців зі стадій із актуальною `teamDatabase`
+  // Покращена авто-синхронізація імен виконавців з урахуванням різниці «е/є» та «і/и»
   const getSynchronizedStages = () => {
     const rawStages = (project.stages || []).map(s => ({
       ...s,
@@ -109,17 +109,21 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
     return rawStages.map(stage => {
       const updatedContractors = stage.contractors.map(cEntry => {
-        // Витягуємо роль з дужок, наприклад "Беляєва (Візуалізатор)" -> роль "(Візуалізатор)"
         const roleMatch = cEntry.match(/\s*\(([^)]+)\)$/);
         const rolePart = roleMatch ? roleMatch[0] : '';
         const namePart = roleMatch ? cEntry.replace(rolePart, '').trim() : cEntry.trim();
 
-        // Шукаємо учасника в базі за частковим збігом або схожістю
-        const matchedMember = teamDatabase.find(m => 
-          m.fullName.toLowerCase() === namePart.toLowerCase() ||
-          m.fullName.toLowerCase().includes(namePart.toLowerCase()) ||
-          namePart.toLowerCase().includes(m.fullName.toLowerCase())
-        );
+        const normalizeStr = (str: string) => 
+          str.toLowerCase().replace(/є/g, 'е').replace(/и/g, 'і').trim();
+
+        const cleanNamePart = normalizeStr(namePart);
+
+        const matchedMember = teamDatabase.find(m => {
+          const cleanMemberName = normalizeStr(m.fullName);
+          return cleanMemberName === cleanNamePart || 
+                 cleanMemberName.includes(cleanNamePart) || 
+                 cleanNamePart.includes(cleanMemberName);
+        });
 
         if (matchedMember) {
           return `${matchedMember.fullName}${rolePart}`;
@@ -136,7 +140,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
   const [stages, setStages] = useState<Stage[]>(getSynchronizedStages());
 
-  // Синхронізуємо при зміні `teamDatabase`
   useEffect(() => {
     const synced = getSynchronizedStages();
     setStages(synced);
