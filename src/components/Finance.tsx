@@ -37,7 +37,11 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
   
   const manualExpenses: ExpenseItem[] = (selectedProject as any)?.expenses || [];
 
-  // Автоматично збираємо виконавців зі стадій проєкту (уникаючи дублікатів за ID або стабільною ключовою ознакою)
+  // Функція нормалізації для однакового порівняння (ігнорує е/є, і/и)
+  const normalizeStr = (str: string) => 
+    str.toLowerCase().replace(/є/g, 'е').replace(/и/g, 'і').trim();
+
+  // Автоматично збираємо виконавців зі стадій проєкту (уникаючи дублікатів)
   const getProjectTeamExpenses = (): ExpenseItem[] => {
     if (!selectedProject || !selectedProject.stages) return [];
     
@@ -49,19 +53,20 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
       contractorsList.forEach((entry: string) => {
         if (!entry) return;
         const title = entry.trim();
-        // Використовуємо стабільний ключ (наприклад, початкове ім'я або всю сукупність), 
-        // але мапимо на актуальний `title`, щоб при зміні імені/ролі не виникало двох рядків
-        const uniqueKey = title.split('(')[0].trim().toLowerCase(); // прив'язка за ім'ям виконавця
+        const baseName = title.split('(')[0].trim();
+        const uniqueKey = normalizeStr(baseName); // унікальний ключ з нормалізацією (е/є)
 
         // Шукаємо, чи є вже збережені налаштування для цього виконавця в базі проєкту
-        const existingSaved = manualExpenses.find(m => 
-          m.id.startsWith('auto-') && (m.id === `auto-${uniqueKey}` || m.title.toLowerCase().includes(uniqueKey))
-        );
+        const existingSaved = manualExpenses.find(m => {
+          if (!m.id.startsWith('auto-')) return false;
+          const mBaseName = m.title.split('(')[0].trim();
+          return normalizeStr(mBaseName) === uniqueKey || m.id === `auto-${uniqueKey}`;
+        });
 
         if (existingSaved) {
           teamMap.set(uniqueKey, {
             ...existingSaved,
-            title: title // оновлюємо назву на актуальну (якщо змінилася роль чи ім'я)
+            title: title // оновлюємо назву на актуальну (наприклад, з «Бєляєва»)
           });
         } else if (!teamMap.has(uniqueKey)) {
           teamMap.set(uniqueKey, {
@@ -211,7 +216,6 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
     if (existingIndex >= 0) {
       updatedExpenses[existingIndex] = { ...updatedExpenses[existingIndex], isDeleted: true };
     } else {
-      // Якщо це автовитрата команди і її ще немає в manualExpenses, додаємо її туди зі статусом isDeleted: true
       const autoItem = autoTeamExpenses.find(a => a.id === id);
       if (autoItem) {
         updatedExpenses.push({ ...autoItem, isDeleted: true });
