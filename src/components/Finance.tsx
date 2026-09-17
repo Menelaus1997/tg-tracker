@@ -19,6 +19,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
 
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
+  const [isEditingAutoExpense, setIsEditingAutoExpense] = useState(false); // Прапорець для автовитрат команди
   
   // Стан для згортання/розгортання блоку собівартості
   const [isExpensesListOpen, setIsExpensesListOpen] = useState(false);
@@ -32,42 +33,49 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
   
-  // 1. Автоматично збираємо виконавців та їхні ролі з масиву contractors у стадіях проєкту
+  // Ручні витрати та налаштування збережені в проєкті
+  const manualExpenses: ExpenseItem[] = (selectedProject as any)?.expenses || [];
+
+  // Автоматично збираємо виконавців зі стадій проєкту
   const getProjectTeamExpenses = (): ExpenseItem[] => {
     if (!selectedProject || !selectedProject.stages) return [];
     
-    const teamMap = new Map<string, ExpenseItem>();
+    const teamMap = new Map<string, string>(); // Назва -> Унікальний ключ для зіставлення
 
     selectedProject.stages.forEach((stage: any) => {
-      // Підтримуємо як новий масив contractors, так і старе поле contractor (якщо десь залишилось)
       const contractorsList: string[] = stage.contractors || (stage.contractor ? [stage.contractor] : []);
 
       contractorsList.forEach((entry: string) => {
         if (!entry) return;
-        const title = entry.trim(); // Наприклад: "Дмитро Пономаренко (Кресляр)"
-        
+        const title = entry.trim();
         if (!teamMap.has(title)) {
-          teamMap.set(title, {
-            id: `auto-${stage.id}-${Math.random().toString(36).substr(2, 4)}`,
-            title: title,
-            amount: 0, // Базова сума за замовчуванням
-            currency: 'USD',
-            calcType: 'fixed'
-          });
+          teamMap.set(title, title);
         }
       });
     });
 
-    return Array.from(teamMap.values());
+    // Формуємо список, зливаючи з уже збереженими в manualExpenses параметрами (якщо вони там є)
+    return Array.from(teamMap.keys()).map((title) => {
+      const existingSaved = manualExpenses.find(m => m.title === title);
+      if (existingSaved) {
+        return existingSaved; // Якщо вже налаштували суму/валюту — беремо їх
+      }
+      return {
+        id: `auto-${title}`,
+        title: title,
+        amount: 0,
+        currency: 'USD',
+        calcType: 'fixed'
+      };
+    });
   };
 
-  // Ручні витрати, які користувач додав самостійно через форму
-  const manualExpenses: ExpenseItem[] = (selectedProject as any)?.expenses || [];
-
-  // Об'єднуємо автоматичні витрати з команди та ручні витрати
   const autoTeamExpenses = getProjectTeamExpenses();
-  const manualFiltered = manualExpenses.filter(m => !autoTeamExpenses.some(a => a.title === m.title));
-  const expenses: ExpenseItem[] = [...autoTeamExpenses, ...manualFiltered];
+  // Ручні витрати — це ті, яких немає в команді стадій
+  const pureManualExpenses = manualExpenses.filter(m => !autoTeamExpenses.some(a => a.title === m.title));
+  
+  // Загальний список для виведення: спочатку команда зі стадій, потім ручні витрати
+  const expenses: ExpenseItem[] = [...autoTeamExpenses, ...pureManualExpenses];
   
   const usdRate = (selectedProject as any)?.usdRate ?? '41.50';
   const customPricePerM2 = (selectedProject as any)?.customPricePerM2 ?? '';
@@ -118,6 +126,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
 
   const handleOpenAddForm = () => {
     setEditingExpenseId(null);
+    setIsEditingAutoExpense(false);
     setNewExpenseTitle('');
     setNewExpenseAmount('');
     setNewExpenseCurrency('USD');
@@ -125,28 +134,41 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
     setIsAddExpenseOpen(true);
   };
 
-  const handleEditExpenseClick = (item: ExpenseItem) => {
+  const handleEditExpenseClick = (item: ExpenseItem, isAuto: boolean) => {
     setEditingExpenseId(item.id);
+    setIsEditingAutoExpense(isAuto);
     setNewExpenseTitle(item.title);
-    setNewExpenseAmount(String(item.amount));
-    setNewExpenseCurrency(item.currency);
-    setNewExpenseCalcType(item.calcType);
+    setNewExpenseAmount(item.amount ? String(item.amount) : '');
+    setNewExpenseCurrency(item.currency || 'USD');
+    setNewExpenseCalcType(item.calcType || 'fixed');
     setIsAddExpenseOpen(true);
   };
 
   const handleSaveExpense = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newExpenseTitle.trim() || !newExpenseAmount || !selectedProject) return;
+    if (!newExpenseTitle.trim() || !selectedProject) return;
 
     let updatedExpenses: ExpenseItem[];
 
     if (editingExpenseId) {
-      updatedExpenses = manualExpenses.map(item => 
-        item.id === editingExpenseId 
-          ? { ...item, title: newExpenseTitle.trim(), amount: currentInputAmount, currency: newExpenseCurrency, calcType: newExpenseCalcType }
-          : item
-      );
+      // Редагуємо існуючу (або ручну, або автовитрату команди)
+      const existingIndex = manualExpenses.findIndex(item => item.id === editingExpenseId || item.title === newExpenseTitle);
+      
+      const updatedItem: ExpenseItem = {
+        id: isEditingAutoExpense ? `auto-${newExpenseTitle}` : editingExpenseId,
+        title: newExpenseTitle.trim(),
+        amount: currentInputAmount,
+        currency: newExpenseCurrency,
+        calcType: newExpenseCalcType
+      };
+
+      if (existingIndex >= 0) {
+        updatedExpenses = manualExpenses.map((item, idx) => idx === existingIndex ? updatedItem : item);
+      } else {
+        updatedExpenses = [updatedItem, ...manualExpenses];
+      }
     } else {
+      // Додаємо нову ручну витрату
       const newItem: ExpenseItem = {
         id: Date.now().toString(),
         title: newExpenseTitle.trim(),
@@ -169,21 +191,32 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
     setNewExpenseTitle('');
     setNewExpenseAmount('');
     setEditingExpenseId(null);
+    setIsEditingAutoExpense(false);
     setIsAddExpenseOpen(false);
   };
 
-  const handleDeleteExpense = (e: React.MouseEvent, id: string) => {
+  const handleDeleteExpense = (e: React.MouseEvent, id: string, isAuto: boolean) => {
     e.stopPropagation();
     if (!selectedProject) return;
-    const updatedExpenses = manualExpenses.filter(item => item.id !== id);
     
-    const updatedProject: Project = {
-      ...selectedProject,
-      expenses: updatedExpenses as any
-    };
-
-    if (onUpdateProject) {
-      onUpdateProject(updatedProject);
+    if (isAuto) {
+      // Для автовитрат команди обнуляємо суму замість повного видалення зі списку
+      const existingIndex = manualExpenses.findIndex(item => item.id === id || item.title.includes(id.replace('auto-', '')));
+      let updatedExpenses = [...manualExpenses];
+      if (existingIndex >= 0) {
+        updatedExpenses[existingIndex] = { ...updatedExpenses[existingIndex], amount: 0 };
+      } else {
+        // Знаходимо назву з ID
+        const titleClean = id.replace('auto-', '');
+        updatedExpenses.push({ id, title: titleClean, amount: 0, currency: 'USD', calcType: 'fixed' });
+      }
+      const updatedProject: Project = { ...selectedProject, expenses: updatedExpenses as any };
+      if (onUpdateProject) onUpdateProject(updatedProject);
+    } else {
+      // Повне видалення ручних витрат
+      const updatedExpenses = manualExpenses.filter(item => item.id !== id);
+      const updatedProject: Project = { ...selectedProject, expenses: updatedExpenses as any };
+      if (onUpdateProject) onUpdateProject(updatedProject);
     }
   };
 
@@ -385,13 +418,13 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
               </div>
               <div style={{ ...colTotalStyle, color: '#007aff' }}>
                 <div>{taxTotal.toFixed(2)} USD</div>
-                <div style={{ fontSize: '11px', color: '#636366', fontWeight: 'normal' }}>
+                <div style={{ fontSize: '11px', color: '#8e8e93', fontWeight: 'normal' }}>
                   {formatUAH(taxTotal * currentRate)}
                 </div>
               </div>
             </div>
 
-            {/* Рядок 4: Собівартість (зі списком учасників та витрат) */}
+            {/* Рядок 4: Собівартість */}
             <div style={{ backgroundColor: '#f2f2f7', border: '1px solid #e5e5ea', borderRadius: '10px', overflow: 'hidden' }}>
               <div 
                 onClick={() => setIsExpensesListOpen(!isExpensesListOpen)}
@@ -416,11 +449,11 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                 </div>
               </div>
 
-              {/* Випадаюче меню витрат та команди всередині Собівартості */}
+              {/* Випадаюче меню витрат */}
               {isExpensesListOpen && (
                 <div style={{ padding: '0 12px 12px 12px', borderTop: '1px solid #e5e5ea', marginTop: '4px', paddingTop: '10px' }}>
                   
-                  {/* Кнопка Додати витрату всередині меню */}
+                  {/* Кнопка Додати витрату */}
                   <div style={{ marginBottom: '10px' }}>
                     <button
                       onClick={(e) => {
@@ -440,16 +473,21 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                   {isAddExpenseOpen && (
                     <form onSubmit={handleSaveExpense} style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '10px', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '8px', border: '1px solid #d1d1d6' }}>
                       <div style={{ fontSize: '12px', fontWeight: 'bold', fontStyle: 'italic', color: '#007aff' }}>
-                        {editingExpenseId ? 'Редагування витрати' : 'Нова витрата'}
+                        {editingExpenseId ? (isEditingAutoExpense ? 'Налаштування вартості виконавця' : 'Редагування витрати') : 'Нова витрата'}
                       </div>
                       <div>
                         <label style={{ fontSize: '10px', fontStyle: 'italic', color: '#636366', display: 'block', marginBottom: '2px' }}>1. Назва витрати</label>
                         <input
                           type="text"
-                          placeholder="Введіть назву витрати..."
                           value={newExpenseTitle}
-                          onChange={(e) => setNewExpenseTitle(e.target.value)}
-                          style={inputStyle}
+                          onChange={(e) => !isEditingAutoExpense && setNewExpenseTitle(e.target.value)}
+                          readOnly={isEditingAutoExpense}
+                          style={{
+                            ...inputStyle,
+                            backgroundColor: isEditingAutoExpense ? '#f2f2f7' : '#ffffff',
+                            color: isEditingAutoExpense ? '#636366' : '#1c1c1e',
+                            cursor: isEditingAutoExpense ? 'not-allowed' : 'text'
+                          }}
                           required
                         />
                       </div>
@@ -505,25 +543,24 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                           type="submit"
                           style={{ flex: 1, padding: '8px', backgroundColor: '#34c759', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontStyle: 'italic', cursor: 'pointer', fontSize: '12px' }}
                         >
-                          {editingExpenseId ? 'Оновити витрату' : 'Зберегти витрату'}
+                          Зберегти
                         </button>
-                        {editingExpenseId && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingExpenseId(null);
-                              setIsAddExpenseOpen(false);
-                            }}
-                            style={{ padding: '8px 12px', backgroundColor: '#8e8e93', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontStyle: 'italic', cursor: 'pointer', fontSize: '12px' }}
-                          >
-                            Скасувати
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingExpenseId(null);
+                            setIsEditingAutoExpense(false);
+                            setIsAddExpenseOpen(false);
+                          }}
+                          style={{ padding: '8px 12px', backgroundColor: '#8e8e93', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontStyle: 'italic', cursor: 'pointer', fontSize: '12px' }}
+                        >
+                          Скасувати
+                        </button>
                       </div>
                     </form>
                   )}
 
-                  {/* Список витрат та автоматично мігрованих виконавців зі стадій */}
+                  {/* Список витрат */}
                   {expenses.length === 0 ? (
                     <div style={{ fontSize: '12px', fontStyle: 'italic', color: '#8e8e93', textAlign: 'center', padding: '8px' }}>Немає призначених виконавців чи витрат для цього проєкту.</div>
                   ) : (
@@ -534,7 +571,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                         return (
                           <div 
                             key={item.id} 
-                            onClick={() => !isAutoTeam && handleEditExpenseClick(item)}
+                            onClick={() => handleEditExpenseClick(item, isAutoTeam)}
                             style={{ 
                               display: 'flex', 
                               justifyContent: 'space-between', 
@@ -543,9 +580,9 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                               backgroundColor: '#ffffff', 
                               border: editingExpenseId === item.id ? '2px solid #007aff' : '1px solid #e5e5ea', 
                               borderRadius: '8px',
-                              cursor: isAutoTeam ? 'default' : 'pointer'
+                              cursor: 'pointer'
                             }}
-                            title={isAutoTeam ? "Автоматично підтягнуто з команди проєкту (стадії)" : "Натисніть, щоб редагувати витрату"}
+                            title="Натисніть, щоб встановити/змінити вартість"
                           >
                             <div>
                               <div style={{ fontSize: '12px', fontStyle: 'italic', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -553,27 +590,29 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                                 {item.title}
                               </div>
                               <div style={{ fontSize: '10px', fontStyle: 'italic', color: '#8e8e93' }}>
-                                {item.calcType === 'm2' ? `${item.amount} * ${projectArea} м²` : (isAutoTeam && item.amount === 0 ? 'Призначено в стадіях (сума не вказана)' : 'Фіксована сума')} {item.amount > 0 ? `= ${calculatedAmount.toFixed(2)} ${item.currency}` : ''}
+                                {item.amount > 0 
+                                  ? (item.calcType === 'm2' ? `${item.amount} ${item.currency} * ${projectArea} м²` : `Фіксована: ${item.amount} ${item.currency}`)
+                                  : 'Натисніть, щоб встановити вартість'}
                               </div>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <div style={{ textAlign: 'right' }}>
-                                <span style={{ fontSize: '12px', fontStyle: 'italic', fontWeight: 'bold', color: '#ff3b30' }}>
-                                  -{calculatedAmount.toFixed(2)} {item.currency}
+                                <span style={{ fontSize: '12px', fontStyle: 'italic', fontWeight: 'bold', color: item.amount > 0 ? '#ff3b30' : '#8e8e93' }}>
+                                  {item.amount > 0 ? `-${calculatedAmount.toFixed(2)} ${item.currency}` : '0.00 USD'}
                                 </span>
-                                <div style={{ fontSize: '9px', color: '#8e8e93' }}>
-                                  -{formatUAH(calculatedAmount * (item.currency === 'USD' ? currentRate : 1))}
-                                </div>
+                                {item.amount > 0 && (
+                                  <div style={{ fontSize: '9px', color: '#8e8e93' }}>
+                                    -{formatUAH(calculatedAmount * (item.currency === 'USD' ? currentRate : 1))}
+                                  </div>
+                                )}
                               </div>
-                              {!isAutoTeam && (
-                                <button
-                                  onClick={(e) => handleDeleteExpense(e, item.id)}
-                                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px' }}
-                                  title="Видалити"
-                                >
-                                  🗑️
-                                </button>
-                              )}
+                              <button
+                                onClick={(e) => handleDeleteExpense(e, item.id, isAutoTeam)}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px' }}
+                                title={isAutoTeam ? "Скинути суму" : "Видалити витрату"}
+                              >
+                                {isAutoTeam ? '🔄' : '🗑️'}
+                              </button>
                             </div>
                           </div>
                         );
