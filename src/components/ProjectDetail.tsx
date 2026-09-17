@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Project, Stage, SubStage, TeamMember } from '../App';
 
 interface ProjectDetailProps {
@@ -100,10 +100,48 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [isStructureOpen, setIsStructureOpen] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(true);
 
-  const [stages, setStages] = useState<Stage[]>(() => (project.stages || []).map(s => ({
-    ...s,
-    contractors: (s as any).contractors || (s.contractor ? [s.contractor] : [])
-  })));
+  // Автоматична синхронізація імен виконавців зі стадій із актуальною `teamDatabase`
+  const getSynchronizedStages = () => {
+    const rawStages = (project.stages || []).map(s => ({
+      ...s,
+      contractors: (s as any).contractors || (s.contractor ? [s.contractor] : [])
+    }));
+
+    return rawStages.map(stage => {
+      const updatedContractors = stage.contractors.map(cEntry => {
+        // Витягуємо роль з дужок, наприклад "Беляєва (Візуалізатор)" -> роль "(Візуалізатор)"
+        const roleMatch = cEntry.match(/\s*\(([^)]+)\)$/);
+        const rolePart = roleMatch ? roleMatch[0] : '';
+        const namePart = roleMatch ? cEntry.replace(rolePart, '').trim() : cEntry.trim();
+
+        // Шукаємо учасника в базі за частковим збігом або схожістю
+        const matchedMember = teamDatabase.find(m => 
+          m.fullName.toLowerCase() === namePart.toLowerCase() ||
+          m.fullName.toLowerCase().includes(namePart.toLowerCase()) ||
+          namePart.toLowerCase().includes(m.fullName.toLowerCase())
+        );
+
+        if (matchedMember) {
+          return `${matchedMember.fullName}${rolePart}`;
+        }
+        return cEntry;
+      });
+
+      return {
+        ...stage,
+        contractors: updatedContractors
+      };
+    });
+  };
+
+  const [stages, setStages] = useState<Stage[]>(getSynchronizedStages());
+
+  // Синхронізуємо при зміні `teamDatabase`
+  useEffect(() => {
+    const synced = getSynchronizedStages();
+    setStages(synced);
+  }, [teamDatabase]);
+
   const [collapsedStages, setCollapsedStages] = useState<{ [key: string]: boolean }>({});
   const [collapsedSubStages, setCollapsedSubStages] = useState<{ [key: string]: boolean }>({});
 
