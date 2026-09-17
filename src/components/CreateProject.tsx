@@ -204,7 +204,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
               />
             </div>
 
-            {/* Кастомний випадаючий список марок із хрестиками для видалення */}
+            {/* Кастомний випадаючий список марок із знаком + замість "Створити" */}
             <div style={{ position: 'relative' }} ref={dropdownRef}>
               <label style={labelStyle}>Марка</label>
               
@@ -290,13 +290,13 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
                         padding: '8px 10px',
                         color: '#007aff',
                         fontWeight: 'bold',
-                        fontSize: '12px',
+                        fontSize: '14px',
                         textAlign: 'center',
                         cursor: 'pointer',
                         backgroundColor: '#f9f9fb'
                       }}
                     >
-                      + Створити...
+                      +
                     </div>
                   ) : (
                     <div style={{ padding: '6px', display: 'flex', gap: '4px', backgroundColor: '#f9f9fb' }}>
