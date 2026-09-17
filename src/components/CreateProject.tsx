@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Project } from '../App';
 
 interface CreateProjectProps {
@@ -26,13 +26,28 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
   const [contractNumber, setContractNumber] = useState('100');
   const [projectYear, setProjectYear] = useState('2024');
   
-  // Список марок із можливістю додавання та видалення
+  // Список марок та стан випадаючого меню
   const [marksList, setMarksList] = useState<string[]>(INITIAL_MARKS);
   const [projectMark, setProjectMark] = useState(INITIAL_MARKS[0]);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAddingMark, setIsAddingMark] = useState(false);
   const [newMarkInput, setNewMarkInput] = useState('');
 
-  // Підсумковий шифр (тільки для читання, білий фон)
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Закриття випадаючого списку при кліку зовні
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+        setIsAddingMark(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Підсумковий шифр
   const [generatedId, setGeneratedId] = useState('');
 
   useEffect(() => {
@@ -72,11 +87,13 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
     }
     setNewMarkInput('');
     setIsAddingMark(false);
+    setIsDropdownOpen(false);
   };
 
-  const handleDeleteMark = (markToDelete: string) => {
+  const handleDeleteMark = (e: React.MouseEvent, markToDelete: string) => {
+    e.stopPropagation();
     if (marksList.length <= 1) {
-      alert('Повинна залишитися хоча б одна марка проєкту.');
+      alert('Повинна залишитися хоча б одна марка.');
       return;
     }
     const updated = marksList.filter(m => m !== markToDelete);
@@ -187,63 +204,125 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
               />
             </div>
 
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <label style={labelStyle}>Марка проєкту</label>
-                {marksList.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteMark(projectMark)}
-                    title={`Видалити марку "${projectMark}"`}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#ff3b30', padding: 0, lineHeight: 1 }}
-                  >
-                    🗑️
-                  </button>
-                )}
+            {/* Кастомний випадаючий список марок із хрестиками для видалення */}
+            <div style={{ position: 'relative' }} ref={dropdownRef}>
+              <label style={labelStyle}>Марка</label>
+              
+              <div
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                style={{
+                  ...formInputStyle,
+                  backgroundColor: '#ffffff',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  padding: '10px 4px',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: '4px',
+                  userSelect: 'none'
+                }}
+              >
+                <span>{projectMark}</span>
+                <span style={{ fontSize: '10px', color: '#636366' }}>▼</span>
               </div>
 
-              {!isAddingMark ? (
-                <select
-                  value={projectMark}
-                  onChange={(e) => {
-                    if (e.target.value === '__add_new__') {
-                      setIsAddingMark(true);
-                    } else {
-                      setProjectMark(e.target.value);
-                    }
-                  }}
-                  style={{ ...formInputStyle, backgroundColor: '#ffffff', cursor: 'pointer', textAlign: 'center', padding: '10px 4px' }}
-                >
+              {isDropdownOpen && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  left: 0,
+                  marginTop: '4px',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #d1d1d6',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                  zIndex: 100,
+                  maxHeight: '160px',
+                  overflowY: 'auto'
+                }}>
                   {marksList.map((mark) => (
-                    <option key={mark} value={mark}>
-                      {mark}
-                    </option>
+                    <div
+                      key={mark}
+                      onClick={() => {
+                        setProjectMark(mark);
+                        setIsDropdownOpen(false);
+                        setIsAddingMark(false);
+                      }}
+                      style={{
+                        padding: '8px 10px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                        backgroundColor: projectMark === mark ? '#f2f2f7' : '#ffffff',
+                        borderBottom: '1px solid #f2f2f7'
+                      }}
+                    >
+                      <span style={{ fontWeight: projectMark === mark ? 'bold' : 'normal' }}>{mark}</span>
+                      {marksList.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteMark(e, mark)}
+                          title="Видалити марку"
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            color: '#ff3b30',
+                            padding: '2px 6px',
+                            borderRadius: '4px'
+                          }}
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
                   ))}
-                  <option value="__add_new__" style={{ color: '#007aff', fontWeight: 'bold' }}>+ Створити...</option>
-                </select>
-              ) : (
-                <div style={{ display: 'flex', gap: '2px' }}>
-                  <input
-                    type="text"
-                    placeholder="Марка"
-                    value={newMarkInput}
-                    onChange={(e) => setNewMarkInput(e.target.value)}
-                    style={{ ...formInputStyle, backgroundColor: '#ffffff', textAlign: 'center', padding: '10px 4px' }}
-                    autoFocus
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddNewMark}
-                    style={{ backgroundColor: '#34c759', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', padding: '0 6px', fontSize: '12px' }}
-                  >
-                    ✓
-                  </button>
+
+                  {!isAddingMark ? (
+                    <div
+                      onClick={() => setIsAddingMark(true)}
+                      style={{
+                        padding: '8px 10px',
+                        color: '#007aff',
+                        fontWeight: 'bold',
+                        fontSize: '12px',
+                        textAlign: 'center',
+                        cursor: 'pointer',
+                        backgroundColor: '#f9f9fb'
+                      }}
+                    >
+                      + Створити...
+                    </div>
+                  ) : (
+                    <div style={{ padding: '6px', display: 'flex', gap: '4px', backgroundColor: '#f9f9fb' }}>
+                      <input
+                        type="text"
+                        placeholder="Марка"
+                        value={newMarkInput}
+                        onChange={(e) => setNewMarkInput(e.target.value)}
+                        style={{ ...formInputStyle, backgroundColor: '#ffffff', padding: '4px 6px', fontSize: '12px', textAlign: 'center' }}
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddNewMark}
+                        style={{ backgroundColor: '#34c759', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', padding: '0 8px', fontSize: '12px' }}
+                      >
+                        ✓
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           </div>
 
-          {/* Шифр (Заблокований, білий фон без зайвих написів) */}
+          {/* Шифр (Білий фон, заблокований) */}
           <div>
             <label style={labelStyle}>Шифр:</label>
             <input
@@ -455,7 +534,7 @@ const formInputStyle: React.CSSProperties = {
   borderRadius: '10px',
   fontSize: '13px',
   fontStyle: 'italic',
-    outline: 'none',
+  outline: 'none',
   boxSizing: 'border-box',
   color: '#1c1c1e'
 };
