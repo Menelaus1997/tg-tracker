@@ -7,11 +7,6 @@ interface CreateProjectProps {
   onUpdateTemplates?: (templates: any[]) => void;
 }
 
-const DEFAULT_COLORS = [
-  '#34c759', '#00c7be', '#5856d6', '#007aff',
-  '#ff3b30', '#5c3d2e', '#ff9500', '#af52de'
-];
-
 const INITIAL_MARKS = ['ЕП', 'АР', 'КР', 'АІ', 'BILD'];
 
 export const CreateProject: React.FC<CreateProjectProps> = ({
@@ -58,22 +53,12 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
   }, [objectIndex, contractNumber, projectYear, projectMark]);
 
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
-  
-  const [colors, setColors] = useState<string[]>([...DEFAULT_COLORS]);
-  const [selectedColorIndex, setSelectedColorIndex] = useState<number>(0);
 
   const [isTemplateManagerOpen, setIsTemplateManagerOpen] = useState(false);
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
   const [editingTemplateName, setEditingTemplateName] = useState('');
 
   const validTemplates = templates.filter((t) => t && t.id && t.name && t.name !== 'undefined');
-
-  const handleCustomColorPicker = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newColor = e.target.value;
-    const updated = [...colors];
-    updated[selectedColorIndex] = newColor;
-    setColors(updated);
-  };
 
   const handleAddNewMark = () => {
     const trimmed = newMarkInput.trim().toUpperCase();
@@ -129,7 +114,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
     const newProj: Project = {
       id: generatedId.trim(),
       name: name.trim(),
-      color: colors[selectedColorIndex],
+      color: '#007aff', // Дефолтний колір, оскільки вибір видалено
       status: 'active',
       stages: cleanStages,
       teamMembers: []
@@ -204,7 +189,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
               />
             </div>
 
-            {/* Кастомний випадаючий список марок із знаком + замість "Створити" */}
+            {/* Кастомний випадаючий список марок (із курсивом) */}
             <div style={{ position: 'relative' }} ref={dropdownRef}>
               <label style={labelStyle}>Марка</label>
               
@@ -256,6 +241,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
                         justifyContent: 'space-between',
                         alignItems: 'center',
                         fontSize: '13px',
+                        fontStyle: 'italic',
                         cursor: 'pointer',
                         backgroundColor: projectMark === mark ? '#f2f2f7' : '#ffffff',
                         borderBottom: '1px solid #f2f2f7'
@@ -291,6 +277,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
                         color: '#007aff',
                         fontWeight: 'bold',
                         fontSize: '14px',
+                        fontStyle: 'italic',
                         textAlign: 'center',
                         cursor: 'pointer',
                         backgroundColor: '#f9f9fb'
@@ -322,7 +309,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
             </div>
           </div>
 
-          {/* Шифр (Білий фон, заблокований) */}
+          {/* Шифр */}
           <div>
             <label style={labelStyle}>Шифр:</label>
             <input
@@ -367,63 +354,6 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
               </option>
             ))}
           </select>
-        </div>
-
-        {/* Палітра кольорів */}
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
-          {colors.map((c, idx) => {
-            const isSelected = selectedColorIndex === idx;
-            return (
-              <div
-                key={idx}
-                onClick={() => setSelectedColorIndex(idx)}
-                style={{
-                  width: '28px',
-                  height: '28px',
-                  borderRadius: '50%',
-                  backgroundColor: c,
-                  border: '1px solid #d1d1d6',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0
-                }}
-              >
-                {isSelected && <span style={{ color: '#fff', fontSize: '12px', fontWeight: 700 }}>✓</span>}
-              </div>
-            );
-          })}
-
-          <label
-            style={{
-              width: '28px',
-              height: '28px',
-              borderRadius: '50%',
-              backgroundColor: '#e5e5ea',
-              border: '1px solid #d1d1d6',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              fontSize: '22px',
-              fontWeight: 700,
-              color: '#007aff',
-              position: 'relative',
-              padding: 0,
-              margin: 0,
-              boxSizing: 'border-box'
-            }}
-          >
-            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', lineHeight: 1 }}>+</span>
-            <input
-              type="color"
-              value={colors[selectedColorIndex]}
-              onChange={handleCustomColorPicker}
-              style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer', top: 0, left: 0 }}
-            />
-          </label>
         </div>
 
         <button
