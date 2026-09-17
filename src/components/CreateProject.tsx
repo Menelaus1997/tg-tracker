@@ -12,7 +12,7 @@ const DEFAULT_COLORS = [
   '#ff3b30', '#5c3d2e', '#ff9500', '#af52de'
 ];
 
-const INITIAL_MARKS = ['ЕП', 'АР', 'КР', 'АІ'];
+const INITIAL_MARKS = ['ЕП', 'АР', 'КР', 'АІ', 'BILD'];
 
 export const CreateProject: React.FC<CreateProjectProps> = ({
   onCreateProject,
@@ -26,13 +26,13 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
   const [contractNumber, setContractNumber] = useState('100');
   const [projectYear, setProjectYear] = useState('2024');
   
-  // Список марок із можливістю додавання нових
+  // Список марок із можливістю додавання та видалення
   const [marksList, setMarksList] = useState<string[]>(INITIAL_MARKS);
   const [projectMark, setProjectMark] = useState(INITIAL_MARKS[0]);
   const [isAddingMark, setIsAddingMark] = useState(false);
   const [newMarkInput, setNewMarkInput] = useState('');
 
-  // Підсумковий шифр (тільки для читання)
+  // Підсумковий шифр (тільки для читання, білий фон)
   const [generatedId, setGeneratedId] = useState('');
 
   useEffect(() => {
@@ -72,6 +72,18 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
     }
     setNewMarkInput('');
     setIsAddingMark(false);
+  };
+
+  const handleDeleteMark = (markToDelete: string) => {
+    if (marksList.length <= 1) {
+      alert('Повинна залишитися хоча б одна марка проєкту.');
+      return;
+    }
+    const updated = marksList.filter(m => m !== markToDelete);
+    setMarksList(updated);
+    if (projectMark === markToDelete) {
+      setProjectMark(updated[0]);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -176,28 +188,39 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
             </div>
 
             <div>
-              <label style={labelStyle}>Марка проєкту</label>
-              {!isAddingMark ? (
-                <div style={{ display: 'flex', gap: '2px' }}>
-                  <select
-                    value={projectMark}
-                    onChange={(e) => {
-                      if (e.target.value === '__add_new__') {
-                        setIsAddingMark(true);
-                      } else {
-                        setProjectMark(e.target.value);
-                      }
-                    }}
-                    style={{ ...formInputStyle, backgroundColor: '#ffffff', cursor: 'pointer', textAlign: 'center', padding: '10px 4px' }}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={labelStyle}>Марка проєкту</label>
+                {marksList.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteMark(projectMark)}
+                    title={`Видалити марку "${projectMark}"`}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#ff3b30', padding: 0, lineHeight: 1 }}
                   >
-                    {marksList.map((mark) => (
-                      <option key={mark} value={mark}>
-                        {mark}
-                      </option>
-                    ))}
-                    <option value="__add_new__" style={{ color: '#007aff', fontWeight: 'bold' }}>+ Створити...</option>
-                  </select>
-                </div>
+                    🗑️
+                  </button>
+                )}
+              </div>
+
+              {!isAddingMark ? (
+                <select
+                  value={projectMark}
+                  onChange={(e) => {
+                    if (e.target.value === '__add_new__') {
+                      setIsAddingMark(true);
+                    } else {
+                      setProjectMark(e.target.value);
+                    }
+                  }}
+                  style={{ ...formInputStyle, backgroundColor: '#ffffff', cursor: 'pointer', textAlign: 'center', padding: '10px 4px' }}
+                >
+                  {marksList.map((mark) => (
+                    <option key={mark} value={mark}>
+                      {mark}
+                    </option>
+                  ))}
+                  <option value="__add_new__" style={{ color: '#007aff', fontWeight: 'bold' }}>+ Створити...</option>
+                </select>
               ) : (
                 <div style={{ display: 'flex', gap: '2px' }}>
                   <input
@@ -220,21 +243,18 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
             </div>
           </div>
 
-          {/* Шифр (Заблокований для ручних змін, генерується автоматично) */}
+          {/* Шифр (Заблокований, білий фон без зайвих написів) */}
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <label style={labelStyle}>Шифр:</label>
-              <span style={{ fontSize: '9px', fontStyle: 'italic', color: '#8e8e93' }}>Формується автоматично</span>
-            </div>
+            <label style={labelStyle}>Шифр:</label>
             <input
               type="text"
               value={generatedId}
               readOnly
               style={{
                 ...formInputStyle,
-                backgroundColor: '#e5e5ea',
+                backgroundColor: '#ffffff',
                 fontWeight: 'bold',
-                color: '#3a3a3c',
+                color: '#1c1c1e',
                 cursor: 'not-allowed'
               }}
             />
@@ -435,7 +455,7 @@ const formInputStyle: React.CSSProperties = {
   borderRadius: '10px',
   fontSize: '13px',
   fontStyle: 'italic',
-  outline: 'none',
+    outline: 'none',
   boxSizing: 'border-box',
   color: '#1c1c1e'
 };
