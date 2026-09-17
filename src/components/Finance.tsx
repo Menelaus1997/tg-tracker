@@ -285,7 +285,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
             </div>
           </div>
 
-          {/* Основна таблиця з 4 колонками */}
+          {/* Основна таблиця фінансів */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
             
             {/* Рядок 1: Загальна вартість */}
@@ -314,7 +314,48 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
               </div>
             </div>
 
-            {/* Рядок 2: Собівартість (зі спадним меню / аккордеоном) */}
+            {/* Рядок 2: Націнка */}
+            <div style={gridRowStyle}>
+              <div style={colNameStyle}>Націнка</div>
+              <div style={{ ...colPercentStyle, color: '#34c759' }}>{markupPercent.toFixed(1)}%</div>
+              <div style={colM2Style}>
+                <span>{markupPerM2.toFixed(2)}</span>
+                <span style={{ color: '#636366', marginLeft: '2px' }}>USD/м²</span>
+              </div>
+              <div style={{ ...colTotalStyle, color: '#34c759' }}>
+                <div>{markupTotal.toFixed(2)} USD</div>
+                <div style={{ fontSize: '11px', color: '#636366', fontWeight: 'normal' }}>
+                  {formatUAH(markupTotal * currentRate)}
+                </div>
+              </div>
+            </div>
+
+            {/* Рядок 3: Податки */}
+            <div style={gridRowStyle}>
+              <div style={colNameStyle}>Податки</div>
+              <div style={{ ...colPercentStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={taxPercent}
+                  onChange={(e) => setTaxPercent(e.target.value)}
+                  style={taxInputStyle}
+                />
+                <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366' }}>%</span>
+              </div>
+              <div style={colM2Style}>
+                <span>{taxPerM2.toFixed(2)}</span>
+                <span style={{ color: '#636366', marginLeft: '2px' }}>USD/м²</span>
+              </div>
+              <div style={{ ...colTotalStyle, color: '#007aff' }}>
+                <div>{taxTotal.toFixed(2)} USD</div>
+                <div style={{ fontSize: '11px', color: '#636366', fontWeight: 'normal' }}>
+                  {formatUAH(taxTotal * currentRate)}
+                </div>
+              </div>
+            </div>
+
+            {/* Рядок 4: Собівартість (тепер внизу під податками зі стрілочкою) */}
             <div style={{ backgroundColor: '#f2f2f7', border: '1px solid #e5e5ea', borderRadius: '10px', overflow: 'hidden' }}>
               <div 
                 onClick={() => setIsExpensesListOpen(!isExpensesListOpen)}
@@ -322,8 +363,8 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
               >
                 <div style={{ ...colNameStyle, display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span>Собівартість</span>
-                  <span style={{ fontSize: '11px', color: '#007aff', fontWeight: 'bold' }}>
-                    {isExpensesListOpen ? '▲ Приховати' : '▼ Показати'}
+                  <span style={{ fontSize: '11px', color: '#48484a', fontWeight: 'bold' }}>
+                    {isExpensesListOpen ? '▲' : '▼'}
                   </span>
                 </div>
                 <div style={colPercentStyle}>{expensesPercent.toFixed(1)}%</div>
@@ -339,7 +380,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                 </div>
               </div>
 
-              {/* Випадаюче меню витрат усередині Собівартості */}
+              {/* Випадаюче меню витрат всередині Собівартості */}
               {isExpensesListOpen && (
                 <div style={{ padding: '0 12px 12px 12px', borderTop: '1px solid #e5e5ea', marginTop: '4px', paddingTop: '10px' }}>
                   
@@ -500,47 +541,6 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
 
                 </div>
               )}
-            </div>
-
-            {/* Рядок 3: Націнка */}
-            <div style={gridRowStyle}>
-              <div style={colNameStyle}>Націнка</div>
-              <div style={{ ...colPercentStyle, color: '#34c759' }}>{markupPercent.toFixed(1)}%</div>
-              <div style={colM2Style}>
-                <span>{markupPerM2.toFixed(2)}</span>
-                <span style={{ color: '#636366', marginLeft: '2px' }}>USD/м²</span>
-              </div>
-              <div style={{ ...colTotalStyle, color: '#34c759' }}>
-                <div>{markupTotal.toFixed(2)} USD</div>
-                <div style={{ fontSize: '11px', color: '#636366', fontWeight: 'normal' }}>
-                  {formatUAH(markupTotal * currentRate)}
-                </div>
-              </div>
-            </div>
-
-            {/* Рядок 4: Податки */}
-            <div style={gridRowStyle}>
-              <div style={colNameStyle}>Податки</div>
-              <div style={{ ...colPercentStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={taxPercent}
-                  onChange={(e) => setTaxPercent(e.target.value)}
-                  style={taxInputStyle}
-                />
-                <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#636366' }}>%</span>
-              </div>
-              <div style={colM2Style}>
-                <span>{taxPerM2.toFixed(2)}</span>
-                <span style={{ color: '#636366', marginLeft: '2px' }}>USD/м²</span>
-              </div>
-              <div style={{ ...colTotalStyle, color: '#007aff' }}>
-                <div>{taxTotal.toFixed(2)} USD</div>
-                <div style={{ fontSize: '11px', color: '#636366', fontWeight: 'normal' }}>
-                  {formatUAH(taxTotal * currentRate)}
-                </div>
-              </div>
             </div>
 
           </div>
