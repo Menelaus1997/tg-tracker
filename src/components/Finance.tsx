@@ -12,6 +12,7 @@ interface ExpenseItem {
   amount: number;
   currency: string;
   calcType: 'm2' | 'fixed';
+  isDeleted?: boolean; // Для роботи кошика
 }
 
 export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) => {
@@ -19,10 +20,11 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
 
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
-  const [isEditingAutoExpense, setIsEditingAutoExpense] = useState(false); // Прапорець для автовитрат команди
+  const [isEditingAutoExpense, setIsEditingAutoExpense] = useState(false);
   
-  // Стан для згортання/розгортання блоку собівартості
+  // Стан для згортання/розгортання блоку собівартості та кошика
   const [isExpensesListOpen, setIsExpensesListOpen] = useState(false);
+  const [isTrashOpen, setIsTrashOpen] = useState(false);
   
   const [newExpenseTitle, setNewExpenseTitle] = useState('');
   const [newExpenseAmount, setNewExpenseAmount] = useState<string>('');
@@ -33,14 +35,13 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
   
-  // Ручні витрати та налаштування збережені в проєкті
   const manualExpenses: ExpenseItem[] = (selectedProject as any)?.expenses || [];
 
-  // Автоматично збираємо виконавців зі стадій проєкту
+  // Автоматично збираємо виконавців зі стадій проєкту (уникаючи дублікатів за ID або стабільною ключовою ознакою)
   const getProjectTeamExpenses = (): ExpenseItem[] => {
     if (!selectedProject || !selectedProject.stages) return [];
     
-    const teamMap = new Map<string, string>(); // Назва -> Унікальний ключ для зіставлення
+    const teamMap = new Map<string, ExpenseItem>();
 
     selectedProject.stages.forEach((stage: any) => {
       const contractorsList: string[] = stage.contractors || (stage.contractor ? [stage.contractor] : []);
@@ -48,53 +49,64 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
       contractorsList.forEach((entry: string) => {
         if (!entry) return;
         const title = entry.trim();
-        if (!teamMap.has(title)) {
-          teamMap.set(title, title);
+        // Використовуємо стабільний ключ (наприклад, початкове ім'я або всю сукупність), 
+        // але мапимо на актуальний `title`, щоб при зміні імені/ролі не виникало двох рядків
+        const uniqueKey = title.split('(')[0].trim().toLowerCase(); // прив'язка за ім'ям виконавця
+
+        // Шукаємо, чи є вже збережені налаштування для цього виконавця в базі проєкту
+        const existingSaved = manualExpenses.find(m => 
+          m.id.startsWith('auto-') && (m.id === `auto-${uniqueKey}` || m.title.toLowerCase().includes(uniqueKey))
+        );
+
+        if (existingSaved) {
+          teamMap.set(uniqueKey, {
+            ...existingSaved,
+            title: title // оновлюємо назву на актуальну (якщо змінилася роль чи ім'я)
+          });
+        } else if (!teamMap.has(uniqueKey)) {
+          teamMap.set(uniqueKey, {
+            id: `auto-${uniqueKey}`,
+            title: title,
+            amount: 0,
+            currency: 'USD',
+            calcType: 'fixed',
+            isDeleted: false
+          });
         }
       });
     });
 
-    // Формуємо список, зливаючи з уже збереженими в manualExpenses параметрами (якщо вони там є)
-    return Array.from(teamMap.keys()).map((title) => {
-      const existingSaved = manualExpenses.find(m => m.title === title);
-      if (existingSaved) {
-        return existingSaved; // Якщо вже налаштували суму/валюту — беремо їх
-      }
-      return {
-        id: `auto-${title}`,
-        title: title,
-        amount: 0,
-        currency: 'USD',
-        calcType: 'fixed'
-      };
-    });
+    return Array.from(teamMap.values());
   };
 
   const autoTeamExpenses = getProjectTeamExpenses();
-  // Ручні витрати — це ті, яких немає в команді стадій
-  const pureManualExpenses = manualExpenses.filter(m => !autoTeamExpenses.some(a => a.title === m.title));
   
-  // Загальний список для виведення: спочатку команда зі стадій, потім ручні витрати
-  const expenses: ExpenseItem[] = [...autoTeamExpenses, ...pureManualExpenses];
+  // Ручні витрати (які не є автовитратами команди)
+  const pureManualExpenses = manualExpenses.filter(m => !m.id.startsWith('auto-'));
+  
+  // Об'єднуємо активні витрати (не видалені)
+  const activeAutoExpenses = autoTeamExpenses.filter(item => !item.isDeleted);
+  const activeManualExpenses = pureManualExpenses.filter(item => !item.isDeleted);
+  const expenses: ExpenseItem[] = [...activeAutoExpenses, ...activeManualExpenses];
+
+  // Видалені витрати (для кошика)
+  const deletedExpenses: ExpenseItem[] = [
+    ...autoTeamExpenses.filter(item => item.isDeleted),
+    ...pureManualExpenses.filter(item => item.isDeleted)
+  ];
   
   const usdRate = (selectedProject as any)?.usdRate ?? '41.50';
   const customPricePerM2 = (selectedProject as any)?.customPricePerM2 ?? '';
 
   const setUsdRate = (rate: string) => {
     if (!selectedProject || !onUpdateProject) return;
-    const updatedProject: Project = {
-      ...selectedProject,
-      usdRate: rate as any
-    };
+    const updatedProject: Project = { ...selectedProject, usdRate: rate as any };
     onUpdateProject(updatedProject);
   };
 
   const setCustomPricePerM2 = (price: string) => {
     if (!selectedProject || !onUpdateProject) return;
-    const updatedProject: Project = {
-      ...selectedProject,
-      customPricePerM2: price as any
-    };
+    const updatedProject: Project = { ...selectedProject, customPricePerM2: price as any };
     onUpdateProject(updatedProject);
   };
 
@@ -148,45 +160,38 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
     e.preventDefault();
     if (!newExpenseTitle.trim() || !selectedProject) return;
 
-    let updatedExpenses: ExpenseItem[];
+    let updatedExpenses = [...manualExpenses];
 
     if (editingExpenseId) {
-      // Редагуємо існуючу (або ручну, або автовитрату команди)
-      const existingIndex = manualExpenses.findIndex(item => item.id === editingExpenseId || item.title === newExpenseTitle);
-      
+      const index = updatedExpenses.findIndex(item => item.id === editingExpenseId);
       const updatedItem: ExpenseItem = {
-        id: isEditingAutoExpense ? `auto-${newExpenseTitle}` : editingExpenseId,
+        id: editingExpenseId,
         title: newExpenseTitle.trim(),
         amount: currentInputAmount,
         currency: newExpenseCurrency,
-        calcType: newExpenseCalcType
+        calcType: newExpenseCalcType,
+        isDeleted: false
       };
 
-      if (existingIndex >= 0) {
-        updatedExpenses = manualExpenses.map((item, idx) => idx === existingIndex ? updatedItem : item);
+      if (index >= 0) {
+        updatedExpenses[index] = updatedItem;
       } else {
-        updatedExpenses = [updatedItem, ...manualExpenses];
+        updatedExpenses.push(updatedItem);
       }
     } else {
-      // Додаємо нову ручну витрату
       const newItem: ExpenseItem = {
         id: Date.now().toString(),
         title: newExpenseTitle.trim(),
         amount: currentInputAmount,
         currency: newExpenseCurrency,
-        calcType: newExpenseCalcType
+        calcType: newExpenseCalcType,
+        isDeleted: false
       };
-      updatedExpenses = [newItem, ...manualExpenses];
+      updatedExpenses.push(newItem);
     }
 
-    const updatedProject: Project = {
-      ...selectedProject,
-      expenses: updatedExpenses as any
-    };
-
-    if (onUpdateProject) {
-      onUpdateProject(updatedProject);
-    }
+    const updatedProject: Project = { ...selectedProject, expenses: updatedExpenses as any };
+    if (onUpdateProject) onUpdateProject(updatedProject);
 
     setNewExpenseTitle('');
     setNewExpenseAmount('');
@@ -195,29 +200,52 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
     setIsAddExpenseOpen(false);
   };
 
-  const handleDeleteExpense = (e: React.MouseEvent, id: string, isAuto: boolean) => {
+  // Переміщення в кошик (м'яке видалення)
+  const handleSoftDeleteExpense = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (!selectedProject) return;
-    
-    if (isAuto) {
-      // Для автовитрат команди обнуляємо суму замість повного видалення зі списку
-      const existingIndex = manualExpenses.findIndex(item => item.id === id || item.title.includes(id.replace('auto-', '')));
-      let updatedExpenses = [...manualExpenses];
-      if (existingIndex >= 0) {
-        updatedExpenses[existingIndex] = { ...updatedExpenses[existingIndex], amount: 0 };
-      } else {
-        // Знаходимо назву з ID
-        const titleClean = id.replace('auto-', '');
-        updatedExpenses.push({ id, title: titleClean, amount: 0, currency: 'USD', calcType: 'fixed' });
-      }
-      const updatedProject: Project = { ...selectedProject, expenses: updatedExpenses as any };
-      if (onUpdateProject) onUpdateProject(updatedProject);
+
+    let updatedExpenses = [...manualExpenses];
+    const existingIndex = updatedExpenses.findIndex(item => item.id === id);
+
+    if (existingIndex >= 0) {
+      updatedExpenses[existingIndex] = { ...updatedExpenses[existingIndex], isDeleted: true };
     } else {
-      // Повне видалення ручних витрат
-      const updatedExpenses = manualExpenses.filter(item => item.id !== id);
-      const updatedProject: Project = { ...selectedProject, expenses: updatedExpenses as any };
-      if (onUpdateProject) onUpdateProject(updatedProject);
+      // Якщо це автовитрата команди і її ще немає в manualExpenses, додаємо її туди зі статусом isDeleted: true
+      const autoItem = autoTeamExpenses.find(a => a.id === id);
+      if (autoItem) {
+        updatedExpenses.push({ ...autoItem, isDeleted: true });
+      }
     }
+
+    const updatedProject: Project = { ...selectedProject, expenses: updatedExpenses as any };
+    if (onUpdateProject) onUpdateProject(updatedProject);
+  };
+
+  // Відновлення з кошика
+  const handleRestoreExpense = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!selectedProject) return;
+
+    let updatedExpenses = [...manualExpenses];
+    const existingIndex = updatedExpenses.findIndex(item => item.id === id);
+
+    if (existingIndex >= 0) {
+      updatedExpenses[existingIndex] = { ...updatedExpenses[existingIndex], isDeleted: false };
+    }
+
+    const updatedProject: Project = { ...selectedProject, expenses: updatedExpenses as any };
+    if (onUpdateProject) onUpdateProject(updatedProject);
+  };
+
+  // Повне видалення з кошика
+  const handlePermanentDelete = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!selectedProject) return;
+
+    const updatedExpenses = manualExpenses.filter(item => item.id !== id);
+    const updatedProject: Project = { ...selectedProject, expenses: updatedExpenses as any };
+    if (onUpdateProject) onUpdateProject(updatedProject);
   };
 
   const totalExpenses = expenses.reduce((acc, item) => {
@@ -562,7 +590,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
 
                   {/* Список витрат */}
                   {expenses.length === 0 ? (
-                    <div style={{ fontSize: '12px', fontStyle: 'italic', color: '#8e8e93', textAlign: 'center', padding: '8px' }}>Немає призначених виконавців чи витрат для цього проєкту.</div>
+                    <div style={{ fontSize: '12px', fontStyle: 'italic', color: '#8e8e93', textAlign: 'center', padding: '8px' }}>Немає активних витрат або виконавців для цього проєкту.</div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       {expenses.map((item) => {
@@ -607,16 +635,61 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                                 )}
                               </div>
                               <button
-                                onClick={(e) => handleDeleteExpense(e, item.id, isAutoTeam)}
+                                onClick={(e) => handleSoftDeleteExpense(e, item.id)}
                                 style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px' }}
-                                title={isAutoTeam ? "Скинути суму" : "Видалити витрату"}
+                                title="Перенести в кошик"
                               >
-                                {isAutoTeam ? '🔄' : '🗑️'}
+                                🗑️
                               </button>
                             </div>
                           </div>
                         );
                       })}
+                    </div>
+                  )}
+
+                  {/* Вкладка КОШИК ВИТРАТ */}
+                  {deletedExpenses.length > 0 && (
+                    <div style={{ marginTop: '12px', borderTop: '1px dashed #d1d1d6', paddingTop: '8px' }}>
+                      <div 
+                        onClick={() => setIsTrashOpen(!isTrashOpen)}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontSize: '12px', fontStyle: 'italic', color: '#8e8e93', userSelect: 'none' }}
+                      >
+                        <span>🗑️ Кошик витрат ({deletedExpenses.length})</span>
+                        <span>{isTrashOpen ? '▲ Приховати' : '▼ Показати'}</span>
+                      </div>
+
+                      {isTrashOpen && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '8px' }}>
+                          {deletedExpenses.map((item) => (
+                            <div 
+                              key={item.id}
+                              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', backgroundColor: '#f2f2f7', borderRadius: '6px', border: '1px solid #e5e5ea', opacity: 0.75 }}
+                            >
+                              <div>
+                                <div style={{ fontSize: '11px', fontStyle: 'italic', textDecoration: 'line-through', color: '#636366' }}>{item.title}</div>
+                                <div style={{ fontSize: '9px', color: '#8e8e93' }}>Видалено з бюджету</div>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <button
+                                  onClick={(e) => handleRestoreExpense(e, item.id)}
+                                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: '#34c759' }}
+                                  title="Відновити"
+                                >
+                                  ↩️ Відновити
+                                </button>
+                                <button
+                                  onClick={(e) => handlePermanentDelete(e, item.id)}
+                                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: '#ff3b30' }}
+                                  title="Видалити назавжди"
+                                >
+                                  ❌
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
 
