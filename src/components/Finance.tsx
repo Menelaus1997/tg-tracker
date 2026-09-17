@@ -19,6 +19,8 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
 
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
+  
+  // Стан для згортання/розгортання списку витрат під Собівартістю
   const [isExpensesListOpen, setIsExpensesListOpen] = useState(true);
   
   const [newExpenseTitle, setNewExpenseTitle] = useState('');
@@ -31,7 +33,6 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
   const selectedProject = projects.find(p => p.id === selectedProjectId);
   const expenses: ExpenseItem[] = (selectedProject as any)?.expenses || [];
   
-  // Зберігаємо кастомний курс та ціну м2 на рівні проєкту, щоб вони не скидались
   const usdRate = (selectedProject as any)?.usdRate ?? '41.50';
   const customPricePerM2 = (selectedProject as any)?.customPricePerM2 ?? '';
 
@@ -68,7 +69,6 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
   const projectArea = selectedProject ? getProjectArea(selectedProject) : 0;
   const currentRate = parseFloat(usdRate) || 1;
 
-  // Функція форматування чисел для UAH з пробілом для тисяч (наприклад, 103 654.97)
   const formatUAH = (val: number): string => {
     const parts = val.toFixed(2).split('.');
     parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
@@ -369,7 +369,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
 
           </div>
 
-          {/* Кнопка та форма додавання/редагування витрат */}
+          {/* Кнопка та меню управління витратами перенесені вниз під таблицю */}
           <div style={{ marginBottom: '16px' }}>
             <button
               onClick={() => {
@@ -471,7 +471,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
             </form>
           )}
 
-          {/* Список витрат з випадаючим меню */}
+          {/* Список витрат з випадаючим меню та оновленою назвою */}
           <div>
             <div 
               onClick={() => setIsExpensesListOpen(!isExpensesListOpen)}
@@ -485,7 +485,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
               }}
             >
               <h3 style={{ fontSize: '14px', fontStyle: 'italic', color: '#636366', margin: 0 }}>
-                Список витрат проєкту (Собівартість):
+                Собівартість витрат проєкту:
               </h3>
               <span style={{ fontSize: '13px', color: '#007aff', fontWeight: 'bold', fontStyle: 'italic' }}>
                 {isExpensesListOpen ? '▲ Приховати' : '▼ Показати'}
