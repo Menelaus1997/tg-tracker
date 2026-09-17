@@ -20,8 +20,8 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
   
-  // Стан для згортання/розгортання списку витрат під Собівартістю
-  const [isExpensesListOpen, setIsExpensesListOpen] = useState(true);
+  // Стан для згортання/розгортання блоку собівартості
+  const [isExpensesListOpen, setIsExpensesListOpen] = useState(false);
   
   const [newExpenseTitle, setNewExpenseTitle] = useState('');
   const [newExpenseAmount, setNewExpenseAmount] = useState<string>('');
@@ -285,9 +285,10 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
             </div>
           </div>
 
-          {/* Таблиця з 4 колонками */}
+          {/* Основна таблиця з 4 колонками */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
             
+            {/* Рядок 1: Загальна вартість */}
             <div style={gridRowStyle}>
               <div style={colNameStyle}>Загальна вартість:</div>
               <div style={colPercentStyle}>{costPercent}%</div>
@@ -313,21 +314,195 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
               </div>
             </div>
 
-            <div style={gridRowStyle}>
-              <div style={colNameStyle}>Собівартість</div>
-              <div style={colPercentStyle}>{expensesPercent.toFixed(1)}%</div>
-              <div style={colM2Style}>
-                <span>{expensesPerM2.toFixed(2)}</span>
-                <span style={{ color: '#636366', marginLeft: '2px' }}>USD/м²</span>
-              </div>
-              <div style={{ ...colTotalStyle, color: '#ff3b30' }}>
-                <div>{totalExpenses.toFixed(2)} USD</div>
-                <div style={{ fontSize: '11px', color: '#8e8e93', fontWeight: 'normal' }}>
-                  {formatUAH(totalExpenses * currentRate)}
+            {/* Рядок 2: Собівартість (зі спадним меню / аккордеоном) */}
+            <div style={{ backgroundColor: '#f2f2f7', border: '1px solid #e5e5ea', borderRadius: '10px', overflow: 'hidden' }}>
+              <div 
+                onClick={() => setIsExpensesListOpen(!isExpensesListOpen)}
+                style={{ ...gridRowStyle, border: 'none', backgroundColor: 'transparent', cursor: 'pointer', userSelect: 'none' }}
+              >
+                <div style={{ ...colNameStyle, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>Собівартість</span>
+                  <span style={{ fontSize: '11px', color: '#007aff', fontWeight: 'bold' }}>
+                    {isExpensesListOpen ? '▲ Приховати' : '▼ Показати'}
+                  </span>
+                </div>
+                <div style={colPercentStyle}>{expensesPercent.toFixed(1)}%</div>
+                <div style={colM2Style}>
+                  <span>{expensesPerM2.toFixed(2)}</span>
+                  <span style={{ color: '#636366', marginLeft: '2px' }}>USD/м²</span>
+                </div>
+                <div style={{ ...colTotalStyle, color: '#ff3b30' }}>
+                  <div>{totalExpenses.toFixed(2)} USD</div>
+                  <div style={{ fontSize: '11px', color: '#8e8e93', fontWeight: 'normal' }}>
+                    {formatUAH(totalExpenses * currentRate)}
+                  </div>
                 </div>
               </div>
+
+              {/* Випадаюче меню витрат усередині Собівартості */}
+              {isExpensesListOpen && (
+                <div style={{ padding: '0 12px 12px 12px', borderTop: '1px solid #e5e5ea', marginTop: '4px', paddingTop: '10px' }}>
+                  
+                  {/* Кнопка Додати витрату всередині меню */}
+                  <div style={{ marginBottom: '10px' }}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isAddExpenseOpen) {
+                          setIsAddExpenseOpen(false);
+                        } else {
+                          handleOpenAddForm();
+                        }
+                      }}
+                      style={{ width: '100%', padding: '10px', backgroundColor: '#007aff', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontStyle: 'italic', fontSize: '13px', cursor: 'pointer' }}
+                    >
+                      {isAddExpenseOpen ? 'Закрити меню витрат' : '+ Додати витрату'}
+                    </button>
+                  </div>
+
+                  {isAddExpenseOpen && (
+                    <form onSubmit={handleSaveExpense} style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '10px', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '8px', border: '1px solid #d1d1d6' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 'bold', fontStyle: 'italic', color: '#007aff' }}>
+                        {editingExpenseId ? 'Редагування витрати' : 'Нова витрата'}
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '10px', fontStyle: 'italic', color: '#636366', display: 'block', marginBottom: '2px' }}>1. Назва витрати</label>
+                        <input
+                          type="text"
+                          placeholder="Введіть назву витрати..."
+                          value={newExpenseTitle}
+                          onChange={(e) => setNewExpenseTitle(e.target.value)}
+                          style={inputStyle}
+                          required
+                        />
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <div style={{ flex: 1.5 }}>
+                          <label style={{ fontSize: '10px', fontStyle: 'italic', color: '#636366', display: 'block', marginBottom: '2px' }}>2. Вартість</label>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            placeholder="0.00"
+                            value={newExpenseAmount}
+                            onChange={(e) => setNewExpenseAmount(e.target.value)}
+                            style={inputStyle}
+                            required
+                          />
+                        </div>
+                        <div style={{ flex: 1.2 }}>
+                          <label style={{ fontSize: '10px', fontStyle: 'italic', color: '#636366', display: 'block', marginBottom: '2px' }}>3. Валюта</label>
+                          <select
+                            value={newExpenseCurrency}
+                            onChange={(e) => setNewExpenseCurrency(e.target.value)}
+                            style={inputStyle}
+                          >
+                            <option value="UAH">UAH</option>
+                            <option value="USD">USD</option>
+                            <option value="USDT">USDT</option>
+                            <option value="EUR">EUR</option>
+                          </select>
+                        </div>
+                        <div style={{ flex: 1.3 }}>
+                          <label style={{ fontSize: '10px', fontStyle: 'italic', color: '#636366', display: 'block', marginBottom: '2px' }}>4. Одиниці</label>
+                          <select
+                            value={newExpenseCalcType}
+                            onChange={(e) => setNewExpenseCalcType(e.target.value as any)}
+                            style={inputStyle}
+                          >
+                            <option value="fixed">Фіксована</option>
+                            <option value="m2">м. кв.</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div style={{ padding: '6px 8px', backgroundColor: '#f2f2f7', borderRadius: '6px', fontSize: '11px', fontStyle: 'italic', color: '#3a3a3c', display: 'flex', justifyContent: 'space-between' }}>
+                        <span>5. Загальна вартість:</span>
+                        <span style={{ fontWeight: 'bold', color: '#007aff' }}>
+                          {calculatedPreviewAmount.toFixed(2)} {newExpenseCurrency} {newExpenseCurrency !== 'UAH' ? `(~ ${formatUAH(calculatedPreviewAmount * (newExpenseCurrency === 'USD' ? currentRate : 1))})` : ''}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+                        <button
+                          type="submit"
+                          style={{ flex: 1, padding: '8px', backgroundColor: '#34c759', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontStyle: 'italic', cursor: 'pointer', fontSize: '12px' }}
+                        >
+                          {editingExpenseId ? 'Оновити витрату' : 'Зберегти витрату'}
+                        </button>
+                        {editingExpenseId && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingExpenseId(null);
+                              setIsAddExpenseOpen(false);
+                            }}
+                            style={{ padding: '8px 12px', backgroundColor: '#8e8e93', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontStyle: 'italic', cursor: 'pointer', fontSize: '12px' }}
+                          >
+                            Скасувати
+                          </button>
+                        )}
+                      </div>
+                    </form>
+                  )}
+
+                  {/* Список самих витрат */}
+                  {expenses.length === 0 ? (
+                    <div style={{ fontSize: '12px', fontStyle: 'italic', color: '#8e8e93', textAlign: 'center', padding: '8px' }}>Немає доданих витрат для цього проєкту.</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {expenses.map((item) => {
+                        const calculatedAmount = item.calcType === 'm2' ? item.amount * (projectArea > 0 ? projectArea : 1) : item.amount;
+                        return (
+                          <div 
+                            key={item.id} 
+                            onClick={() => handleEditExpenseClick(item)}
+                            style={{ 
+                              display: 'flex', 
+                              justifyContent: 'space-between', 
+                              alignItems: 'center', 
+                              padding: '8px 10px', 
+                              backgroundColor: '#ffffff', 
+                              border: editingExpenseId === item.id ? '2px solid #007aff' : '1px solid #e5e5ea', 
+                              borderRadius: '8px',
+                              cursor: 'pointer'
+                            }}
+                            title="Натисніть, щоб редагувати витрату"
+                          >
+                            <div>
+                              <div style={{ fontSize: '12px', fontStyle: 'italic', fontWeight: 500 }}>{item.title}</div>
+                              <div style={{ fontSize: '10px', fontStyle: 'italic', color: '#8e8e93' }}>
+                                {item.calcType === 'm2' ? `${item.amount} * ${projectArea} м²` : 'Фіксована сума'} = {calculatedAmount.toFixed(2)} {item.currency}
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div style={{ textAlign: 'right' }}>
+                                <span style={{ fontSize: '12px', fontStyle: 'italic', fontWeight: 'bold', color: '#ff3b30' }}>
+                                  -{calculatedAmount.toFixed(2)} {item.currency}
+                                </span>
+                                <div style={{ fontSize: '9px', color: '#8e8e93' }}>
+                                  -{formatUAH(calculatedAmount * (item.currency === 'USD' ? currentRate : 1))}
+                                </div>
+                              </div>
+                              <button
+                                onClick={(e) => handleDeleteExpense(e, item.id)}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px' }}
+                                title="Видалити"
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                </div>
+              )}
             </div>
 
+            {/* Рядок 3: Націнка */}
             <div style={gridRowStyle}>
               <div style={colNameStyle}>Націнка</div>
               <div style={{ ...colPercentStyle, color: '#34c759' }}>{markupPercent.toFixed(1)}%</div>
@@ -337,12 +512,13 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
               </div>
               <div style={{ ...colTotalStyle, color: '#34c759' }}>
                 <div>{markupTotal.toFixed(2)} USD</div>
-                <div style={{ fontSize: '11px', color: '#8e8e93', fontWeight: 'normal' }}>
+                <div style={{ fontSize: '11px', color: '#636366', fontWeight: 'normal' }}>
                   {formatUAH(markupTotal * currentRate)}
                 </div>
               </div>
             </div>
 
+            {/* Рядок 4: Податки */}
             <div style={gridRowStyle}>
               <div style={colNameStyle}>Податки</div>
               <div style={{ ...colPercentStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}>
@@ -361,7 +537,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
               </div>
               <div style={{ ...colTotalStyle, color: '#007aff' }}>
                 <div>{taxTotal.toFixed(2)} USD</div>
-                <div style={{ fontSize: '11px', color: '#8e8e93', fontWeight: 'normal' }}>
+                <div style={{ fontSize: '11px', color: '#636366', fontWeight: 'normal' }}>
                   {formatUAH(taxTotal * currentRate)}
                 </div>
               </div>
@@ -369,184 +545,6 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
 
           </div>
 
-          {/* Кнопка та меню управління витратами перенесені вниз під таблицю */}
-          <div style={{ marginBottom: '16px' }}>
-            <button
-              onClick={() => {
-                if (isAddExpenseOpen) {
-                  setIsAddExpenseOpen(false);
-                } else {
-                  handleOpenAddForm();
-                }
-              }}
-              style={{ width: '100%', padding: '12px', backgroundColor: '#007aff', color: '#ffffff', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontStyle: 'italic', fontSize: '14px', cursor: 'pointer' }}
-            >
-              {isAddExpenseOpen ? 'Закрити меню витрат' : '+ Додати витрату'}
-            </button>
-          </div>
-
-          {isAddExpenseOpen && (
-            <form onSubmit={handleSaveExpense} style={{ backgroundColor: '#f2f2f7', padding: '14px', borderRadius: '12px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <div style={{ fontSize: '13px', fontWeight: 'bold', fontStyle: 'italic', color: '#007aff', marginBottom: '2px' }}>
-                {editingExpenseId ? 'Редагування витрати' : 'Нова витрата'}
-              </div>
-              <div>
-                <label style={{ fontSize: '11px', fontStyle: 'italic', color: '#636366', display: 'block', marginBottom: '2px' }}>1. Назва витрати</label>
-                <input
-                  type="text"
-                  placeholder="Введіть назву витрати..."
-                  value={newExpenseTitle}
-                  onChange={(e) => setNewExpenseTitle(e.target.value)}
-                  style={inputStyle}
-                  required
-                />
-              </div>
-
-              <div style={{ display: 'flex', gap: '6px' }}>
-                <div style={{ flex: 1.5 }}>
-                  <label style={{ fontSize: '11px', fontStyle: 'italic', color: '#636366', display: 'block', marginBottom: '2px' }}>2. Вартість</label>
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    placeholder="0.00"
-                    value={newExpenseAmount}
-                    onChange={(e) => setNewExpenseAmount(e.target.value)}
-                    style={inputStyle}
-                    required
-                  />
-                </div>
-                <div style={{ flex: 1.2 }}>
-                  <label style={{ fontSize: '11px', fontStyle: 'italic', color: '#636366', display: 'block', marginBottom: '2px' }}>3. Валюта</label>
-                  <select
-                    value={newExpenseCurrency}
-                    onChange={(e) => setNewExpenseCurrency(e.target.value)}
-                    style={inputStyle}
-                  >
-                    <option value="UAH">UAH</option>
-                    <option value="USD">USD</option>
-                    <option value="USDT">USDT</option>
-                    <option value="EUR">EUR</option>
-                  </select>
-                </div>
-                <div style={{ flex: 1.3 }}>
-                  <label style={{ fontSize: '11px', fontStyle: 'italic', color: '#636366', display: 'block', marginBottom: '2px' }}>4. Одиниці</label>
-                  <select
-                    value={newExpenseCalcType}
-                    onChange={(e) => setNewExpenseCalcType(e.target.value as any)}
-                    style={inputStyle}
-                  >
-                    <option value="fixed">Фіксована</option>
-                    <option value="m2">м. кв.</option>
-                  </select>
-                </div>
-              </div>
-
-              <div style={{ padding: '8px 10px', backgroundColor: '#e5e5ea', borderRadius: '8px', fontSize: '12px', fontStyle: 'italic', color: '#3a3a3c', display: 'flex', justifyContent: 'space-between' }}>
-                <span>5. Загальна вартість витрати:</span>
-                <span style={{ fontWeight: 'bold', color: '#007aff' }}>
-                  {calculatedPreviewAmount.toFixed(2)} {newExpenseCurrency} {newExpenseCurrency !== 'UAH' ? `(~ ${formatUAH(calculatedPreviewAmount * (newExpenseCurrency === 'USD' ? currentRate : 1))})` : ''}
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
-                <button
-                  type="submit"
-                  style={{ flex: 1, padding: '10px', backgroundColor: '#34c759', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontStyle: 'italic', cursor: 'pointer' }}
-                >
-                  {editingExpenseId ? 'Оновити витрату' : 'Зберегти витрату'}
-                </button>
-                {editingExpenseId && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingExpenseId(null);
-                      setIsAddExpenseOpen(false);
-                    }}
-                    style={{ padding: '10px 14px', backgroundColor: '#8e8e93', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontStyle: 'italic', cursor: 'pointer' }}
-                  >
-                    Скасувати
-                  </button>
-                )}
-              </div>
-            </form>
-          )}
-
-          {/* Список витрат з випадаючим меню та оновленою назвою */}
-          <div>
-            <div 
-              onClick={() => setIsExpensesListOpen(!isExpensesListOpen)}
-              style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'space-between', 
-                cursor: 'pointer', 
-                marginBottom: '10px',
-                userSelect: 'none'
-              }}
-            >
-              <h3 style={{ fontSize: '14px', fontStyle: 'italic', color: '#636366', margin: 0 }}>
-                Собівартість витрат проєкту:
-              </h3>
-              <span style={{ fontSize: '13px', color: '#007aff', fontWeight: 'bold', fontStyle: 'italic' }}>
-                {isExpensesListOpen ? '▲ Приховати' : '▼ Показати'}
-              </span>
-            </div>
-
-            {isExpensesListOpen && (
-              <div>
-                {expenses.length === 0 ? (
-                  <div style={{ fontSize: '12px', fontStyle: 'italic', color: '#8e8e93', textAlign: 'center' }}>Немає доданих витрат для цього проєкту.</div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {expenses.map((item) => {
-                      const calculatedAmount = item.calcType === 'm2' ? item.amount * (projectArea > 0 ? projectArea : 1) : item.amount;
-                      return (
-                        <div 
-                          key={item.id} 
-                          onClick={() => handleEditExpenseClick(item)}
-                          style={{ 
-                            display: 'flex', 
-                            justifyContent: 'space-between', 
-                            alignItems: 'center', 
-                            padding: '10px 12px', 
-                            backgroundColor: '#f9f9fb', 
-                            border: editingExpenseId === item.id ? '2px solid #007aff' : '1px solid #e5e5ea', 
-                            borderRadius: '8px',
-                            cursor: 'pointer'
-                          }}
-                          title="Натисніть, щоб редагувати витрату"
-                        >
-                          <div>
-                            <div style={{ fontSize: '13px', fontStyle: 'italic', fontWeight: 500 }}>{item.title}</div>
-                            <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#8e8e93' }}>
-                              {item.calcType === 'm2' ? `${item.amount} * ${projectArea} м²` : 'Фіксована сума'} = {calculatedAmount.toFixed(2)} {item.currency}
-                            </div>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div style={{ textAlign: 'right' }}>
-                              <span style={{ fontSize: '13px', fontStyle: 'italic', fontWeight: 'bold', color: '#ff3b30' }}>
-                                -{calculatedAmount.toFixed(2)} {item.currency}
-                              </span>
-                              <div style={{ fontSize: '10px', color: '#8e8e93' }}>
-                                -{formatUAH(calculatedAmount * (item.currency === 'USD' ? currentRate : 1))}
-                              </div>
-                            </div>
-                            <button
-                              onClick={(e) => handleDeleteExpense(e, item.id)}
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}
-                              title="Видалити"
-                            >
-                              🗑️
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
         </div>
       )}
     </div>
