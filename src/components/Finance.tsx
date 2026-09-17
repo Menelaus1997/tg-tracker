@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Project } from '../App';
 
 interface FinanceProps {
@@ -32,29 +32,30 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
   
-  // 1. Автоматично збираємо виконавців та їхні ролі зі стадій проєкту (якщо вони там призначені)
+  // 1. Автоматично збираємо виконавців та їхні ролі з масиву contractors у стадіях проєкту
   const getProjectTeamExpenses = (): ExpenseItem[] => {
     if (!selectedProject || !selectedProject.stages) return [];
     
     const teamMap = new Map<string, ExpenseItem>();
 
     selectedProject.stages.forEach((stage: any) => {
-      // Перевіряємо, чи в стадії вказано виконавця/роль (адаптуємо під можливі поля в структурі стадії)
-      const assignee = stage.assignee || stage.executor || stage.teamMember;
-      const role = stage.role || stage.position || 'Виконавець';
+      // Підтримуємо як новий масив contractors, так і старе поле contractor (якщо десь залишилось)
+      const contractorsList: string[] = stage.contractors || (stage.contractor ? [stage.contractor] : []);
 
-      if (assignee) {
-        const title = `${assignee} (${role})`;
+      contractorsList.forEach((entry: string) => {
+        if (!entry) return;
+        const title = entry.trim(); // Наприклад: "Дмитро Пономаренко (Кресляр)"
+        
         if (!teamMap.has(title)) {
           teamMap.set(title, {
-            id: `auto-${stage.id || Math.random()}`,
+            id: `auto-${stage.id}-${Math.random().toString(36).substr(2, 4)}`,
             title: title,
-            amount: 0, // Суму можна налаштувати або залишити за замовчуванням
+            amount: 0, // Базова сума за замовчуванням
             currency: 'USD',
             calcType: 'fixed'
           });
         }
-      }
+      });
     });
 
     return Array.from(teamMap.values());
@@ -65,7 +66,6 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
 
   // Об'єднуємо автоматичні витрати з команди та ручні витрати
   const autoTeamExpenses = getProjectTeamExpenses();
-  // Щоб не було дублікатів за назвою
   const manualFiltered = manualExpenses.filter(m => !autoTeamExpenses.some(a => a.title === m.title));
   const expenses: ExpenseItem[] = [...autoTeamExpenses, ...manualFiltered];
   
@@ -175,7 +175,6 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
   const handleDeleteExpense = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (!selectedProject) return;
-    // Видаляємо лише з ручних витрат (автоматичні прив'язані до команди проєкту)
     const updatedExpenses = manualExpenses.filter(item => item.id !== id);
     
     const updatedProject: Project = {
@@ -524,7 +523,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                     </form>
                   )}
 
-                  {/* Список витрат та мігрованих членів команди проєкту */}
+                  {/* Список витрат та автоматично мігрованих виконавців зі стадій */}
                   {expenses.length === 0 ? (
                     <div style={{ fontSize: '12px', fontStyle: 'italic', color: '#8e8e93', textAlign: 'center', padding: '8px' }}>Немає призначених виконавців чи витрат для цього проєкту.</div>
                   ) : (
@@ -546,15 +545,15 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                               borderRadius: '8px',
                               cursor: isAutoTeam ? 'default' : 'pointer'
                             }}
-                            title={isAutoTeam ? "Автоматично підтягнуто з команди проєкту" : "Натисніть, щоб редагувати витрату"}
+                            title={isAutoTeam ? "Автоматично підтягнуто з команди проєкту (стадії)" : "Натисніть, щоб редагувати витрату"}
                           >
                             <div>
                               <div style={{ fontSize: '12px', fontStyle: 'italic', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                {isAutoTeam && <span style={{ fontSize: '10px', color: '#007aff', backgroundColor: '#e5e5ea', padding: '1px 4px', borderRadius: '4px' }}>Команда</span>}
+                                {isAutoTeam && <span style={{ fontSize: '10px', color: '#007aff', backgroundColor: '#e5e5ea', padding: '1px 4px', borderRadius: '4px' }}>Виконавець</span>}
                                 {item.title}
                               </div>
                               <div style={{ fontSize: '10px', fontStyle: 'italic', color: '#8e8e93' }}>
-                                {item.calcType === 'm2' ? `${item.amount} * ${projectArea} м²` : (isAutoTeam && item.amount === 0 ? 'Виконавець проєкту (сума не вказана)' : 'Фіксована сума')} {item.amount > 0 ? `= ${calculatedAmount.toFixed(2)} ${item.currency}` : ''}
+                                {item.calcType === 'm2' ? `${item.amount} * ${projectArea} м²` : (isAutoTeam && item.amount === 0 ? 'Призначено в стадіях (сума не вказана)' : 'Фіксована сума')} {item.amount > 0 ? `= ${calculatedAmount.toFixed(2)} ${item.currency}` : ''}
                               </div>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
