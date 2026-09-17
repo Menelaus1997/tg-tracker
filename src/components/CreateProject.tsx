@@ -5,6 +5,7 @@ interface CreateProjectProps {
   onCreateProject: (project: Project) => void;
   templates: any[];
   onUpdateTemplates?: (templates: any[]) => void;
+  projects?: Project[]; // Потрібно для автовизначення порядкового номера об'єкта
 }
 
 const DEFAULT_COLORS = [
@@ -12,13 +13,44 @@ const DEFAULT_COLORS = [
   '#ff3b30', '#5c3d2e', '#ff9500', '#af52de'
 ];
 
+const AVAILABLE_MARKS = ['АР', 'КР', 'ОВ', 'ВК', 'ЗВК', 'ЛД', 'BILD'];
+
 export const CreateProject: React.FC<CreateProjectProps> = ({
   onCreateProject,
   templates = [],
-  onUpdateTemplates
+  onUpdateTemplates,
+  projects = []
 }) => {
   const [name, setName] = useState('');
-  const [projectId, setProjectId] = useState('');
+  
+  // Ручні поля для формування шифру
+  const [contractNumber, setContractNumber] = useState('');
+  const [projectYear, setProjectYear] = useState(new Date().getFullYear().toString());
+  const [projectMark, setProjectMark] = useState(AVAILABLE_MARKS[0]);
+
+  // Автоматичний порядковий номер об'єкта (якщо це перший проєкт -> "01", якщо вже є -> наступний)
+  const calculateNextObjectIndex = (): string => {
+    if (!projects || projects.length === 0) return '01';
+    // Намагаємось знайти максимальний числовий префікс серед існуючих ID (формат XX/...)
+    let maxNum = 0;
+    projects.forEach(p => {
+      const parts = p.id.split('/');
+      if (parts.length > 0) {
+        const num = parseInt(parts[0], 10);
+        if (!isNaN(num) && num > maxNum) {
+          maxNum = num;
+        }
+      }
+    });
+    const nextNum = maxNum > 0 ? maxNum + 1 : projects.length + 1;
+    return String(nextNum).padStart(2, '0');
+  };
+
+  const objectIndex = calculateNextObjectIndex();
+
+  // Автоматично сформований унікальний ID-шифр проєкту
+  const generatedId = `${objectIndex}/${contractNumber.trim() || 'XXX'}-${projectYear.trim() || '2026'}-${projectMark}`;
+
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   
   const [colors, setColors] = useState<string[]>([...DEFAULT_COLORS]);
@@ -39,7 +71,10 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !projectId.trim()) return;
+    if (!name.trim() || !contractNumber.trim()) {
+      alert('Будь ласка, заповніть назву проєкту та номер договору.');
+      return;
+    }
 
     const matchedTemplate = validTemplates.find((t) => t.id === selectedTemplateId);
 
@@ -58,7 +93,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
       : [];
 
     const newProj: Project = {
-      id: projectId.trim(),
+      id: generatedId,
       name: name.trim(),
       color: colors[selectedColorIndex],
       status: 'active',
@@ -68,7 +103,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
 
     onCreateProject(newProj);
     setName('');
-    setProjectId('');
+    setContractNumber('');
     setSelectedTemplateId('');
   };
 
@@ -93,11 +128,14 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
 
   return (
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e' }}>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        
+        {/* 1. Найменування проєкту */}
         <div>
-          <label style={labelStyle}>Назва проєкту</label>
+          <label style={labelStyle}>Найменування проєкту</label>
           <input
             type="text"
+            placeholder="НОВЕ БУДІВНИЦТВО ЖИТЛОВОЇ ЗАБУДОВИ..."
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
@@ -105,19 +143,76 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
           />
         </div>
 
-        <div>
-          <label style={labelStyle}>ID проєкту</label>
-          <input
-            type="text"
-            value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
-            required
-            style={formInputStyle}
-          />
+        {/* Структура Шифру / ID проєкту */}
+        <div style={{ backgroundColor: '#f2f2f7', padding: '12px', borderRadius: '12px', border: '1px solid #e5e5ea', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ fontSize: '12px', fontWeight: 'bold', fontStyle: 'italic', color: '#007aff' }}>
+            Формування унікального шифру (ID проєкту):
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <div>
+              <label style={labelStyle}>1. № Договору</label>
+              <input
+                type="text"
+                placeholder="напр. 100"
+                value={contractNumber}
+                onChange={(e) => setContractNumber(e.target.value)}
+                required
+                style={{ ...formInputStyle, backgroundColor: '#ffffff' }}
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>2. Рік</label>
+              <input
+                type="text"
+                placeholder="2026"
+                value={projectYear}
+                onChange={(e) => setProjectYear(e.target.value)}
+                required
+                style={{ ...formInputStyle, backgroundColor: '#ffffff' }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <div>
+              <label style={labelStyle}>3. Марка проєкту</label>
+              <select
+                value={projectMark}
+                onChange={(e) => setProjectMark(e.target.value)}
+                style={{ ...formInputStyle, backgroundColor: '#ffffff', cursor: 'pointer' }}
+              >
+                {AVAILABLE_MARKS.map((mark) => (
+                  <option key={mark} value={mark}>
+                    {mark} {mark === 'BILD' ? '(Будівництво)' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label style={labelStyle}>Порядковий об'єкта</label>
+              <input
+                type="text"
+                value={objectIndex}
+                disabled
+                style={{ ...formInputStyle, backgroundColor: '#e5e5ea', color: '#8e8e93', cursor: 'not-allowed' }}
+                title="Формується автоматично"
+              />
+            </div>
+          </div>
+
+          {/* Відображення згенерованого ID */}
+          <div style={{ marginTop: '4px', fontSize: '11px', fontStyle: 'italic', color: '#3a3a3c', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#ffffff', padding: '6px 8px', borderRadius: '8px', border: '1px solid #d1d1d6' }}>
+            <span>Підсумковий ID (Шифр):</span>
+            <span style={{ fontWeight: 'bold', color: '#007aff' }}>{generatedId}</span>
+          </div>
         </div>
 
+        {/* Шаблон */}
         <div>
-          <label style={labelStyle}>Шаблон</label>
+          <label style={labelStyle}>Шаблон етапів</label>
           <select
             value={selectedTemplateId}
             onChange={(e) => setSelectedTemplateId(e.target.value)}
@@ -133,7 +228,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
         </div>
 
         {/* Палітра кольорів */}
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
           {colors.map((c, idx) => {
             const isSelected = selectedColorIndex === idx;
             return (
@@ -201,7 +296,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
             fontSize: '15px',
             fontStyle: 'italic',
             cursor: 'pointer',
-            marginTop: '10px'
+            marginTop: '6px'
           }}
         >
           Додати проєкт
@@ -291,11 +386,11 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
 
 const formInputStyle: React.CSSProperties = {
   width: '100%',
-  padding: '12px',
+  padding: '10px 12px',
   backgroundColor: '#e5e5ea',
   border: '1px solid #d1d1d6',
   borderRadius: '10px',
-  fontSize: '14px',
+  fontSize: '13px',
   fontStyle: 'italic',
   outline: 'none',
   boxSizing: 'border-box',
@@ -303,9 +398,9 @@ const formInputStyle: React.CSSProperties = {
 };
 
 const labelStyle: React.CSSProperties = {
-  fontSize: '12px',
+  fontSize: '11px',
   color: '#636366',
-  marginBottom: '4px',
+  marginBottom: '3px',
   fontStyle: 'italic',
   display: 'block'
 };
