@@ -57,7 +57,7 @@ export interface Project {
   tagsTitle?: string;
   dataTitle?: string;
   settingsTitle?: string;
-  expenses?: any[]; // Додано поле для збереження витрат
+  expenses?: any[];
 }
 
 const INITIAL_ROLES: RoleConfig[] = [
@@ -84,15 +84,95 @@ export const App: React.FC = () => {
   
   const [currentRoleName, setCurrentRoleName] = useState<string>('Керівник');
 
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(() => {
+    const saved = localStorage.getItem('app_team');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Глобальна функція нормалізації для виправлення е/є та і/и
+  const normalizeStr = (str: string) => 
+    str.toLowerCase().replace(/є/g, 'е').replace(/и/g, 'і').trim();
+
+  // Автоматичне оновлення імен виконавців у всіх проєктах при зміні teamMembers
   const [projects, setProjects] = useState<Project[]>(() => {
     const saved = localStorage.getItem('app_projects');
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(() => {
-    const saved = localStorage.getItem('app_team');
-    return saved ? JSON.parse(saved) : [];
-  });
+  // Синхронізуємо імена в проєктах та витратах, коли змінюється команда
+  useEffect(() => {
+    if (!teamMembers.length || !projects.length) return;
+
+    let hasChanges = false;
+    const updatedProjects = projects.map(proj => {
+      let projectChanged = false;
+
+      // 1. Оновлюємо імена у стадіях
+      const updatedStages = (proj.stages || []).map(stage => {
+        const contractors: string[] = stage.contractors || (stage.contractor ? [stage.contractor] : []);
+        let stageChanged = false;
+
+        const newContractors = contractors.map(cEntry => {
+          const roleMatch = cEntry.match(/\s*\(([^)]+)\)$/);
+          const rolePart = roleMatch ? roleMatch[0] : '';
+          const namePart = roleMatch ? cEntry.replace(rolePart, '').trim() : cEntry.trim();
+          const cleanName = normalizeStr(namePart);
+
+          const matched = teamMembers.find(m => {
+            const cleanMember = normalizeStr(m.fullName);
+            return cleanMember === cleanName || cleanMember.includes(cleanName) || cleanName.includes(cleanMember);
+          });
+
+          if (matched && matched.fullName !== namePart) {
+            stageChanged = true;
+            hasChanges = true;
+            return `${matched.fullName}${rolePart}`;
+          }
+          return cEntry;
+        });
+
+        if (stageChanged) {
+          projectChanged = true;
+          return { ...stage, contractors: newContractors };
+        }
+        return stage;
+      });
+
+      // 2. Оновлюємо імена у витратах / бюджеті (expenses)
+      const updatedExpenses = (proj.expenses || []).map(exp => {
+        if (!exp.id.startsWith('auto-')) return exp;
+
+        const baseName = exp.title.split('(')[0].trim();
+        const cleanExpName = normalizeStr(baseName);
+
+        const matched = teamMembers.find(m => {
+          const cleanMember = normalizeStr(m.fullName);
+          return cleanMember === cleanExpName || cleanMember.includes(cleanExpName) || cleanExpName.includes(cleanMember);
+        });
+
+        if (matched) {
+          const roleMatch = exp.title.match(/\s*\(([^)]+)\)$/);
+          const rolePart = roleMatch ? roleMatch[0] : '';
+          const newTitle = `${matched.fullName}${rolePart}`;
+          if (newTitle !== exp.title) {
+            projectChanged = true;
+            hasChanges = true;
+            return { ...exp, title: newTitle };
+          }
+        }
+        return exp;
+      });
+
+      if (projectChanged) {
+        return { ...proj, stages: updatedStages, expenses: updatedExpenses };
+      }
+      return proj;
+    });
+
+    if (hasChanges) {
+      setProjects(updatedProjects);
+    }
+  }, [teamMembers]);
 
   const [roles, setRoles] = useState<RoleConfig[]>(() => {
     const saved = localStorage.getItem('app_roles');
