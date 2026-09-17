@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Project } from '../App';
 
 interface CreateProjectProps {
   onCreateProject: (project: Project) => void;
   templates: any[];
   onUpdateTemplates?: (templates: any[]) => void;
-  projects?: Project[];
 }
 
 const DEFAULT_COLORS = [
@@ -22,14 +21,17 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
 }) => {
   const [name, setName] = useState('');
   
-  // Ручні поля для шифру
-  const [objectIndex, setObjectIndex] = useState('XXX');
+  // Тільки номер договору та вибір марки
   const [contractNumber, setContractNumber] = useState('');
-  const [projectYear, setProjectYear] = useState('XXX');
   const [projectMark, setProjectMark] = useState(AVAILABLE_MARKS[0]);
 
-  // Підсумковий шифр (ID проєкту), який збирається з твоїх ручних значень
-  const generatedId = `${objectIndex.trim() || 'XXX'}/${contractNumber.trim() || 'XXX'}-${projectYear.trim() || 'XXX'}-${projectMark}`;
+  // Повністю ручний або автоматично підказуаваний Підсумковий ID (Шифр), який можна редагувати
+  const [generatedId, setGeneratedId] = useState('');
+
+  // Коли змінюється номер договору або марка, оновлюємо шаблон у шифрі, але даємо повну свободу вводу
+  useEffect(() => {
+    setGeneratedId(`01/${contractNumber.trim() || 'XXX'}-2026-${projectMark}`);
+  }, [contractNumber, projectMark]);
 
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   
@@ -51,8 +53,8 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !contractNumber.trim()) {
-      alert('Будь ласка, заповніть назву проєкту та номер договору.');
+    if (!name.trim() || !generatedId.trim()) {
+      alert('Будь ласка, заповніть назву проєкту та ID шифр.');
       return;
     }
 
@@ -73,7 +75,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
       : [];
 
     const newProj: Project = {
-      id: generatedId,
+      id: generatedId.trim(),
       name: name.trim(),
       color: colors[selectedColorIndex],
       status: 'active',
@@ -84,8 +86,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
     onCreateProject(newProj);
     setName('');
     setContractNumber('');
-    setObjectIndex('XXX');
-    setProjectYear('XXX');
+    setGeneratedId('');
     setSelectedTemplateId('');
   };
 
@@ -125,7 +126,7 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
           />
         </div>
 
-        {/* Структура Шифру / ID проєкту з ручним заповненням */}
+        {/* Блок формування шифру */}
         <div style={{ backgroundColor: '#f2f2f7', padding: '12px', borderRadius: '12px', border: '1px solid #e5e5ea', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div style={{ fontSize: '12px', fontWeight: 'bold', fontStyle: 'italic', color: '#007aff' }}>
             Формування унікального шифру (ID проєкту):
@@ -133,43 +134,17 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             <div>
-              <label style={labelStyle}>1. Порядковий об'єкта</label>
+              <label style={labelStyle}>№ Договору</label>
               <input
                 type="text"
-                value={objectIndex}
-                onChange={(e) => setObjectIndex(e.target.value)}
-                required
-                style={{ ...formInputStyle, backgroundColor: '#ffffff' }}
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>2. № Договору</label>
-              <input
-                type="text"
-                placeholder="напр. 100"
                 value={contractNumber}
                 onChange={(e) => setContractNumber(e.target.value)}
-                required
-                style={{ ...formInputStyle, backgroundColor: '#ffffff' }}
-              />
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <div>
-              <label style={labelStyle}>3. Рік</label>
-              <input
-                type="text"
-                value={projectYear}
-                onChange={(e) => setProjectYear(e.target.value)}
-                required
                 style={{ ...formInputStyle, backgroundColor: '#ffffff' }}
               />
             </div>
 
             <div>
-              <label style={labelStyle}>4. Марка проєкту</label>
+              <label style={labelStyle}>Марка проєкту</label>
               <select
                 value={projectMark}
                 onChange={(e) => setProjectMark(e.target.value)}
@@ -184,10 +159,21 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
             </div>
           </div>
 
-          {/* Відображення підсумкового ID */}
-          <div style={{ marginTop: '4px', fontSize: '11px', fontStyle: 'italic', color: '#3a3a3c', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#ffffff', padding: '6px 8px', borderRadius: '8px', border: '1px solid #d1d1d6' }}>
-            <span>Підсумковий ID (Шифр):</span>
-            <span style={{ fontWeight: 'bold', color: '#007aff' }}>{generatedId}</span>
+          {/* Підсумковий ID тепер є полем вводу (input), яке можна повністю редагувати вручну */}
+          <div>
+            <label style={labelStyle}>Підсумковий ID (Шифр) — можна редагувати вручну:</label>
+            <input
+              type="text"
+              value={generatedId}
+              onChange={(e) => setGeneratedId(e.target.value)}
+              required
+              style={{
+                ...formInputStyle,
+                backgroundColor: '#ffffff',
+                fontWeight: 'bold',
+                color: '#007aff'
+              }}
+            />
           </div>
         </div>
 
