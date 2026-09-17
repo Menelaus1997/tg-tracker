@@ -19,8 +19,6 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
 
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
-  
-  // Стан для згортання/розгортання списку витрат
   const [isExpensesListOpen, setIsExpensesListOpen] = useState(true);
   
   const [newExpenseTitle, setNewExpenseTitle] = useState('');
@@ -29,15 +27,31 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
   const [newExpenseCalcType, setNewExpenseCalcType] = useState<'m2' | 'fixed'>('fixed');
 
   const [taxPercent, setTaxPercent] = useState<string>('8');
-  const [customPricePerM2, setCustomPricePerM2] = useState<string>('');
-  const [usdRate, setUsdRate] = useState<string>('41.50');
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
   const expenses: ExpenseItem[] = (selectedProject as any)?.expenses || [];
+  
+  // Зберігаємо кастомний курс та ціну м2 на рівні проєкту, щоб вони не скидались
+  const usdRate = (selectedProject as any)?.usdRate ?? '41.50';
+  const customPricePerM2 = (selectedProject as any)?.customPricePerM2 ?? '';
 
-  useEffect(() => {
-    setCustomPricePerM2('');
-  }, [selectedProjectId]);
+  const setUsdRate = (rate: string) => {
+    if (!selectedProject || !onUpdateProject) return;
+    const updatedProject: Project = {
+      ...selectedProject,
+      usdRate: rate as any
+    };
+    onUpdateProject(updatedProject);
+  };
+
+  const setCustomPricePerM2 = (price: string) => {
+    if (!selectedProject || !onUpdateProject) return;
+    const updatedProject: Project = {
+      ...selectedProject,
+      customPricePerM2: price as any
+    };
+    onUpdateProject(updatedProject);
+  };
 
   const getProjectArea = (proj: Project): number => {
     if (!proj.passportRows) return 0;
@@ -53,6 +67,13 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
 
   const projectArea = selectedProject ? getProjectArea(selectedProject) : 0;
   const currentRate = parseFloat(usdRate) || 1;
+
+  // Функція форматування чисел для UAH з пробілом для тисяч (наприклад, 103 654.97)
+  const formatUAH = (val: number): string => {
+    const parts = val.toFixed(2).split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return `${parts.join('.')} UAH`;
+  };
 
   const currentInputAmount = parseFloat(newExpenseAmount) || 0;
   const calculatedPreviewAmount = newExpenseCalcType === 'm2' 
@@ -287,7 +308,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
               <div style={colTotalStyle}>
                 <div>{finalTotalProjectCost.toFixed(2)} USD</div>
                 <div style={{ fontSize: '11px', color: '#636366', fontWeight: 'normal' }}>
-                  {(finalTotalProjectCost * currentRate).toFixed(2)} UAH
+                  {formatUAH(finalTotalProjectCost * currentRate)}
                 </div>
               </div>
             </div>
@@ -302,7 +323,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
               <div style={{ ...colTotalStyle, color: '#ff3b30' }}>
                 <div>{totalExpenses.toFixed(2)} USD</div>
                 <div style={{ fontSize: '11px', color: '#8e8e93', fontWeight: 'normal' }}>
-                  {(totalExpenses * currentRate).toFixed(2)} UAH
+                  {formatUAH(totalExpenses * currentRate)}
                 </div>
               </div>
             </div>
@@ -317,7 +338,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
               <div style={{ ...colTotalStyle, color: '#34c759' }}>
                 <div>{markupTotal.toFixed(2)} USD</div>
                 <div style={{ fontSize: '11px', color: '#8e8e93', fontWeight: 'normal' }}>
-                  {(markupTotal * currentRate).toFixed(2)} UAH
+                  {formatUAH(markupTotal * currentRate)}
                 </div>
               </div>
             </div>
@@ -341,7 +362,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
               <div style={{ ...colTotalStyle, color: '#007aff' }}>
                 <div>{taxTotal.toFixed(2)} USD</div>
                 <div style={{ fontSize: '11px', color: '#8e8e93', fontWeight: 'normal' }}>
-                  {(taxTotal * currentRate).toFixed(2)} UAH
+                  {formatUAH(taxTotal * currentRate)}
                 </div>
               </div>
             </div>
@@ -423,7 +444,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
               <div style={{ padding: '8px 10px', backgroundColor: '#e5e5ea', borderRadius: '8px', fontSize: '12px', fontStyle: 'italic', color: '#3a3a3c', display: 'flex', justifyContent: 'space-between' }}>
                 <span>5. Загальна вартість витрати:</span>
                 <span style={{ fontWeight: 'bold', color: '#007aff' }}>
-                  {calculatedPreviewAmount.toFixed(2)} {newExpenseCurrency} {newExpenseCurrency !== 'UAH' ? `(~ ${(calculatedPreviewAmount * (newExpenseCurrency === 'USD' ? currentRate : 1)).toFixed(2)} UAH)` : ''}
+                  {calculatedPreviewAmount.toFixed(2)} {newExpenseCurrency} {newExpenseCurrency !== 'UAH' ? `(~ ${formatUAH(calculatedPreviewAmount * (newExpenseCurrency === 'USD' ? currentRate : 1))})` : ''}
                 </span>
               </div>
 
@@ -450,7 +471,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
             </form>
           )}
 
-          {/* Список витрат з випадаючим меню (аккордеоном) */}
+          {/* Список витрат з випадаючим меню */}
           <div>
             <div 
               onClick={() => setIsExpensesListOpen(!isExpensesListOpen)}
@@ -507,7 +528,7 @@ export const Finance: React.FC<FinanceProps> = ({ projects, onUpdateProject }) =
                                 -{calculatedAmount.toFixed(2)} {item.currency}
                               </span>
                               <div style={{ fontSize: '10px', color: '#8e8e93' }}>
-                                -{(calculatedAmount * (item.currency === 'USD' ? currentRate : 1)).toFixed(2)} UAH
+                                -{formatUAH(calculatedAmount * (item.currency === 'USD' ? currentRate : 1))}
                               </div>
                             </div>
                             <button
