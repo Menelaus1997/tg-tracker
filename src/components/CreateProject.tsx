@@ -21,13 +21,13 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
 }) => {
   const [name, setName] = useState('');
   
-  // Частини шифру: 1 та 3 — редаговані вручну, 2 та 4 — керуються через інпут договору та селект марки
-  const [objectIndex, setObjectIndex] = useState('01'); // редаговане
-  const [contractNumber, setContractNumber] = useState('100'); // нередаговане в шифрі напряму, задається через поле договору
-  const [projectYear, setProjectYear] = useState('2024'); // редаговане
-  const [projectMark, setProjectMark] = useState(AVAILABLE_MARKS[0]); // нередаговане в шифрі напряму, задається через селект
+  // 4 елементи шифру
+  const [objectIndex, setObjectIndex] = useState('01');
+  const [contractNumber, setContractNumber] = useState('100');
+  const [projectYear, setProjectYear] = useState('2024');
+  const [projectMark, setProjectMark] = useState(AVAILABLE_MARKS[0]);
 
-  // Динамічний шифр за шаблоном: [Редагований об'єкт] / [Договір] - [Редагований рік] - [Марка]
+  // Підсумковий шифр
   const [generatedId, setGeneratedId] = useState('');
 
   useEffect(() => {
@@ -118,54 +118,53 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e' }}>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
         
-        {/* Блок формування шифру (знаходиться зверху) */}
+        {/* Блок формування шифру */}
         <div style={{ backgroundColor: '#f2f2f7', padding: '12px', borderRadius: '12px', border: '1px solid #e5e5ea', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div style={{ fontSize: '12px', fontWeight: 'bold', fontStyle: 'italic', color: '#007aff' }}>
             Формування унікального шифру (ID проєкту):
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+          {/* Всі 4 рядки об'єднані в один сіточний рядок (grid-template-columns на 4 частини) */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
             <div>
-              <label style={labelStyle}>1. Порядковий об'єкта (Редаговане)</label>
+              <label style={labelStyle}>Порядковий номер об'єкта</label>
               <input
                 type="text"
                 value={objectIndex}
                 onChange={(e) => setObjectIndex(e.target.value)}
                 required
-                style={{ ...formInputStyle, backgroundColor: '#ffffff' }}
+                style={{ ...formInputStyle, backgroundColor: '#ffffff', textAlign: 'center' }}
               />
             </div>
 
             <div>
-              <label style={labelStyle}>2. № Договору (Авто з поля нижче)</label>
+              <label style={labelStyle}>№ Договору</label>
               <input
                 type="text"
                 value={contractNumber}
                 onChange={(e) => setContractNumber(e.target.value)}
                 required
-                style={{ ...formInputStyle, backgroundColor: '#ffffff' }}
+                style={{ ...formInputStyle, backgroundColor: '#ffffff', textAlign: 'center' }}
               />
             </div>
-          </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             <div>
-              <label style={labelStyle}>3. Рік (Редаговане)</label>
+              <label style={labelStyle}>Рік</label>
               <input
                 type="text"
                 value={projectYear}
                 onChange={(e) => setProjectYear(e.target.value)}
                 required
-                style={{ ...formInputStyle, backgroundColor: '#ffffff' }}
+                style={{ ...formInputStyle, backgroundColor: '#ffffff', textAlign: 'center' }}
               />
             </div>
 
             <div>
-              <label style={labelStyle}>4. Марка проєкту (Авто з вибору)</label>
+              <label style={labelStyle}>Марка проєкту</label>
               <select
                 value={projectMark}
                 onChange={(e) => setProjectMark(e.target.value)}
-                style={{ ...formInputStyle, backgroundColor: '#ffffff', cursor: 'pointer' }}
+                style={{ ...formInputStyle, backgroundColor: '#ffffff', cursor: 'pointer', textAlign: 'center' }}
               >
                 {AVAILABLE_MARKS.map((mark) => (
                   <option key={mark} value={mark}>
@@ -176,9 +175,9 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
             </div>
           </div>
 
-          {/* Підсумковий ID (Шифр) */}
+          {/* Підсумковий Шифр */}
           <div>
-            <label style={labelStyle}>Підсумковий ID (Шифр):</label>
+            <label style={labelStyle}>Шифр:</label>
             <input
               type="text"
               value={generatedId}
@@ -194,12 +193,11 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
           </div>
         </div>
 
-        {/* Найменування проєкту (опущено під шифр) */}
+        {/* Найменування проєкту (опущено під шифр, текст всередині приховано) */}
         <div>
           <label style={labelStyle}>Найменування проєкту</label>
           <input
             type="text"
-            placeholder="НОВЕ БУДІВНИЦТВО ЖИТЛОВОЇ ЗАБУДОВИ..."
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
@@ -395,11 +393,14 @@ const formInputStyle: React.CSSProperties = {
 };
 
 const labelStyle: React.CSSProperties = {
-  fontSize: '11px',
+  fontSize: '10px',
   color: '#636366',
-  marginBottom: '3px',
+  marginBottom: '2px',
   fontStyle: 'italic',
-  display: 'block'
+  display: 'block',
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis'
 };
 
 export default CreateProject;
