@@ -12,7 +12,7 @@ const DEFAULT_COLORS = [
   '#ff3b30', '#5c3d2e', '#ff9500', '#af52de'
 ];
 
-const AVAILABLE_MARKS = ['АР', 'КР', 'ОВ', 'ВК', 'ЗВК', 'ЛД', 'BILD'];
+const INITIAL_MARKS = ['ЕП', 'АР', 'КР', 'АІ'];
 
 export const CreateProject: React.FC<CreateProjectProps> = ({
   onCreateProject,
@@ -25,9 +25,14 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
   const [objectIndex, setObjectIndex] = useState('01');
   const [contractNumber, setContractNumber] = useState('100');
   const [projectYear, setProjectYear] = useState('2024');
-  const [projectMark, setProjectMark] = useState(AVAILABLE_MARKS[0]);
+  
+  // Список марок із можливістю додавання нових
+  const [marksList, setMarksList] = useState<string[]>(INITIAL_MARKS);
+  const [projectMark, setProjectMark] = useState(INITIAL_MARKS[0]);
+  const [isAddingMark, setIsAddingMark] = useState(false);
+  const [newMarkInput, setNewMarkInput] = useState('');
 
-  // Підсумковий шифр
+  // Підсумковий шифр (тільки для читання)
   const [generatedId, setGeneratedId] = useState('');
 
   useEffect(() => {
@@ -55,10 +60,24 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
     setColors(updated);
   };
 
+  const handleAddNewMark = () => {
+    const trimmed = newMarkInput.trim().toUpperCase();
+    if (!trimmed) return;
+    if (!marksList.includes(trimmed)) {
+      const updatedMarks = [...marksList, trimmed];
+      setMarksList(updatedMarks);
+      setProjectMark(trimmed);
+    } else {
+      setProjectMark(trimmed);
+    }
+    setNewMarkInput('');
+    setIsAddingMark(false);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !generatedId.trim()) {
-      alert('Будь ласка, заповніть найменування проєкту та шифр.');
+      alert('Будь ласка, заповніть найменування проєкту.');
       return;
     }
 
@@ -118,10 +137,10 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', color: '#1c1c1e' }}>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
         
-        {/* Блок формування шифру (без зайвого заголовка) */}
+        {/* Блок формування шифру */}
         <div style={{ backgroundColor: '#f2f2f7', padding: '12px', borderRadius: '12px', border: '1px solid #e5e5ea', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           
-          {/* Всі 4 рядки в один ряд */}
+          {/* 4 елементи в один рядок */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
             <div>
               <label style={labelStyle}>№ об'єкту</label>
@@ -158,33 +177,65 @@ export const CreateProject: React.FC<CreateProjectProps> = ({
 
             <div>
               <label style={labelStyle}>Марка проєкту</label>
-              <select
-                value={projectMark}
-                onChange={(e) => setProjectMark(e.target.value)}
-                style={{ ...formInputStyle, backgroundColor: '#ffffff', cursor: 'pointer', textAlign: 'center' }}
-              >
-                {AVAILABLE_MARKS.map((mark) => (
-                  <option key={mark} value={mark}>
-                    {mark}
-                  </option>
-                ))}
-              </select>
+              {!isAddingMark ? (
+                <div style={{ display: 'flex', gap: '2px' }}>
+                  <select
+                    value={projectMark}
+                    onChange={(e) => {
+                      if (e.target.value === '__add_new__') {
+                        setIsAddingMark(true);
+                      } else {
+                        setProjectMark(e.target.value);
+                      }
+                    }}
+                    style={{ ...formInputStyle, backgroundColor: '#ffffff', cursor: 'pointer', textAlign: 'center', padding: '10px 4px' }}
+                  >
+                    {marksList.map((mark) => (
+                      <option key={mark} value={mark}>
+                        {mark}
+                      </option>
+                    ))}
+                    <option value="__add_new__" style={{ color: '#007aff', fontWeight: 'bold' }}>+ Створити...</option>
+                  </select>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', gap: '2px' }}>
+                  <input
+                    type="text"
+                    placeholder="Марка"
+                    value={newMarkInput}
+                    onChange={(e) => setNewMarkInput(e.target.value)}
+                    style={{ ...formInputStyle, backgroundColor: '#ffffff', textAlign: 'center', padding: '10px 4px' }}
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddNewMark}
+                    style={{ backgroundColor: '#34c759', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', padding: '0 6px', fontSize: '12px' }}
+                  >
+                    ✓
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Підсумковий Шифр (чорний текст) */}
+          {/* Шифр (Заблокований для ручних змін, генерується автоматично) */}
           <div>
-            <label style={labelStyle}>Шифр:</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label style={labelStyle}>Шифр:</label>
+              <span style={{ fontSize: '9px', fontStyle: 'italic', color: '#8e8e93' }}>Формується автоматично</span>
+            </div>
             <input
               type="text"
               value={generatedId}
-              onChange={(e) => setGeneratedId(e.target.value)}
-              required
+              readOnly
               style={{
                 ...formInputStyle,
-                backgroundColor: '#ffffff',
+                backgroundColor: '#e5e5ea',
                 fontWeight: 'bold',
-                color: '#1c1c1e'
+                color: '#3a3a3c',
+                cursor: 'not-allowed'
               }}
             />
           </div>
