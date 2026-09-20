@@ -191,31 +191,35 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
   const TIMELINE_HEIGHT = '43px';
   const STAGE_ROW_HEIGHT = '43px';
 
-  // Розраховуємо загальну мінімальну ширину всього блока аналітики (стадії 300px + всі дні)
-  const totalAnalyticsMinWidth = 300 + (totalDays * 36);
-
   return (
     <div style={{ padding: '16px', width: '100%', boxSizing: 'border-box', color: '#1c1c1e', fontFamily: "'SF Pro Condensed', -apple-system, sans-serif", fontSize: '11px' }}>
       
+      {/* Стилі для друку: прибирають колонтитули, виводять тільки блок аналітики та примусово вмикають кольори фону для діаграми */}
       <style>{`
         @media print {
           @page {
             size: landscape;
-            margin: 10mm;
+            margin: 5mm; /* Нульові/мінімальні поля прибирають системні колонтитули браузера з датою та посиланням */
           }
-          body *, html *, #root * {
-            visibility: hidden;
+          body, html {
+            background-color: #ffffff !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          body * {
+            visibility: hidden !important;
           }
           #printable-analytics, #printable-analytics * {
-            visibility: visible;
+            visibility: visible !important;
           }
           #printable-analytics {
-            position: absolute;
-            left: 0;
-            top: 0;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
             width: 100% !important;
             display: flex !important;
             flex-direction: row !important;
+            background-color: #ffffff !important;
           }
           .no-print {
             display: none !important;
@@ -251,7 +255,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
           Немає доступних проєктів.
         </div>
       ) : (
-        /* ЗАГАЛЬНИЙ ГОРИЗОНТАЛЬНИЙ СКРОЛ ДЛЯ ВСІЄЇ АНАЛІТИКИ (І стадії, і графік рухаються разом одним повзунком) */
         <div style={{ width: '100%', overflowX: 'auto', overflowY: 'hidden', paddingBottom: '16px' }}>
           <div 
             id="printable-analytics" 
@@ -260,8 +263,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
               display: 'flex', 
               gap: '12px', 
               alignItems: 'flex-start', 
-              minWidth: `${totalAnalyticsMinWidth}px`, 
-              width: `${totalAnalyticsMinWidth}px`,
+              minWidth: `${310 + totalDays * 36}px`, 
               backgroundColor: '#ffffff', 
               padding: '8px', 
               boxSizing: 'border-box' 
@@ -291,6 +293,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                 gap: '3px'
               }}>
                 <select
+                  className="no-print"
                   value={selectedProjectId}
                   onChange={(e) => handleSelectProject(e.target.value)}
                   style={{
@@ -313,6 +316,10 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                     </option>
                   ))}
                 </select>
+                {/* Назва проєкту для друку (замість select) */}
+                <div style={{ display: 'none', fontSize: '13px', fontWeight: 'bold', fontStyle: 'italic' }}>
+                  {activeProject.name}
+                </div>
 
                 <div style={{ fontSize: '10px', color: '#8e8e93', fontStyle: 'italic', fontWeight: 'bold', paddingLeft: '2px' }}>
                   ID проєкту: <span style={{ color: '#007aff' }}>{activeProject.id}</span>
@@ -350,7 +357,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                             {sIdx + 1}. {stage.title}
                           </span>
                         </div>
-                        <span style={{ fontSize: '9px', padding: '2px 6px', borderRadius: '10px', backgroundColor: statusBg, color: '#fff', fontWeight: 'bold', fontStyle: 'italic', flexShrink: 0 }}>
+                        <span style={{ fontSize: '9px', padding: '2px 6px', borderRadius: '10px', backgroundColor: statusBg, color: '#fff', fontWeight: 'bold', fontStyle: 'italic', flexShrink: 0, WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
                           {statusLabel}
                         </span>
                       </div>
@@ -373,7 +380,9 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                 overflow: 'hidden',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
                 height: HEADER_HEIGHT,
-                boxSizing: 'border-box'
+                boxSizing: 'border-box',
+                WebkitPrintColorAdjust: 'exact',
+                printColorAdjust: 'exact'
               }}>
                 
                 <div style={{ display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle, borderBottom: '1px solid #e5e5ea', backgroundColor: '#f9f9fb' }}>
@@ -422,7 +431,9 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                       zIndex: 1,
                       position: 'relative',
                       display: 'flex',
-                      alignItems: 'center'
+                      alignItems: 'center',
+                      WebkitPrintColorAdjust: 'exact',
+                      printColorAdjust: 'exact'
                     }} 
                   >
                     <div 
@@ -430,7 +441,9 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                         width: `${projectProgress}%`, 
                         height: '100%', 
                         backgroundColor: '#005ec4',
-                        transition: 'width 0.3s' 
+                        transition: 'width 0.3s',
+                        WebkitPrintColorAdjust: 'exact',
+                        printColorAdjust: 'exact'
                       }} 
                     />
                     <span style={{
@@ -507,11 +520,11 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                     const isNearBottom = sIdx >= totalStagesCount - 2;
 
                     return (
-                      <div key={stage.id || sIdx} style={{ padding: '0', height: STAGE_ROW_HEIGHT, boxSizing: 'border-box', backgroundColor: sIdx % 2 === 1 ? '#fafafa' : '#ffffff', overflow: 'visible', display: 'flex', alignItems: 'center', borderBottom: sIdx === activeProject.stages.length - 1 ? 'none' : '1px solid #e5e5ea' }}>
+                      <div key={stage.id || sIdx} style={{ padding: '0', height: STAGE_ROW_HEIGHT, boxSizing: 'border-box', backgroundColor: sIdx % 2 === 1 ? '#fafafa' : '#ffffff', overflow: 'visible', display: 'flex', alignItems: 'center', borderBottom: sIdx === activeProject.stages.length - 1 ? 'none' : '1px solid #e5e5ea', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
                         
                         <div style={{ position: 'relative', width: '100%', height: '31px', backgroundColor: 'transparent', borderRadius: '4px', overflow: 'visible', display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle }}>
                           
-                          {/* Червоний геп */}
+                          {/* Червоний геп (пауза) */}
                           {gapSpanCount > 0 && (
                             <div 
                               onClick={(e) => {
@@ -533,7 +546,9 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                overflow: 'visible'
+                                overflow: 'visible',
+                                WebkitPrintColorAdjust: 'exact',
+                                printColorAdjust: 'exact'
                               }}
                             >
                               {savedComment && (
@@ -630,7 +645,9 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                               zIndex: 1,
                               position: 'relative',
                               display: 'flex',
-                              alignItems: 'center'
+                              alignItems: 'center',
+                              WebkitPrintColorAdjust: 'exact',
+                              printColorAdjust: 'exact'
                             }} 
                           >
                             <div 
@@ -638,7 +655,9 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                                 width: `${progressPct}%`, 
                                 height: '100%', 
                                 backgroundColor: statusBg,
-                                transition: 'width 0.3s' 
+                                transition: 'width 0.3s',
+                                WebkitPrintColorAdjust: 'exact',
+                                printColorAdjust: 'exact'
                               }} 
                             />
                             {!isCompleted && (
