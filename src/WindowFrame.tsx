@@ -8,8 +8,6 @@ export const WindowFrame: React.FC<WindowFrameProps> = ({ children }) => {
   return (
     <div style={{
       width: '100%',
-      // Використовуємо 100vh, але додаємо внутрішні відступи (padding), 
-      // щоб на Windows залишався простір знизу для панелі завдань, а зверху — для кнопок Telegram
       height: '100vh',
       maxHeight: '100vh',
       borderRadius: 0,
@@ -20,9 +18,9 @@ export const WindowFrame: React.FC<WindowFrameProps> = ({ children }) => {
       flexDirection: 'column',
       overflow: 'hidden',
       boxSizing: 'border-box',
-      // Надійний відступ зверху, щоб мобільні кнопки (3 точки/хрестик) нічого не перекривали
-      paddingTop: '75px',
-      // Відступ знизу, щоб на Windows завжди залишалося місце для панелі завдань та нижнього меню
+      // Збільшуємо відступ зверху ще на кілька пікселів для комфортного відступу від системних кнопок на телефоні
+      paddingTop: '90px',
+      // Відступ знизу, щоб залишався простір для панелі завдань та нижнього меню
       paddingBottom: '50px',
     }}>
       {/* Контейнер вмісту з вертикальним скролом */}
