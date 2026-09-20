@@ -161,32 +161,18 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
   const projSpanCount = Math.max(1, projEndIndex - projStartIndex);
   const projGridColumnStart = projStartIndex + 1;
 
-  // Висоти рядків для синхронізації Блоку 1 та Блоку 2
-  const HEADER_HEIGHT = '57px'; // Сумарна висота 2 рядків шапки
-  const TIMELINE_HEIGHT = '43px'; // Висота рядка таймлайну
-  const STAGE_ROW_HEIGHT = '43px'; // Висота рядка стадії
+  const HEADER_HEIGHT = '57px';
+  const TIMELINE_HEIGHT = '43px';
+  const STAGE_ROW_HEIGHT = '43px';
 
   return (
     <div style={{ padding: '16px', maxWidth: '100%', overflowX: 'auto', color: '#1c1c1e', fontFamily: "'SF Pro Condensed', -apple-system, sans-serif", fontSize: '11px' }}>
       
-      {/* Вибір проєкту */}
-      <div style={{ marginBottom: '16px', maxWidth: '400px' }}>
-        <label style={{ fontSize: '11px', color: '#8e8e93', fontStyle: 'italic', display: 'block', marginBottom: '4px' }}>Виберіть проєкт:</label>
+      {/* Зовнішній вибір проєкту залишено також зверху для зручності */}
+      <div style={{ marginBottom: '16px', maxWidth: '400px', display: 'none' }}>
         <select
           value={selectedProjectId}
           onChange={(e) => handleSelectProject(e.target.value)}
-          style={{
-            width: '100%',
-            padding: '8px 12px',
-            backgroundColor: '#f2f2f7',
-            border: '1px solid #d1d1d6',
-            borderRadius: '8px',
-            fontSize: '12px',
-            fontWeight: 'bold',
-            fontStyle: 'italic',
-            outline: 'none',
-            color: '#1c1c1e'
-          }}
         >
           {projects.map(p => (
             <option key={p.id} value={p.id}>
@@ -203,7 +189,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
       ) : (
         <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', minWidth: '1200px', width: '100%' }}>
           
-          {/* БЛОК 1: Назва стадії та тег стадії */}
+          {/* БЛОК 1: Назва проєкту зі спадним меню + Назви стадій та теги */}
           <div style={{ 
             width: '320px', 
             flexShrink: 0, 
@@ -213,8 +199,31 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
             overflow: 'hidden',
             boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
           }}>
+            {/* Рядок вибору проєкту у вигляді спадного меню */}
             <div style={{ backgroundColor: '#f2f2f7', borderBottom: '1px solid #d1d1d6', padding: '0 12px', height: HEADER_HEIGHT, boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}>
-              <span style={{ fontSize: '13px', fontWeight: 'bold', fontStyle: 'italic' }}>{activeProject.name}</span>
+              <select
+                value={selectedProjectId}
+                onChange={(e) => handleSelectProject(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '6px 8px',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #d1d1d6',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  fontStyle: 'italic',
+                  outline: 'none',
+                  color: '#1c1c1e',
+                  cursor: 'pointer'
+                }}
+              >
+                {projects.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div style={{ backgroundColor: '#fcfcfc', borderBottom: '1px solid #e5e5ea', padding: '0 12px', height: TIMELINE_HEIGHT, boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}>
@@ -258,14 +267,10 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
             )}
           </div>
 
-          {/* БЛОК 2: Графік Ганта та шкала (без зовнішньої рамки самого контейнера, рамка лише у шапки з місяцями/числами) */}
-          <div style={{ 
-            flexGrow: 1, 
-            backgroundColor: 'transparent', 
-            overflow: 'visible'
-          }}>
+          {/* БЛОК 2: Графік Ганта та шкала */}
+          <div style={{ flexGrow: 1, backgroundColor: 'transparent', overflow: 'visible' }}>
             
-            {/* Шапка Блоку 2 із контуром та фоном */}
+            {/* Шапка Блоку 2 */}
             <div style={{ 
               display: 'grid', 
               gridTemplateRows: 'auto auto', 
@@ -278,7 +283,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
               boxSizing: 'border-box'
             }}>
               
-              {/* Рядок 1: Назва місяця та року */}
               <div style={{ display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle, borderBottom: '1px solid #e5e5ea', backgroundColor: '#f9f9fb' }}>
                 {monthGroups.map((mg, gIdx) => (
                   <div 
@@ -302,7 +306,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                 ))}
               </div>
 
-              {/* Рядок 2: Числа днів */}
               <div style={{ display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle, backgroundColor: '#f2f2f7', height: '28px', boxSizing: 'border-box' }}>
                 {timelineDays.map((d, idx) => (
                   <div key={`day-${idx}`} style={{ textAlign: 'center', padding: '4px 0', fontSize: '15px', fontStyle: 'italic', fontWeight: 'bold', color: '#1c1c1e', borderRight: '1px solid #e5e5ea' }}>
@@ -320,7 +323,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                   style={{ 
                     gridColumn: `${projGridColumnStart} / span ${projSpanCount}`,
                     gridRow: 1,
-                    backgroundColor: '#d1d1d6', 
+                    backgroundColor: '#e5e5ea', 
                     borderRadius: '4px',
                     overflow: 'hidden',
                     zIndex: 1,
@@ -353,7 +356,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
               </div>
             </div>
 
-            {/* Графік Ганта по стадіях */}
+            {/* Графік Ганта по стадіях із правильним заповненням повзунків */}
             {(!activeProject.stages || activeProject.stages.length === 0) ? (
               <div style={{ padding: '20px', textAlign: 'center', color: '#8e8e93', fontStyle: 'italic' }}>Немає стадій</div>
             ) : (
@@ -409,7 +412,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                   return (
                     <div key={stage.id || sIdx} style={{ padding: '0 12px', height: STAGE_ROW_HEIGHT, boxSizing: 'border-box', backgroundColor: sIdx % 2 === 1 ? '#fafafa' : '#ffffff', overflow: 'visible', display: 'flex', alignItems: 'center', borderBottom: sIdx === activeProject.stages.length - 1 ? 'none' : '1px solid #e5e5ea' }}>
                       
-                      {/* Контейнер рядка Ганта */}
                       <div style={{ position: 'relative', width: '100%', height: '31px', backgroundColor: 'transparent', borderRadius: '4px', overflow: 'visible', display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle }}>
                         
                         {/* Червоний геп */}
@@ -509,12 +511,12 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                           </div>
                         )}
 
-                        {/* Повнорозмірна смужка стадії */}
+                        {/* Смужка стадії із заповненням відсотків всередині сітки Ганта */}
                         <div 
                           style={{ 
                             gridColumn: `${gridColumnStart} / span ${spanCount}`,
                             gridRow: 1,
-                            backgroundColor: '#d1d1d6', 
+                            backgroundColor: '#e5e5ea', 
                             borderRadius: '4px',
                             overflow: 'hidden',
                             zIndex: 1,
