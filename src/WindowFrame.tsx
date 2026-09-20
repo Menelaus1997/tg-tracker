@@ -8,9 +8,10 @@ export const WindowFrame: React.FC<WindowFrameProps> = ({ children }) => {
   return (
     <div style={{
       width: '100%',
-      // Використовуємо висоту вікна мінус невеликий запас знизу, щоб на Windows завжди залишалася видима панель завдань
-      height: 'calc(100vh - 40px)',
-      maxHeight: 'calc(100vh - 40px)',
+      // Використовуємо 100vh, але додаємо внутрішні відступи (padding), 
+      // щоб на Windows залишався простір знизу для панелі завдань, а зверху — для кнопок Telegram
+      height: '100vh',
+      maxHeight: '100vh',
       borderRadius: 0,
       margin: 0,
       backgroundColor: '#ffffff',
@@ -19,12 +20,21 @@ export const WindowFrame: React.FC<WindowFrameProps> = ({ children }) => {
       flexDirection: 'column',
       overflow: 'hidden',
       boxSizing: 'border-box',
-      // Збільшуємо відступ зверху, щоб інтерфейс не налізав на кнопки "Закрити / Стрілочка" в Telegram на телефоні
-      paddingTop: '60px',
-      paddingBottom: '10px',
+      // Надійний відступ зверху, щоб мобільні кнопки (3 точки/хрестик) нічого не перекривали
+      paddingTop: '75px',
+      // Відступ знизу, щоб на Windows завжди залишалося місце для панелі завдань та нижнього меню
+      paddingBottom: '50px',
     }}>
-      {/* Вміст програми */}
-      <div style={{ flex: 1, overflowY: 'auto', position: 'relative', width: '100%', height: '100%' }}>
+      {/* Контейнер вмісту з вертикальним скролом */}
+      <div style={{ 
+        flex: 1, 
+        overflowY: 'auto', 
+        overflowX: 'hidden',
+        position: 'relative', 
+        width: '100%', 
+        height: '100%',
+        boxSizing: 'border-box'
+      }}>
         {children}
       </div>
     </div>
