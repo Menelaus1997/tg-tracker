@@ -58,7 +58,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
     }
   };
 
-  // Функція збереження в PDF через вбудований діалог друку браузера
   const handleExportPDF = () => {
     setEditingGapKey(null);
     window.print();
@@ -195,7 +194,35 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
   return (
     <div style={{ padding: '16px', maxWidth: '100%', overflowX: 'auto', color: '#1c1c1e', fontFamily: "'SF Pro Condensed', -apple-system, sans-serif", fontSize: '11px' }}>
       
-      {/* Кнопка експорту в PDF */}
+      {/* Вбудовані стилі для друку: приховують усе зайве та масштабують графік на один аркуш */}
+      <style>{`
+        @media print {
+          @page {
+            size: landscape;
+            margin: 5mm;
+          }
+          /* Приховуємо все на сторінці, окрім самого контенту аналітики */
+          body * {
+            visibility: hidden;
+          }
+          #printable-analytics, #printable-analytics * {
+            visibility: visible;
+          }
+          #printable-analytics {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100% !important;
+            transform: scale(0.92); /* Масштабування, щоб влізло по ширині */
+            transform-origin: top left;
+          }
+          .no-print {
+            display: none !important;
+          }
+        }
+      `}</style>
+
+      {/* Кнопка експорту в PDF (зникає при друку) */}
       <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
         <button
           onClick={handleExportPDF}
@@ -224,7 +251,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
           Немає доступних проєктів.
         </div>
       ) : (
-        <div ref={reportRef} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', minWidth: '1200px', width: '100%', backgroundColor: '#ffffff', padding: '8px' }}>
+        /* Головний контейнер блоків 1 та 2 для друку */
+        <div id="printable-analytics" ref={reportRef} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', minWidth: '1200px', width: '100%', backgroundColor: '#ffffff', padding: '8px' }}>
           
           {/* БЛОК 1 */}
           <div style={{ 
@@ -555,7 +583,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                                     style={{
                                       backgroundColor: '#34c759',
                                       color: '#ffffff',
-                                      border: 'none',
+                                      border: '1px solid #d1d1d6',
                                       borderRadius: '6px',
                                       width: '28px',
                                       height: '28px',
