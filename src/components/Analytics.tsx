@@ -250,10 +250,10 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
       ) : (
         <div id="printable-analytics" ref={reportRef} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', width: '100%', backgroundColor: '#ffffff', padding: '8px', boxSizing: 'border-box' }}>
           
-          {/* БЛОК 1: Список стадій (фіксована ширина зліва) */}
+          {/* БЛОК 1: Список стадій (фіксована ширина зліва, яка не стискається) */}
           <div style={{ 
-            width: '320px', 
-            flexShrink: 0, 
+            width: '300px', 
+            minWidth: '300px', 
             backgroundColor: '#ffffff', 
             border: '1px solid #d1d1d6', 
             borderRadius: '12px', 
@@ -341,8 +341,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
             )}
           </div>
 
-          {/* БЛОК 2: Графік Ганта зі скролом в бік */}
-          <div style={{ flexGrow: 1, overflowX: 'auto', overflowY: 'hidden', minWidth: 0, paddingBottom: '8px' }}>
+          {/* БЛОК 2: Графік Ганта зі справжнім горизонтальним скролом */}
+          <div style={{ flexGrow: 1, overflowX: 'auto', overflowY: 'hidden', minWidth: 0, paddingBottom: '12px' }}>
             <div style={{ minWidth: `${totalDays * 36}px` }}>
               
               {/* Шапка Блоку 2 */}
