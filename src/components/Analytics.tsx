@@ -191,8 +191,11 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
   const TIMELINE_HEIGHT = '43px';
   const STAGE_ROW_HEIGHT = '43px';
 
+  // Розраховуємо загальну мінімальну ширину всього блока аналітики (стадії 300px + всі дні)
+  const totalAnalyticsMinWidth = 300 + (totalDays * 36);
+
   return (
-    <div style={{ padding: '16px', width: '100%', boxSizing: 'border-box', color: '#1c1c1e', fontFamily: "'SF Pro Condensed', -apple-system, sans-serif", fontSize: '11px', overflowX: 'hidden' }}>
+    <div style={{ padding: '16px', width: '100%', boxSizing: 'border-box', color: '#1c1c1e', fontFamily: "'SF Pro Condensed', -apple-system, sans-serif", fontSize: '11px' }}>
       
       <style>{`
         @media print {
@@ -248,18 +251,33 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
           Немає доступних проєктів.
         </div>
       ) : (
-        <div style={{ width: '100%', overflowX: 'hidden', paddingBottom: '16px' }}>
-          <div id="printable-analytics" ref={reportRef} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', width: '100%', backgroundColor: '#ffffff', padding: '8px', boxSizing: 'border-box' }}>
+        /* ЗАГАЛЬНИЙ ГОРИЗОНТАЛЬНИЙ СКРОЛ ДЛЯ ВСІЄЇ АНАЛІТИКИ (І стадії, і графік рухаються разом одним повзунком) */
+        <div style={{ width: '100%', overflowX: 'auto', overflowY: 'hidden', paddingBottom: '16px' }}>
+          <div 
+            id="printable-analytics" 
+            ref={reportRef} 
+            style={{ 
+              display: 'flex', 
+              gap: '12px', 
+              alignItems: 'flex-start', 
+              minWidth: `${totalAnalyticsMinWidth}px`, 
+              width: `${totalAnalyticsMinWidth}px`,
+              backgroundColor: '#ffffff', 
+              padding: '8px', 
+              boxSizing: 'border-box' 
+            }}
+          >
             
             {/* БЛОК 1: Список стадій зліва */}
             <div style={{ 
-              width: '280px', 
-              minWidth: '280px', 
+              width: '300px', 
+              minWidth: '300px', 
               backgroundColor: '#ffffff', 
               border: '1px solid #d1d1d6', 
               borderRadius: '12px', 
               overflow: 'hidden',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+              flexShrink: 0
             }}>
               <div style={{ 
                 backgroundColor: '#f2f2f7', 
@@ -342,313 +360,311 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
               )}
             </div>
 
-            {/* БЛОК 2: Графік Ганта зі своїм акуратним горизонтальним повзунком */}
-            <div style={{ flexGrow: 1, overflowX: 'auto', overflowY: 'hidden', minWidth: 0, paddingBottom: '8px' }}>
-              <div style={{ minWidth: `${totalDays * 36}px` }}>
+            {/* БЛОК 2: Графік Ганта праворуч */}
+            <div style={{ flexGrow: 1, minWidth: `${totalDays * 36}px`, backgroundColor: 'transparent' }}>
+              
+              {/* Шапка Блоку 2 */}
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateRows: 'auto auto', 
+                backgroundColor: '#f2f2f7', 
+                border: '1px solid #d1d1d6', 
+                borderRadius: '12px 12px 0 0', 
+                overflow: 'hidden',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                height: HEADER_HEIGHT,
+                boxSizing: 'border-box'
+              }}>
                 
-                {/* Шапка Блоку 2 */}
-                <div style={{ 
-                  display: 'grid', 
-                  gridTemplateRows: 'auto auto', 
-                  backgroundColor: '#f2f2f7', 
-                  border: '1px solid #d1d1d6', 
-                  borderRadius: '12px 12px 0 0', 
-                  overflow: 'hidden',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                  height: HEADER_HEIGHT,
-                  boxSizing: 'border-box'
-                }}>
-                  
-                  <div style={{ display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle, borderBottom: '1px solid #e5e5ea', backgroundColor: '#f9f9fb' }}>
-                    {monthGroups.map((mg, gIdx) => (
-                      <div 
-                        key={`mg-${gIdx}`} 
-                        style={{ 
-                          gridColumn: `span ${mg.span}`, 
-                          textAlign: 'center', 
-                          padding: '4px 2px', 
-                          fontSize: '14px', 
-                          fontWeight: 'bold', 
-                          fontStyle: 'italic',
-                          color: '#000000', 
-                          borderRight: '1px solid #e5e5ea', 
-                          whiteSpace: 'nowrap', 
-                          overflow: 'hidden',
-                          textTransform: 'capitalize'
-                        }}
-                      >
-                        {mg.label}
-                      </div>
-                    ))}
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle, backgroundColor: '#f2f2f7', height: '28px', boxSizing: 'border-box' }}>
-                    {timelineDays.map((d, idx) => (
-                      <div key={`day-${idx}`} style={{ textAlign: 'center', padding: '4px 0', fontSize: '12px', fontStyle: 'italic', fontWeight: 'bold', color: '#1c1c1e', borderRight: '1px solid #e5e5ea', overflow: 'hidden' }}>
-                        {d.dayNum}
-                      </div>
-                    ))}
-                  </div>
-
+                <div style={{ display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle, borderBottom: '1px solid #e5e5ea', backgroundColor: '#f9f9fb' }}>
+                  {monthGroups.map((mg, gIdx) => (
+                    <div 
+                      key={`mg-${gIdx}`} 
+                      style={{ 
+                        gridColumn: `span ${mg.span}`, 
+                        textAlign: 'center', 
+                        padding: '4px 2px', 
+                        fontSize: '16px', 
+                        fontWeight: 'bold', 
+                        fontStyle: 'italic',
+                        color: '#000000', 
+                        borderRight: '1px solid #e5e5ea', 
+                        whiteSpace: 'nowrap', 
+                        overflow: 'hidden',
+                        textTransform: 'capitalize'
+                      }}
+                    >
+                      {mg.label}
+                    </div>
+                  ))}
                 </div>
 
-                {/* Рядок загального таймлайну проєкту */}
-                <div style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e5e5ea', borderLeft: '1px solid #d1d1d6', borderRight: '1px solid #d1d1d6', padding: '0', height: TIMELINE_HEIGHT, boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}>
-                  <div style={{ position: 'relative', width: '100%', height: '31px', backgroundColor: 'transparent', borderRadius: '4px', overflow: 'visible', display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle }}>
+                <div style={{ display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle, backgroundColor: '#f2f2f7', height: '28px', boxSizing: 'border-box' }}>
+                  {timelineDays.map((d, idx) => (
+                    <div key={`day-${idx}`} style={{ textAlign: 'center', padding: '4px 0', fontSize: '15px', fontStyle: 'italic', fontWeight: 'bold', color: '#1c1c1e', borderRight: '1px solid #e5e5ea', overflow: 'hidden' }}>
+                      {d.dayNum}
+                    </div>
+                  ))}
+                </div>
+
+              </div>
+
+              {/* Рядок загального таймлайну проєкту */}
+              <div style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e5e5ea', borderLeft: '1px solid #d1d1d6', borderRight: '1px solid #d1d1d6', padding: '0', height: TIMELINE_HEIGHT, boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}>
+                <div style={{ position: 'relative', width: '100%', height: '31px', backgroundColor: 'transparent', borderRadius: '4px', overflow: 'visible', display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle }}>
+                  <div 
+                    style={{ 
+                      gridColumn: `${projGridColumnStart} / span ${projSpanCount}`,
+                      gridRow: 1,
+                      backgroundColor: '#007aff', 
+                      borderRadius: '4px',
+                      overflow: 'hidden',
+                      zIndex: 1,
+                      position: 'relative',
+                      display: 'flex',
+                      alignItems: 'center'
+                    }} 
+                  >
                     <div 
                       style={{ 
-                        gridColumn: `${projGridColumnStart} / span ${projSpanCount}`,
-                        gridRow: 1,
-                        backgroundColor: '#007aff', 
-                        borderRadius: '4px',
-                        overflow: 'hidden',
-                        zIndex: 1,
-                        position: 'relative',
-                        display: 'flex',
-                        alignItems: 'center'
+                        width: `${projectProgress}%`, 
+                        height: '100%', 
+                        backgroundColor: '#005ec4',
+                        transition: 'width 0.3s' 
                       }} 
-                    >
-                      <div 
-                        style={{ 
-                          width: `${projectProgress}%`, 
-                          height: '100%', 
-                          backgroundColor: '#005ec4',
-                          transition: 'width 0.3s' 
-                        }} 
-                      />
-                      <span style={{
-                        position: 'absolute',
-                        width: '100%',
-                        textAlign: 'center',
-                        fontSize: '10px',
-                        fontWeight: 'bold',
-                        fontStyle: 'italic',
-                        color: '#ffffff',
-                        pointerEvents: 'none'
-                      }}>
-                        {projectProgress}%
-                      </span>
-                    </div>
+                    />
+                    <span style={{
+                      position: 'absolute',
+                      width: '100%',
+                      textAlign: 'center',
+                      fontSize: '10px',
+                      fontWeight: 'bold',
+                      fontStyle: 'italic',
+                      color: '#ffffff',
+                      pointerEvents: 'none'
+                    }}>
+                      {projectProgress}%
+                    </span>
                   </div>
                 </div>
+              </div>
 
-                {/* Графік Ганта по стадіях */}
-                {(!activeProject.stages || activeProject.stages.length === 0) ? (
-                  <div style={{ padding: '20px', textAlign: 'center', color: '#8e8e93', fontStyle: 'italic' }}>Немає стадій</div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', overflow: 'visible', backgroundColor: '#ffffff', borderBottom: '1px solid #d1d1d6', borderLeft: '1px solid #d1d1d6', borderRight: '1px solid #d1d1d6', borderRadius: '0 0 12px 12px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-                    {activeProject.stages.map((stage: any, sIdx: number) => {
-                      const statusLabel = stage.currentStatus || 'В процесі';
-                      const progressPct = calculateStageProgress(stage);
-                      const isCompleted = statusLabel.toLowerCase().includes('завершено');
+              {/* Графік Ганта по стадіях */}
+              {(!activeProject.stages || activeProject.stages.length === 0) ? (
+                <div style={{ padding: '20px', textAlign: 'center', color: '#8e8e93', fontStyle: 'italic' }}>Немає стадій</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', overflow: 'visible', backgroundColor: '#ffffff', borderBottom: '1px solid #d1d1d6', borderLeft: '1px solid #d1d1d6', borderRight: '1px solid #d1d1d6', borderRadius: '0 0 12px 12px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                  {activeProject.stages.map((stage: any, sIdx: number) => {
+                    const statusLabel = stage.currentStatus || 'В процесі';
+                    const progressPct = calculateStageProgress(stage);
+                    const isCompleted = statusLabel.toLowerCase().includes('завершено');
 
-                      let statusBg = '#007aff';
-                      if (isCompleted) statusBg = '#34c759';
-                      else if (statusLabel.toLowerCase().includes('паузі')) statusBg = '#ffcc00';
-                      else if (statusLabel.toLowerCase().includes('перевірці') || statusLabel.toLowerCase().includes('правки')) statusBg = '#ff9500';
+                    let statusBg = '#007aff';
+                    if (isCompleted) statusBg = '#34c759';
+                    else if (statusLabel.toLowerCase().includes('паузі')) statusBg = '#ffcc00';
+                    else if (statusLabel.toLowerCase().includes('перевірці') || statusLabel.toLowerCase().includes('правки')) statusBg = '#ff9500';
 
-                      const startMs = stage.startDate ? new Date(stage.startDate).setHours(0,0,0,0) : adjustedMinTimestamp;
-                      const endD = stage.reviewDate || stage.endDate;
-                      const endMs = endD ? new Date(endD).setHours(23,59,59,999) : startMs + 24 * 60 * 60 * 1000;
+                    const startMs = stage.startDate ? new Date(stage.startDate).setHours(0,0,0,0) : adjustedMinTimestamp;
+                    const endD = stage.reviewDate || stage.endDate;
+                    const endMs = endD ? new Date(endD).setHours(23,59,59,999) : startMs + 24 * 60 * 60 * 1000;
 
-                      const startIndex = Math.max(0, Math.floor((startMs - adjustedMinTimestamp) / dayWidthMs));
-                      const endIndex = Math.max(startIndex, Math.ceil((endMs - adjustedMinTimestamp) / dayWidthMs));
-                      const spanCount = Math.max(1, endIndex - startIndex);
+                    const startIndex = Math.max(0, Math.floor((startMs - adjustedMinTimestamp) / dayWidthMs));
+                    const endIndex = Math.max(startIndex, Math.ceil((endMs - adjustedMinTimestamp) / dayWidthMs));
+                    const spanCount = Math.max(1, endIndex - startIndex);
 
-                      const gridColumnStart = startIndex + 1;
+                    const gridColumnStart = startIndex + 1;
 
-                      let prevEndMs = adjustedMinTimestamp;
-                      for (let i = 0; i < sIdx; i++) {
-                        const stPrev = activeProject.stages[i];
-                        const stPrevEnd = stPrev.reviewDate || stPrev.endDate;
-                        if (stPrevEnd) {
-                          const t = new Date(stPrevEnd).getTime();
-                          if (t > prevEndMs) prevEndMs = t;
-                        }
+                    let prevEndMs = adjustedMinTimestamp;
+                    for (let i = 0; i < sIdx; i++) {
+                      const stPrev = activeProject.stages[i];
+                      const stPrevEnd = stPrev.reviewDate || stPrev.endDate;
+                      if (stPrevEnd) {
+                        const t = new Date(stPrevEnd).getTime();
+                        if (t > prevEndMs) prevEndMs = t;
                       }
+                    }
 
-                      let gapGridStart = 0;
-                      let gapSpanCount = 0;
-                      const GAP_THRESHOLD_MS = 2 * 24 * 60 * 60 * 1000;
+                    let gapGridStart = 0;
+                    let gapSpanCount = 0;
+                    const GAP_THRESHOLD_MS = 2 * 24 * 60 * 60 * 1000;
 
-                      if (sIdx > 0 && startMs > prevEndMs + GAP_THRESHOLD_MS) {
-                        const prevEndDateObj = new Date(prevEndMs);
-                        prevEndDateObj.setDate(prevEndDateObj.getDate() + 1);
-                        prevEndDateObj.setHours(0, 0, 0, 0);
+                    if (sIdx > 0 && startMs > prevEndMs + GAP_THRESHOLD_MS) {
+                      const prevEndDateObj = new Date(prevEndMs);
+                      prevEndDateObj.setDate(prevEndDateObj.getDate() + 1);
+                      prevEndDateObj.setHours(0, 0, 0, 0);
 
-                        const gStartIndex = Math.max(0, Math.floor((prevEndDateObj.getTime() - adjustedMinTimestamp) / dayWidthMs));
-                        const gEndIndex = Math.max(gStartIndex, Math.floor((startMs - adjustedMinTimestamp) / dayWidthMs));
-                        if (gEndIndex > gStartIndex) {
-                          gapGridStart = gStartIndex + 1;
-                          gapSpanCount = gEndIndex - gStartIndex;
-                        }
+                      const gStartIndex = Math.max(0, Math.floor((prevEndDateObj.getTime() - adjustedMinTimestamp) / dayWidthMs));
+                      const gEndIndex = Math.max(gStartIndex, Math.floor((startMs - adjustedMinTimestamp) / dayWidthMs));
+                      if (gEndIndex > gStartIndex) {
+                        gapGridStart = gStartIndex + 1;
+                        gapSpanCount = gEndIndex - gStartIndex;
                       }
+                    }
 
-                      const gapKey = `stage_${stage.id || sIdx}_gap`;
-                      const savedComment = gapComments[gapKey];
-                      const isEditing = editingGapKey === gapKey;
-                      const isNearBottom = sIdx >= totalStagesCount - 2;
+                    const gapKey = `stage_${stage.id || sIdx}_gap`;
+                    const savedComment = gapComments[gapKey];
+                    const isEditing = editingGapKey === gapKey;
+                    const isNearBottom = sIdx >= totalStagesCount - 2;
 
-                      return (
-                        <div key={stage.id || sIdx} style={{ padding: '0', height: STAGE_ROW_HEIGHT, boxSizing: 'border-box', backgroundColor: sIdx % 2 === 1 ? '#fafafa' : '#ffffff', overflow: 'visible', display: 'flex', alignItems: 'center', borderBottom: sIdx === activeProject.stages.length - 1 ? 'none' : '1px solid #e5e5ea' }}>
+                    return (
+                      <div key={stage.id || sIdx} style={{ padding: '0', height: STAGE_ROW_HEIGHT, boxSizing: 'border-box', backgroundColor: sIdx % 2 === 1 ? '#fafafa' : '#ffffff', overflow: 'visible', display: 'flex', alignItems: 'center', borderBottom: sIdx === activeProject.stages.length - 1 ? 'none' : '1px solid #e5e5ea' }}>
+                        
+                        <div style={{ position: 'relative', width: '100%', height: '31px', backgroundColor: 'transparent', borderRadius: '4px', overflow: 'visible', display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle }}>
                           
-                          <div style={{ position: 'relative', width: '100%', height: '31px', backgroundColor: 'transparent', borderRadius: '4px', overflow: 'visible', display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle }}>
-                            
-                            {/* Червоний геп */}
-                            {gapSpanCount > 0 && (
-                              <div 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setEditingGapKey(gapKey);
-                                  setTempComment(savedComment || '');
-                                }}
-                                title={savedComment ? `Коментар: ${savedComment}` : "Клікніть, щоб додати коментар до гепу (паузи)"}
-                                style={{
-                                  gridColumn: `${gapGridStart} / span ${gapSpanCount}`,
-                                  gridRow: 1,
-                                  backgroundColor: '#ff3b30',
-                                  borderRadius: '4px',
-                                  opacity: 0.9,
-                                  zIndex: 2,
-                                  cursor: 'pointer',
-                                  boxShadow: '0 0 4px rgba(255, 59, 48, 0.4)',
-                                  position: 'relative',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  overflow: 'visible'
-                                }}
-                              >
-                                {savedComment && (
-                                  <span style={{
-                                    fontSize: '10px',
-                                    fontWeight: 'bold',
-                                    fontStyle: 'italic',
-                                    color: '#ffffff',
-                                    whiteSpace: 'nowrap',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    padding: '0 4px',
-                                    pointerEvents: 'none'
-                                  }}>
-                                    {savedComment}
-                                  </span>
-                                )}
-
-                                {isEditing && (
-                                  <div className="no-print" style={{
-                                    position: 'absolute',
-                                    ...(isNearBottom ? { bottom: '38px' } : { top: '38px' }),
-                                    left: '0px',
-                                    zIndex: 1000,
-                                    backgroundColor: '#ffffff',
-                                    border: '1px solid #d1d1d6',
-                                    borderRadius: '8px',
-                                    padding: '8px',
-                                    boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
-                                    width: '230px',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: '6px',
-                                    cursor: 'default'
-                                  }} onClick={(e) => e.stopPropagation()}>
-                                    <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#ff3b30' }}>Причина паузи / гепу:</span>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                      <input
-                                        type="text"
-                                        value={tempComment}
-                                        onChange={(e) => setTempComment(e.target.value)}
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter') {
-                                            handleSaveComment(gapKey);
-                                          }
-                                        }}
-                                        placeholder="Введіть причину..."
-                                        style={{
-                                          padding: '5px 8px',
-                                          border: '1px solid #d1d1d6',
-                                          borderRadius: '6px',
-                                          fontSize: '11px',
-                                          outline: 'none',
-                                          flexGrow: 1,
-                                          boxSizing: 'border-box'
-                                        }}
-                                        autoFocus
-                                      />
-                                      <button
-                                        onClick={() => handleSaveComment(gapKey)}
-                                        title="Зберегти"
-                                        style={{
-                                          backgroundColor: '#34c759',
-                                          color: '#ffffff',
-                                          border: '1px solid #d1d1d6',
-                                          borderRadius: '6px',
-                                          width: '28px',
-                                          height: '28px',
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          justifyContent: 'center',
-                                          cursor: 'pointer',
-                                          fontSize: '14px',
-                                          fontWeight: 'bold',
-                                          flexShrink: 0
-                                        }}
-                                      >
-                                        ✓
-                                      </button>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Смужка стадії */}
+                          {/* Червоний геп */}
+                          {gapSpanCount > 0 && (
                             <div 
-                              style={{ 
-                                gridColumn: `${gridColumnStart} / span ${spanCount}`,
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingGapKey(gapKey);
+                                setTempComment(savedComment || '');
+                              }}
+                              title={savedComment ? `Коментар: ${savedComment}` : "Клікніть, щоб додати коментар до гепу (паузи)"}
+                              style={{
+                                gridColumn: `${gapGridStart} / span ${gapSpanCount}`,
                                 gridRow: 1,
-                                backgroundColor: '#e5e5ea', 
+                                backgroundColor: '#ff3b30',
                                 borderRadius: '4px',
-                                overflow: 'hidden',
-                                zIndex: 1,
+                                opacity: 0.9,
+                                zIndex: 2,
+                                cursor: 'pointer',
+                                boxShadow: '0 0 4px rgba(255, 59, 48, 0.4)',
                                 position: 'relative',
                                 display: 'flex',
-                                alignItems: 'center'
-                              }} 
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                overflow: 'visible'
+                              }}
                             >
-                              <div 
-                                style={{ 
-                                  width: `${progressPct}%`, 
-                                  height: '100%', 
-                                  backgroundColor: statusBg,
-                                  transition: 'width 0.3s' 
-                                }} 
-                              />
-                              {!isCompleted && (
+                              {savedComment && (
                                 <span style={{
-                                  position: 'absolute',
-                                  width: '100%',
-                                  textAlign: 'center',
                                   fontSize: '10px',
                                   fontWeight: 'bold',
                                   fontStyle: 'italic',
-                                  color: progressPct > 50 ? '#ffffff' : '#1c1c1e',
+                                  color: '#ffffff',
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  padding: '0 4px',
                                   pointerEvents: 'none'
                                 }}>
-                                  {progressPct}%
+                                  {savedComment}
                                 </span>
                               )}
-                            </div>
 
+                              {isEditing && (
+                                <div className="no-print" style={{
+                                  position: 'absolute',
+                                  ...(isNearBottom ? { bottom: '38px' } : { top: '38px' }),
+                                  left: '0px',
+                                  zIndex: 1000,
+                                  backgroundColor: '#ffffff',
+                                  border: '1px solid #d1d1d6',
+                                  borderRadius: '8px',
+                                  padding: '8px',
+                                  boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+                                  width: '230px',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '6px',
+                                  cursor: 'default'
+                                }} onClick={(e) => e.stopPropagation()}>
+                                  <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#ff3b30' }}>Причина паузи / гепу:</span>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <input
+                                      type="text"
+                                      value={tempComment}
+                                      onChange={(e) => setTempComment(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          handleSaveComment(gapKey);
+                                        }
+                                      }}
+                                      placeholder="Введіть причину..."
+                                      style={{
+                                        padding: '5px 8px',
+                                        border: '1px solid #d1d1d6',
+                                        borderRadius: '6px',
+                                        fontSize: '11px',
+                                        outline: 'none',
+                                        flexGrow: 1,
+                                        boxSizing: 'border-box'
+                                      }}
+                                      autoFocus
+                                    />
+                                    <button
+                                      onClick={() => handleSaveComment(gapKey)}
+                                      title="Зберегти"
+                                      style={{
+                                        backgroundColor: '#34c759',
+                                        color: '#ffffff',
+                                        border: '1px solid #d1d1d6',
+                                        borderRadius: '6px',
+                                        width: '28px',
+                                        height: '28px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        cursor: 'pointer',
+                                        fontSize: '14px',
+                                        fontWeight: 'bold',
+                                        flexShrink: 0
+                                      }}
+                                    >
+                                      ✓
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Смужка стадії */}
+                          <div 
+                            style={{ 
+                              gridColumn: `${gridColumnStart} / span ${spanCount}`,
+                              gridRow: 1,
+                              backgroundColor: '#e5e5ea', 
+                              borderRadius: '4px',
+                              overflow: 'hidden',
+                              zIndex: 1,
+                              position: 'relative',
+                              display: 'flex',
+                              alignItems: 'center'
+                            }} 
+                          >
+                            <div 
+                              style={{ 
+                                width: `${progressPct}%`, 
+                                height: '100%', 
+                                backgroundColor: statusBg,
+                                transition: 'width 0.3s' 
+                              }} 
+                            />
+                            {!isCompleted && (
+                              <span style={{
+                                position: 'absolute',
+                                width: '100%',
+                                textAlign: 'center',
+                                fontSize: '10px',
+                                fontWeight: 'bold',
+                                fontStyle: 'italic',
+                                color: progressPct > 50 ? '#ffffff' : '#1c1c1e',
+                                pointerEvents: 'none'
+                              }}>
+                                {progressPct}%
+                              </span>
+                            )}
                           </div>
 
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
 
-              </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
             </div>
 
           </div>
