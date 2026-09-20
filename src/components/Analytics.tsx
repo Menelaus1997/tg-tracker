@@ -15,7 +15,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
   const [editingGapKey, setEditingGapKey] = useState<string | null>(null);
   const [tempComment, setTempComment] = useState<string>('');
 
-  // Синхронізуємо коментарі щоразу, коли змінюється активний проєкт
   useEffect(() => {
     if (activeProject) {
       setGapComments((activeProject as any)?.gapComments || {});
@@ -421,7 +420,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                       
                       <div style={{ position: 'relative', width: '100%', height: '31px', backgroundColor: 'transparent', borderRadius: '4px', overflow: 'visible', display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle }}>
                         
-                        {/* Червоний геп із текстом та винесеним попапом */}
+                        {/* Червоний геп із текстом та попапом з галочкою */}
                         {gapSpanCount > 0 && (
                           <div 
                             onClick={(e) => {
@@ -469,48 +468,58 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                                 backgroundColor: '#ffffff',
                                 border: '1px solid #d1d1d6',
                                 borderRadius: '8px',
-                                padding: '10px',
+                                padding: '8px',
                                 boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
-                                width: '240px',
+                                width: '230px',
                                 display: 'flex',
                                 flexDirection: 'column',
-                                gap: '8px',
+                                gap: '6px',
                                 cursor: 'default'
                               }} onClick={(e) => e.stopPropagation()}>
-                                <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#ff3b30' }}>Причина паузи / гепу:</span>
-                                <input
-                                  type="text"
-                                  value={tempComment}
-                                  onChange={(e) => setTempComment(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      handleSaveComment(gapKey);
-                                    }
-                                  }}
-                                  placeholder="Введіть причину..."
-                                  style={{
-                                    padding: '6px 8px',
-                                    border: '1px solid #d1d1d6',
-                                    borderRadius: '6px',
-                                    fontSize: '12px',
-                                    outline: 'none',
-                                    width: '100%',
-                                    boxSizing: 'border-box'
-                                  }}
-                                  autoFocus
-                                />
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
-                                  <button 
-                                    onClick={() => setEditingGapKey(null)}
-                                    style={{ padding: '4px 8px', fontSize: '11px', background: '#e5e5ea', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-                                  >
-                                    Скасувати
-                                  </button>
-                                  <button 
+                                <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#ff3b30' }}>Причина паузи / гепу:</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <input
+                                    type="text"
+                                    value={tempComment}
+                                    onChange={(e) => setTempComment(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        handleSaveComment(gapKey);
+                                      }
+                                    }}
+                                    placeholder="Введіть причину..."
+                                    style={{
+                                      padding: '5px 8px',
+                                      border: '1px solid #d1d1d6',
+                                      borderRadius: '6px',
+                                      fontSize: '11px',
+                                      outline: 'none',
+                                      flexGrow: 1,
+                                      boxSizing: 'border-box'
+                                    }}
+                                    autoFocus
+                                  />
+                                  {/* Кнопка-галочка для збереження замість старого ряду кнопок */}
+                                  <button
                                     onClick={() => handleSaveComment(gapKey)}
-                                    style={{ padding: '4px 8px', fontSize: '11px', background: '#007aff', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                                    title="Зберегти"
+                                    style={{
+                                      backgroundColor: '#34c759',
+                                      color: '#ffffff',
+                                      border: 'none',
+                                      borderRadius: '6px',
+                                      width: '28px',
+                                      height: '28px',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      cursor: 'pointer',
+                                      fontSize: '14px',
+                                      fontWeight: 'bold',
+                                      flexShrink: 0
+                                    }}
                                   >
-                                    Зберегти
+                                    ✓
                                   </button>
                                 </div>
                               </div>
