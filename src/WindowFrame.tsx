@@ -7,20 +7,22 @@ interface WindowFrameProps {
 export const WindowFrame: React.FC<WindowFrameProps> = ({ children }) => {
   return (
     <div style={{
-      width: '100%',
-      // Використовуємо 100% замість 100vh, щоб вікно не закривало системну панель завдань Windows знизу
-      height: '100%',
-      maxHeight: '100vh',
-      borderRadius: 0,
-      margin: 0,
+      // Ширина вікна (наприклад, 800px або на весь доступний простір з невеликими відступами з боків)
+      width: '90%',
+      maxWidth: '1100px',
+      // Висота екрана мінус відступ зверху (10 мм ≈ 38px) та знизу (20 мм ≈ 76px)
+      height: 'calc(100vh - 114px)',
+      maxHeight: '850px',
+      // Центруємо вікно по горизонталі, а зверху залишаємо акуратний відступ
+      margin: '38px auto 76px auto',
       backgroundColor: '#ffffff',
-      border: 'none',
+      border: '1px solid #d1d1d6',
+      borderRadius: '12px',
+      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
       boxSizing: 'border-box',
-      // Невеликий відступ зверху, щоб мобільні кнопки Telegram (3 точки/хрестик) не налізали на контент
-      paddingTop: '50px',
     }}>
       {/* Контейнер вмісту з вертикальним скролом */}
       <div style={{ 
