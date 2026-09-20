@@ -76,15 +76,16 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
     maxTimestamp = minTimestamp + 30 * 24 * 60 * 60 * 1000;
   }
 
-  minTimestamp -= 1 * 24 * 60 * 60 * 1000;
+  // Робимо старт рівно по мінімальній даті без зайвих відступів
+  const startDateObj = new Date(minTimestamp);
+  startDateObj.setHours(0, 0, 0, 0);
+  const adjustedMinTimestamp = startDateObj.getTime();
+
   maxTimestamp += 3 * 24 * 60 * 60 * 1000;
 
-  const totalDaysCount = Math.round((maxTimestamp - minTimestamp) / (1000 * 60 * 60 * 24)) + 1;
-
   // Генеруємо масив днів для шкали
-  const timelineDays: { dateStr: string; dayNum: number; monthYearLabel: string }[] = [];
-  let curr = new Date(minTimestamp);
-  curr.setHours(0, 0, 0, 0);
+  const timelineDays: { dateStr: string; dayNum: number; monthYearLabel: string; timestamp: number }[] = [];
+  let curr = new Date(adjustedMinTimestamp);
   const endLimit = new Date(maxTimestamp);
 
   while (curr <= endLimit) {
@@ -93,12 +94,36 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
     timelineDays.push({
       dateStr: curr.toISOString().split('T')[0],
       dayNum: curr.getDate(),
-      monthYearLabel: `${monthName} ${yearNum}`
+      monthYearLabel: `${monthName} ${yearNum}`,
+      timestamp: curr.getTime()
     });
     curr.setDate(curr.getDate() + 1);
   }
 
-  const gridTemplateColumnsStyle = `repeat(${timelineDays.length}, minmax(28px, 1fr))`;
+  const totalDays = timelineDays.length;
+  const gridTemplateColumnsStyle = `repeat(${totalDays}, minmax(28px, 1fr))`;
+
+  // Групуємо дні по місяцях для верхнього рядка шапки
+  const monthGroups: { label: string; span: number }[] = [];
+  let currentMonthLabel = '';
+  let currentSpan = 0;
+
+  timelineDays.forEach((d) => {
+    if (d.monthYearLabel === currentMonthLabel) {
+      currentSpan++;
+    } else {
+      if (currentSpan > 0) {
+        monthGroups.push({ label: currentMonthLabel, span: currentSpan });
+      }
+      currentMonthLabel = d.monthYearLabel;
+      currentSpan = 1;
+    }
+  });
+  if (currentSpan > 0) {
+    monthGroups.push({ label: currentMonthLabel, span: currentSpan });
+  }
+
+  const totalStagesCount = activeProject?.stages?.length || 0;
 
   return (
     <div style={{ padding: '16px', maxWidth: '100%', overflowX: 'auto', color: '#1c1c1e', fontFamily: "'SF Pro Condensed', -apple-system, sans-serif", fontSize: '11px' }}>
@@ -137,7 +162,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
       ) : (
         <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d1d6', borderRadius: '12px', overflow: 'visible', width: '100%', minWidth: '1000px' }}>
           
-          {/* Шапка: 2 рядки (Місяць з роком + Числа) */}
+          {/* Шапка: 2 рядки (Верхній — Назва місяця з роком, Нижній — Числа) */}
           <div style={{ display: 'grid', gridTemplateColumns: `350px 1fr`, backgroundColor: '#f2f2f7', borderBottom: '1px solid #d1d1d6' }}>
             
             <div style={{ padding: '10px 12px', fontSize: '13px', fontWeight: 'bold', fontStyle: 'italic', display: 'flex', alignItems: 'center', borderRight: '1px solid #d1d1d6' }}>
@@ -147,16 +172,27 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
             {/* Контейнер шапки з 2 рядками */}
             <div style={{ display: 'grid', gridTemplateRows: 'auto auto' }}>
               
-              {/* Рядок 1: Назва місяця з роком (наприклад, червень 2026) */}
+              {/* Рядок 1: Назва місяця з роком об'єднана в одну плашку на весь місяць */}
               <div style={{ display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle, borderBottom: '1px solid #e5e5ea', backgroundColor: '#f9f9fb' }}>
-                {timelineDays.map((d, idx) => {
-                  const showLabel = idx === 0 || timelineDays[idx - 1].monthYearLabel !== d.monthYearLabel;
-                  return (
-                    <div key={`month-${idx}`} style={{ textAlign: 'left', padding: '4px 2px', fontSize: '10px', fontWeight: 'bold', color: '#007aff', borderRight: '1px solid #e5e5ea', whiteSpace: 'nowrap', overflow: 'hidden' }}>
-                      {showLabel ? d.monthYearLabel : ''}
-                    </div>
-                  );
-                })}
+                {monthGroups.map((mg, gIdx) => (
+                  <div 
+                    key={`mg-${gIdx}`} 
+                    style={{ 
+                      gridColumn: `span ${mg.span}`, 
+                      textAlign: 'center', 
+                      padding: '4px 2px', 
+                      fontSize: '10px', 
+                      fontWeight: 'bold', 
+                      color: '#007aff', 
+                      borderRight: '1px solid #e5e5ea', 
+                      whiteSpace: 'nowrap', 
+                      overflow: 'hidden',
+                      textTransform: 'capitalize'
+                    }}
+                  >
+                    {mg.label}
+                  </div>
+                ))}
               </div>
 
               {/* Рядок 2: Числові значення днів */}
@@ -198,19 +234,21 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                 else if (statusLabel.toLowerCase().includes('паузі')) statusBg = '#ffcc00';
                 else if (statusLabel.toLowerCase().includes('перевірці') || statusLabel.toLowerCase().includes('правки')) statusBg = '#ff9500';
 
-                // Розрахунок позицій у відсотках або днях для ідеального збігу з сіткою
-                const startMs = stage.startDate ? new Date(stage.startDate).getTime() : minTimestamp;
+                // Точний розрахунок індексів днів для ідеального збігу з сіткою
+                const startMs = stage.startDate ? new Date(stage.startDate).setHours(0,0,0,0) : adjustedMinTimestamp;
                 const endD = stage.reviewDate || stage.endDate;
-                const endMs = endD ? new Date(endD).getTime() : startMs + 24 * 60 * 60 * 1000;
+                const endMs = endD ? new Date(endD).setHours(23,59,59,999) : startMs + 24 * 60 * 60 * 1000;
 
-                const startIndex = Math.max(0, Math.round((startMs - minTimestamp) / (1000 * 60 * 60 * 24)));
-                const durationDays = Math.max(1, Math.round((endMs - startMs) / (1000 * 60 * 60 * 24)));
+                const dayWidthMs = 24 * 60 * 60 * 1000;
+                const startIndex = Math.max(0, Math.floor((startMs - adjustedMinTimestamp) / dayWidthMs));
+                const endIndex = Math.max(startIndex, Math.ceil((endMs - adjustedMinTimestamp) / dayWidthMs));
+                const spanCount = Math.max(1, endIndex - startIndex);
 
-                const leftPercent = (startIndex / timelineDays.length) * 100;
-                const widthPercent = (durationDays / timelineDays.length) * 100;
+                const gridColumnStart = startIndex + 1;
+                const gridColumnEnd = gridColumnStart + spanCount;
 
                 // Пошук реального попереднього завершення для гепу
-                let prevEndMs = minTimestamp;
+                let prevEndMs = adjustedMinTimestamp;
                 for (let i = 0; i < sIdx; i++) {
                   const stPrev = activeProject.stages[i];
                   const stPrevEnd = stPrev.reviewDate || stPrev.endDate;
@@ -220,20 +258,23 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                   }
                 }
 
-                let gapLeftPercent = 0;
-                let gapWidthPercent = 0;
-                const GAP_THRESHOLD_MS = 2 * 24 * 60 * 60 * 1000; // більше 2 днів вважається гепом
+                let gapGridStart = 0;
+                let gapSpanCount = 0;
+                const GAP_THRESHOLD_MS = 2 * 24 * 60 * 60 * 1000; // більше 2 днів
 
                 if (sIdx > 0 && startMs > prevEndMs + GAP_THRESHOLD_MS) {
-                  const gapStartIndex = Math.max(0, Math.round((prevEndMs - minTimestamp) / (1000 * 60 * 60 * 24)));
-                  gapLeftPercent = (gapStartIndex / timelineDays.length) * 100;
-                  gapWidthPercent = leftPercent - gapLeftPercent;
+                  const gStartIndex = Math.max(0, Math.floor((prevEndMs - adjustedMinTimestamp) / dayWidthMs));
+                  const gEndIndex = Math.max(gStartIndex, Math.floor((startMs - adjustedMinTimestamp) / dayWidthMs));
+                  if (gEndIndex > gStartIndex) {
+                    gapGridStart = gStartIndex + 1;
+                    gapSpanCount = gEndIndex - gStartIndex;
+                  }
                 }
 
                 const gapKey = `stage_${stage.id || sIdx}_gap`;
                 const savedComment = gapComments[gapKey];
                 const isEditing = editingGapKey === gapKey;
-                const isNearBottom = sIdx >= totalDaysCount - 2;
+                const isNearBottom = sIdx >= totalStagesCount - 2;
 
                 return (
                   <div key={stage.id || sIdx} style={{ display: 'grid', gridTemplateColumns: '350px 1fr', padding: '10px 12px', alignItems: 'center', borderBottom: '1px solid #e5e5ea', backgroundColor: '#fafafa', overflow: 'visible' }}>
@@ -260,18 +301,16 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                       </span>
                     </div>
 
-                    {/* Права частина: Сітка днів та смужки Ганта */}
-                    <div style={{ position: 'relative', height: '22px', backgroundColor: '#f2f2f7', borderRadius: '4px', overflow: 'visible' }}>
+                    {/* Права частина: Повна сітка Ганта зі стовпчиками */}
+                    <div style={{ position: 'relative', height: '22px', backgroundColor: '#f2f2f7', borderRadius: '4px', overflow: 'visible', display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle }}>
                       
-                      {/* Фонова сітка клітинок, яка повністю збігається з шапкою */}
-                      <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle, pointerEvents: 'none' }}>
-                        {timelineDays.map((_, dIdx) => (
-                          <div key={`grid-cell-${dIdx}`} style={{ borderRight: '1px solid #e5e5ea', height: '100%' }} />
-                        ))}
-                      </div>
+                      {/* Фонова сітка клітинок */}
+                      {timelineDays.map((_, dIdx) => (
+                        <div key={`grid-cell-${dIdx}`} style={{ borderRight: '1px solid #e5e5ea', height: '100%' }} />
+                      ))}
 
-                      {/* Червоне виділення справжнього гепу */}
-                      {gapWidthPercent > 0.2 && (
+                      {/* Червоне виділення справжнього гепу за конкретними стовпчиками сітки */}
+                      {gapSpanCount > 0 && (
                         <div 
                           onClick={() => {
                             setEditingGapKey(gapKey);
@@ -279,109 +318,103 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                           }}
                           title={savedComment ? `Коментар: ${savedComment}` : "Клікніть, щоб додати коментар до гепу (паузи)"}
                           style={{
-                            position: 'absolute',
-                            top: '2px',
-                            bottom: '2px',
-                            left: `${gapLeftPercent}%`,
-                            width: `${gapWidthPercent}%`,
+                            gridColumn: `${gapGridStart} / span ${gapSpanCount}`,
+                            gridRow: 1,
+                            margin: '2px 0',
                             backgroundColor: '#ff3b30',
                             borderRadius: '3px',
                             opacity: 0.9,
                             zIndex: 2,
                             cursor: 'pointer',
-                            boxShadow: '0 0 4px rgba(255, 59, 48, 0.4)'
+                            boxShadow: '0 0 4px rgba(255, 59, 48, 0.4)',
+                            position: 'relative'
                           }}
-                        />
-                      )}
-
-                      {/* Вікно введення коментаря */}
-                      {isEditing && (
-                        <div style={{
-                          position: 'absolute',
-                          ...(isNearBottom ? { bottom: '26px' } : { top: '26px' }),
-                          left: `${gapLeftPercent}%`,
-                          zIndex: 100,
-                          backgroundColor: '#ffffff',
-                          border: '1px solid #d1d1d6',
-                          borderRadius: '8px',
-                          padding: '8px',
-                          boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
-                          width: '220px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '6px'
-                        }}>
-                          <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#ff3b30' }}>Причина паузи / гепу:</span>
-                          <input
-                            type="text"
-                            value={tempComment}
-                            onChange={(e) => setTempComment(e.target.value)}
-                            placeholder="Введіть причину..."
-                            style={{
-                              padding: '4px 6px',
-                              border: '1px solid #d1d1d6',
-                              borderRadius: '4px',
-                              fontSize: '11px',
-                              outline: 'none'
-                            }}
-                            autoFocus
-                          />
-                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '4px' }}>
-                            <button 
-                              onClick={() => setEditingGapKey(null)}
-                              style={{ padding: '2px 6px', fontSize: '10px', background: '#e5e5ea', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-                            >
-                              Скасувати
-                            </button>
-                            <button 
-                              onClick={() => handleSaveComment(gapKey)}
-                              style={{ padding: '2px 6px', fontSize: '10px', background: '#007aff', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-                            >
-                              Зберегти
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Текст збереженого коментаря */}
-                      {savedComment && !isEditing && (
-                        <div 
-                          onClick={() => {
-                            setEditingGapKey(gapKey);
-                            setTempComment(savedComment);
-                          }}
-                          style={{
-                            position: 'absolute',
-                            ...(isNearBottom ? { bottom: '24px' } : { top: '22px' }),
-                            left: `${gapLeftPercent}%`,
-                            fontSize: '9px',
-                            color: '#ff3b30',
-                            fontStyle: 'italic',
-                            cursor: 'pointer',
-                            maxWidth: '160px',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            zIndex: 10,
-                            backgroundColor: 'rgba(255,255,255,0.9)',
-                            padding: '1px 4px',
-                            borderRadius: '4px',
-                            border: '1px solid rgba(255,59,48,0.3)'
-                          }}
-                          title={savedComment}
                         >
-                          💬 {savedComment}
+                          {/* Вікно введення коментаря */}
+                          {isEditing && (
+                            <div style={{
+                              position: 'absolute',
+                              ...(isNearBottom ? { bottom: '26px' } : { top: '26px' }),
+                              left: '0px',
+                              zIndex: 100,
+                              backgroundColor: '#ffffff',
+                              border: '1px solid #d1d1d6',
+                              borderRadius: '8px',
+                              padding: '8px',
+                              boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+                              width: '220px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '6px',
+                              cursor: 'default'
+                            }} onClick={(e) => e.stopPropagation()}>
+                              <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#ff3b30' }}>Причина паузи / гепу:</span>
+                              <input
+                                type="text"
+                                value={tempComment}
+                                onChange={(e) => setTempComment(e.target.value)}
+                                placeholder="Введіть причину..."
+                                style={{
+                                  padding: '4px 6px',
+                                  border: '1px solid #d1d1d6',
+                                  borderRadius: '4px',
+                                  fontSize: '11px',
+                                  outline: 'none'
+                                }}
+                                autoFocus
+                              />
+                              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '4px' }}>
+                                <button 
+                                  onClick={() => setEditingGapKey(null)}
+                                  style={{ padding: '2px 6px', fontSize: '10px', background: '#e5e5ea', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                                >
+                                  Скасувати
+                                </button>
+                                <button 
+                                  onClick={() => handleSaveComment(gapKey)}
+                                  style={{ padding: '2px 6px', fontSize: '10px', background: '#007aff', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                                >
+                                  Зберегти
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Текст збереженого коментаря */}
+                          {savedComment && !isEditing && (
+                            <div 
+                              style={{
+                                position: 'absolute',
+                                ...(isNearBottom ? { bottom: '24px' } : { top: '22px' }),
+                                left: '0px',
+                                fontSize: '9px',
+                                color: '#ff3b30',
+                                fontStyle: 'italic',
+                                cursor: 'pointer',
+                                maxWidth: '160px',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                zIndex: 10,
+                                backgroundColor: 'rgba(255,255,255,0.9)',
+                                padding: '1px 4px',
+                                borderRadius: '4px',
+                                border: '1px solid rgba(255,59,48,0.3)'
+                              }}
+                              title={savedComment}
+                            >
+                              💬 {savedComment}
+                            </div>
+                          )}
                         </div>
                       )}
 
-                      {/* Основна смужка стадії */}
+                      {/* Основна смужка стадії строго по колонках сітки */}
                       <div 
                         style={{ 
-                          position: 'absolute', 
-                          top: '2px', 
-                          bottom: '2px', 
-                          left: `${leftPercent}%`, 
-                          width: `${widthPercent}%`, 
+                          gridColumn: `${gridColumnStart} / span ${spanCount}`,
+                          gridRow: 1,
+                          margin: '2px 0',
                           backgroundColor: '#d1d1d6', 
                           borderRadius: '3px',
                           overflow: 'hidden',
@@ -397,6 +430,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                           }} 
                         />
                       </div>
+
                     </div>
 
                   </div>
