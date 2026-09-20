@@ -161,7 +161,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
   const projSpanCount = Math.max(1, projEndIndex - projStartIndex);
   const projGridColumnStart = projStartIndex + 1;
 
-  const HEADER_HEIGHT = '57px';
+  const HEADER_HEIGHT = '60px'; // Синхронізована висота дворядкової шапки
   const TIMELINE_HEIGHT = '43px';
   const STAGE_ROW_HEIGHT = '43px';
 
@@ -175,7 +175,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
       ) : (
         <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', minWidth: '1200px', width: '100%' }}>
           
-          {/* БЛОК 1: Вибір проєкту + Назви стадій та теги */}
+          {/* БЛОК 1: Дворядкова шапка (Спадне меню + Унікальний шифр ID) */}
           <div style={{ 
             width: '320px', 
             flexShrink: 0, 
@@ -185,18 +185,29 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
             overflow: 'hidden',
             boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
           }}>
-            {/* Випадаючий список проєктів */}
-            <div style={{ backgroundColor: '#f2f2f7', borderBottom: '1px solid #d1d1d6', padding: '0 12px', height: HEADER_HEIGHT, boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}>
+            {/* Дворядковий контейнер шапки блоку 1 */}
+            <div style={{ 
+              backgroundColor: '#f2f2f7', 
+              borderBottom: '1px solid #d1d1d6', 
+              padding: '6px 10px', 
+              height: HEADER_HEIGHT, 
+              boxSizing: 'border-box', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              justifyContent: 'center',
+              gap: '3px'
+            }}>
+              {/* Рядок 1: Спадне меню вибору проєкту */}
               <select
                 value={selectedProjectId}
                 onChange={(e) => handleSelectProject(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '6px 8px',
+                  padding: '3px 6px',
                   backgroundColor: '#ffffff',
                   border: '1px solid #d1d1d6',
-                  borderRadius: '6px',
-                  fontSize: '13px',
+                  borderRadius: '4px',
+                  fontSize: '12px',
                   fontWeight: 'bold',
                   fontStyle: 'italic',
                   outline: 'none',
@@ -210,6 +221,11 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                   </option>
                 ))}
               </select>
+
+              {/* Рядок 2: Унікальний шифр проекту (ID) */}
+              <div style={{ fontSize: '10px', color: '#8e8e93', fontStyle: 'italic', fontWeight: 'bold', paddingLeft: '2px' }}>
+                ID проєкту: <span style={{ color: '#007aff' }}>{activeProject.id}</span>
+              </div>
             </div>
 
             <div style={{ backgroundColor: '#fcfcfc', borderBottom: '1px solid #e5e5ea', padding: '0 12px', height: TIMELINE_HEIGHT, boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}>
@@ -253,7 +269,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
             )}
           </div>
 
-          {/* БЛОК 2: Графік Ганта та шкала (повністю без відступів зліва/справа) */}
+          {/* БЛОК 2: Графік Ганта та шкала */}
           <div style={{ flexGrow: 1, backgroundColor: 'transparent', overflow: 'visible' }}>
             
             {/* Шапка Блоку 2 */}
@@ -302,7 +318,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
 
             </div>
 
-            {/* Рядок загального таймлайну проєкту (без внутрішніх відступів padding: 0) */}
+            {/* Рядок загального таймлайну проєкту */}
             <div style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e5e5ea', borderLeft: '1px solid #d1d1d6', borderRight: '1px solid #d1d1d6', padding: '0', height: TIMELINE_HEIGHT, boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}>
               <div style={{ position: 'relative', width: '100%', height: '31px', backgroundColor: 'transparent', borderRadius: '4px', overflow: 'visible', display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle }}>
                 <div 
@@ -342,7 +358,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
               </div>
             </div>
 
-            {/* Графік Ганта по стадіях (без внутрішніх відступів padding: 0) */}
+            {/* Графік Ганта по стадіях */}
             {(!activeProject.stages || activeProject.stages.length === 0) ? (
               <div style={{ padding: '20px', textAlign: 'center', color: '#8e8e93', fontStyle: 'italic' }}>Немає стадій</div>
             ) : (
