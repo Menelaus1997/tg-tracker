@@ -48,16 +48,15 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase }) 
 
   if (minTimestamp === Infinity) minTimestamp = new Date().getTime();
   if (maxTimestamp === -Infinity || maxTimestamp <= minTimestamp) {
-    maxTimestamp = minTimestamp + 30 * 24 * 60 * 60 * 1000; // +30 днів за замовчуванням
+    maxTimestamp = minTimestamp + 30 * 24 * 60 * 60 * 1000;
   }
 
   const totalProjectDurationMs = maxTimestamp - minTimestamp || 1;
 
-  // Генеруємо масив днів для шапки на основі реального діапазону дат проєкту
+  // Генеруємо масив днів для шапки
   const timelineDays: { dateStr: string; dayNum: number; monthName: string }[] = [];
   let curr = new Date(minTimestamp);
   const endLimit = new Date(maxTimestamp);
-  // Додамо трохи запасу в кінці
   endLimit.setDate(endLimit.getDate() + 5);
 
   while (curr <= endLimit) {
@@ -151,7 +150,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase }) 
                 else if (statusLabel.toLowerCase().includes('паузі')) statusBg = '#ffcc00';
                 else if (statusLabel.toLowerCase().includes('перевірці') || statusLabel.toLowerCase().includes('правки')) statusBg = '#ff9500';
 
-                // Точний розрахунок позиції смужки Ганта за реальними часовими мітками (Timestamps)
+                // Розрахунок позиції смужки Ганта
                 let leftPercent = 0;
                 let widthPercent = 10;
 
@@ -164,9 +163,13 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase }) 
                 if (stage.startDate && endD) {
                   const startMs = new Date(stage.startDate).getTime();
                   const endMs = new Date(endD).getTime();
-                  const durationMs = Math.max(endMs - startMs, 24 * 60 * 60 * 1000); // мінімум 1 день
+                  const durationMs = Math.max(endMs - startMs, 24 * 60 * 60 * 1000);
                   widthPercent = Math.max(2, Math.min(100 - leftPercent, (durationMs / totalProjectDurationMs) * 100));
                 }
+
+                // Обчислюємо розмір та позицію для сірої зони паузи (від початку шкали 0% до початку стадії leftPercent)
+                const pauseLeft = 0;
+                const pauseWidth = Math.max(0, leftPercent);
 
                 return (
                   <div key={stage.id || sIdx} style={{ display: 'grid', gridTemplateColumns: '350px 1fr', padding: '10px 12px', alignItems: 'center', borderBottom: '1px solid #e5e5ea', backgroundColor: '#fafafa' }}>
@@ -195,18 +198,38 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase }) 
                       </span>
                     </div>
 
-                    {/* Права частина: Хронологічна смужка Ганта */}
+                    {/* Права частина: Хронологічна смужка Ганта з сірою зоною паузи */}
                     <div style={{ position: 'relative', height: '18px', backgroundColor: '#f2f2f7', borderRadius: '4px', overflow: 'hidden' }}>
+                      
+                      {/* Сіра зона паузи (від початку таймлайну до старту стадії) */}
+                      {pauseWidth > 0 && (
+                        <div 
+                          title="Пауза / Простій перед стадією"
+                          style={{
+                            position: 'absolute',
+                            top: '2px',
+                            bottom: '2px',
+                            left: `${pauseLeft}%`,
+                            width: `${pauseWidth}%`,
+                            backgroundColor: '#e0e0e0',
+                            borderRadius: '3px',
+                            opacity: 0.8
+                          }}
+                        />
+                      )}
+
+                      {/* Основна смужка стадії */}
                       <div 
                         style={{ 
                           position: 'absolute', 
                           top: '2px', 
                           bottom: '2px', 
-                         left: `${leftPercent}%`, 
+                          left: `${leftPercent}%`, 
                           width: `${widthPercent}%`, 
                           backgroundColor: '#d1d1d6', 
                           borderRadius: '3px',
-                          overflow: 'hidden'
+                          overflow: 'hidden',
+                          zIndex: 1
                         }} 
                       >
                         <div 
