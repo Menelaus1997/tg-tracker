@@ -1,39 +1,25 @@
-import React from 'react';
-
-interface WindowFrameProps {
-  children: React.ReactNode;
-}
-
 export const WindowFrame: React.FC<WindowFrameProps> = ({ children }) => {
   return (
     <div style={{
       width: '100vw',
       height: '100vh',
-      maxWidth: 'none',
-      maxHeight: 'none',
-      borderRadius: 0,
       margin: 0,
       backgroundColor: '#ffffff',
-      border: 'none',
       display: 'flex',
       flexDirection: 'column',
-      overflow: 'hidden', // Головне: ховаємо загальний скрол вікна
+      overflow: 'hidden', // <-- ОБОВ'ЯЗКОВО має бути hidden, щоб вікно не скролилось вбік
       boxSizing: 'border-box',
     }}>
       <div style={{ 
         flex: 1, 
         overflowY: 'auto', 
-        overflowX: 'hidden', // Забороняємо виїжджати вбік усьому вікну
-        position: 'relative', 
+        overflowX: 'hidden', // <-- ЗАБОРОНЯЄМО горизонтальний скрол для всього вмісту додатку
         width: '100%', 
         height: '100%',
-        boxSizing: 'border-box',
-        padding: 0,
+        boxSizing: 'border-box'
       }}>
         {children}
       </div>
     </div>
   );
 };
-
-export default WindowFrame;
