@@ -7,7 +7,7 @@ interface WindowFrameProps {
 export const WindowFrame: React.FC<WindowFrameProps> = ({ children }) => {
   return (
     <div style={{
-      width: '100vw',
+      width: '100%',
       height: '100vh',
       maxWidth: 'none',
       maxHeight: 'none',
@@ -18,9 +18,11 @@ export const WindowFrame: React.FC<WindowFrameProps> = ({ children }) => {
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
-      boxSizing: 'border-box'
+      boxSizing: 'border-box',
+      // Робимо відступ зверху, щоб системні кнопки Telegram (3 точки та хрестик) нічого не перекривали
+      paddingTop: '44px', 
     }}>
-      {/* Вміст програми на весь екран без зайвих панелей */}
+      {/* Вміст програми з відступом під системні кнопки */}
       <div style={{ flex: 1, overflowY: 'auto', position: 'relative', width: '100%', height: '100%' }}>
         {children}
       </div>
