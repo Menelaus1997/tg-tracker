@@ -53,7 +53,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
     return Math.round((completed / total) * 100);
   };
 
-  // Динамічне визначення мінімальної та максимальної дати проєкту
+  // 1. Точний старт шкали суворо за першою стадією проєкту (без штучних відступів)
   let minTimestamp = Infinity;
   let maxTimestamp = -Infinity;
 
@@ -73,16 +73,15 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
 
   if (minTimestamp === Infinity) minTimestamp = new Date().getTime();
   if (maxTimestamp === -Infinity || maxTimestamp <= minTimestamp) {
-    maxTimestamp = minTimestamp + 30 * 24 * 60 * 60 * 1000; // за замовчуванням 30 днів
+    maxTimestamp = minTimestamp + 30 * 24 * 60 * 60 * 1000;
   }
 
-  // Додаємо невеликий запас у кілька днів на початку та в кінці для красивого відступу
-  minTimestamp -= 2 * 24 * 60 * 60 * 1000;
-  maxTimestamp += 3 * 24 * 60 * 60 * 1000;
+  // Невеликий запас у кінці для естетики
+  maxTimestamp += 2 * 24 * 60 * 60 * 1000;
 
   const totalProjectDurationMs = maxTimestamp - minTimestamp || 1;
 
-  // Генеруємо масив днів рівно під тривалість проєкту
+  // Генеруємо масив днів рівно від першої дати проєкту
   const timelineDays: { dateStr: string; dayNum: number; monthName: string; isFirstOfMonth: boolean }[] = [];
   let curr = new Date(minTimestamp);
   curr.setHours(0, 0, 0, 0);
@@ -138,13 +137,13 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
       ) : (
         <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d1d6', borderRadius: '12px', overflow: 'visible', width: '100%', minWidth: '900px' }}>
           
-          {/* Шапка: Назва проєкту + Динамічна календарна шкала під період проєкту */}
+          {/* Шапка: Назва проєкту + Календарна шкала */}
           <div style={{ display: 'grid', gridTemplateColumns: '350px 1fr', backgroundColor: '#f2f2f7', borderBottom: '1px solid #d1d1d6', padding: '10px 12px', alignItems: 'center' }}>
             <div style={{ fontSize: '13px', fontWeight: 'bold', fontStyle: 'italic' }}>
               {activeProject.name}
             </div>
 
-            {/* Шкала днів, яка розтягується або стискається залежно від тривалості проєкту */}
+            {/* Шкала днів */}
             <div style={{ display: 'grid', gridTemplateColumns: `repeat(${timelineDays.length}, minmax(18px, 1fr))`, padding: '0 4px', fontSize: '9px', color: '#8e8e93', fontWeight: 'bold' }}>
               {timelineDays.map((d, idx) => (
                 <div key={idx} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -203,15 +202,11 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
 
                 let gapLeftPercent = 0;
                 let gapWidthPercent = 0;
-                const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+                // Збільшуємо поріг гепу до 2 днів (48 годин), щоб маленькі стики (наступного дня) не підсвічувались
+                const GAP_THRESHOLD_MS = 2 * 24 * 60 * 60 * 1000;
 
-                if (sIdx === 0) {
-                  if (currentStartMs - minTimestamp > ONE_DAY_MS * 1.5) {
-                    gapLeftPercent = 0;
-                    gapWidthPercent = leftPercent;
-                  }
-                } else {
-                  if (currentStartMs - previousStageEndMs > ONE_DAY_MS * 1.5) {
+                if (sIdx > 0) {
+                  if (currentStartMs - previousStageEndMs > GAP_THRESHOLD_MS) {
                     gapLeftPercent = Math.max(0, Math.min(100, ((previousStageEndMs - minTimestamp) / totalProjectDurationMs) * 100));
                     gapWidthPercent = Math.max(0, leftPercent - gapLeftPercent);
                   }
@@ -248,10 +243,10 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                       </span>
                     </div>
 
-                    {/* Права частина: Шкала Ганта під період проєкту */}
+                    {/* Права частина: Шкала Ганта */}
                     <div style={{ position: 'relative', height: '22px', backgroundColor: '#f2f2f7', borderRadius: '4px', overflow: 'visible' }}>
                       
-                      {/* Червоне виділення гепу */}
+                      {/* Червоне виділення справжнього гепу (паузи) */}
                       {gapWidthPercent > 0.2 && (
                         <div 
                           onClick={() => {
