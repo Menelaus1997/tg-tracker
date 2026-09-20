@@ -53,7 +53,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
     return Math.round((completed / total) * 100);
   };
 
-  // 1. Точний старт шкали суворо за першою стадією проєкту (без штучних відступів)
+  // Визначення часових меж проекту
   let minTimestamp = Infinity;
   let maxTimestamp = -Infinity;
 
@@ -76,13 +76,13 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
     maxTimestamp = minTimestamp + 30 * 24 * 60 * 60 * 1000;
   }
 
-  // Невеликий запас у кінці для естетики
-  maxTimestamp += 2 * 24 * 60 * 60 * 1000;
+  minTimestamp -= 1 * 24 * 60 * 60 * 1000;
+  maxTimestamp += 3 * 24 * 60 * 60 * 1000;
 
   const totalProjectDurationMs = maxTimestamp - minTimestamp || 1;
 
-  // Генеруємо масив днів рівно від першої дати проєкту
-  const timelineDays: { dateStr: string; dayNum: number; monthName: string; isFirstOfMonth: boolean }[] = [];
+  // Генеруємо масив днів для шкали
+  const timelineDays: { dateStr: string; dayNum: number; monthName: string; yearNum: number }[] = [];
   let curr = new Date(minTimestamp);
   curr.setHours(0, 0, 0, 0);
   const endLimit = new Date(maxTimestamp);
@@ -91,8 +91,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
     timelineDays.push({
       dateStr: curr.toISOString().split('T')[0],
       dayNum: curr.getDate(),
-      monthName: curr.toLocaleString('uk-UA', { month: 'short', year: '2-digit' }),
-      isFirstOfMonth: curr.getDate() === 1
+      monthName: curr.toLocaleString('uk-UA', { month: 'long' }),
+      yearNum: curr.getFullYear()
     });
     curr.setDate(curr.getDate() + 1);
   }
@@ -135,22 +135,51 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
           Немає доступних проєктів.
         </div>
       ) : (
-        <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d1d6', borderRadius: '12px', overflow: 'visible', width: '100%', minWidth: '900px' }}>
+        <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d1d6', borderRadius: '12px', overflow: 'visible', width: '100%', minWidth: '1000px' }}>
           
-          {/* Шапка: Назва проєкту + Календарна шкала */}
-          <div style={{ display: 'grid', gridTemplateColumns: '350px 1fr', backgroundColor: '#f2f2f7', borderBottom: '1px solid #d1d1d6', padding: '10px 12px', alignItems: 'center' }}>
-            <div style={{ fontSize: '13px', fontWeight: 'bold', fontStyle: 'italic' }}>
+          {/* Шапка: 3 ряди (Числа, Місяць, Рік) з клітинками */}
+          <div style={{ display: 'grid', gridTemplateColumns: '350px 1fr', backgroundColor: '#f2f2f7', borderBottom: '1px solid #d1d1d6' }}>
+            
+            <div style={{ padding: '10px 12px', fontSize: '13px', fontWeight: 'bold', fontStyle: 'italic', display: 'flex', alignItems: 'center', borderRight: '1px solid #d1d1d6' }}>
               {activeProject.name}
             </div>
 
-            {/* Шкала днів */}
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${timelineDays.length}, minmax(18px, 1fr))`, padding: '0 4px', fontSize: '9px', color: '#8e8e93', fontWeight: 'bold' }}>
-              {timelineDays.map((d, idx) => (
-                <div key={idx} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <span style={{ fontSize: '7px', color: '#007aff', whiteSpace: 'nowrap' }}>{d.isFirstOfMonth ? d.monthName : ''}</span>
-                  <span>{d.dayNum}</span>
-                </div>
-              ))}
+            {/* 3 ряди для чисел, місяця та року */}
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${timelineDays.length}, minmax(24px, 1fr))` }}>
+              
+              {/* Рядок 1: Числа */}
+              <div style={{ gridColumn: `1 / span ${timelineDays.length}`, display: 'grid', gridTemplateColumns: `repeat(${timelineDays.length}, minmax(24px, 1fr))`, borderBottom: '1px solid #e5e5ea', backgroundColor: '#f9f9fb' }}>
+                {timelineDays.map((d, idx) => (
+                  <div key={`day-${idx}`} style={{ textAlign: 'center', padding: '4px 0', fontSize: '10px', fontWeight: 'bold', color: '#1c1c1e', borderRight: '1px solid #e5e5ea' }}>
+                    {d.dayNum}
+                  </div>
+                ))}
+              </div>
+
+              {/* Рядок 2: Місяць повністю */}
+              <div style={{ gridColumn: `1 / span ${timelineDays.length}`, display: 'grid', gridTemplateColumns: `repeat(${timelineDays.length}, minmax(24px, 1fr))`, borderBottom: '1px solid #e5e5ea', backgroundColor: '#f2f2f7' }}>
+                {timelineDays.map((d, idx) => {
+                  const showMonth = idx === 0 || timelineDays[idx - 1].monthName !== d.monthName;
+                  return (
+                    <div key={`month-${idx}`} style={{ textAlign: 'center', padding: '3px 2px', fontSize: '9px', fontWeight: 'bold', color: '#007aff', borderRight: '1px solid #e5e5ea', whiteSpace: 'nowrap', overflow: 'hidden' }}>
+                      {showMonth ? d.monthName : ''}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Рядок 3: Рік проєкту */}
+              <div style={{ gridColumn: `1 / span ${timelineDays.length}`, display: 'grid', gridTemplateColumns: `repeat(${timelineDays.length}, minmax(24px, 1fr))`, backgroundColor: '#eaeaf0' }}>
+                {timelineDays.map((d, idx) => {
+                  const showYear = idx === 0 || timelineDays[idx - 1].yearNum !== d.yearNum;
+                  return (
+                    <div key={`year-${idx}`} style={{ textAlign: 'center', padding: '3px 2px', fontSize: '9px', fontWeight: 'bold', color: '#636366', borderRight: '1px solid #d1d1d6', whiteSpace: 'nowrap', overflow: 'hidden' }}>
+                      {showYear ? d.yearNum : ''}
+                    </div>
+                  );
+                })}
+              </div>
+
             </div>
           </div>
 
@@ -200,13 +229,14 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                   currentEndMs = currentStartMs + 24 * 60 * 60 * 1000;
                 }
 
+                // Визначаємо справжній геп (паузу понад 2 дні відносно попередньої стадії)
                 let gapLeftPercent = 0;
                 let gapWidthPercent = 0;
-                // Збільшуємо поріг гепу до 2 днів (48 годин), щоб маленькі стики (наступного дня) не підсвічувались
                 const GAP_THRESHOLD_MS = 2 * 24 * 60 * 60 * 1000;
 
                 if (sIdx > 0) {
-                  if (currentStartMs - previousStageEndMs > GAP_THRESHOLD_MS) {
+                  // Перевіряємо, чи починається ця стадія пізніше за кінець попередньої з урахуванням порогу
+                  if (currentStartMs > previousStageEndMs + GAP_THRESHOLD_MS) {
                     gapLeftPercent = Math.max(0, Math.min(100, ((previousStageEndMs - minTimestamp) / totalProjectDurationMs) * 100));
                     gapWidthPercent = Math.max(0, leftPercent - gapLeftPercent);
                   }
@@ -243,10 +273,17 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                       </span>
                     </div>
 
-                    {/* Права частина: Шкала Ганта */}
+                    {/* Права частина: Сітка днів та смужки Ганта */}
                     <div style={{ position: 'relative', height: '22px', backgroundColor: '#f2f2f7', borderRadius: '4px', overflow: 'visible' }}>
                       
-                      {/* Червоне виділення справжнього гепу (паузи) */}
+                      {/* Фонова сітка клітинок */}
+                      <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: `repeat(${timelineDays.length}, minmax(24px, 1fr))`, pointerEvents: 'none' }}>
+                        {timelineDays.map((_, dIdx) => (
+                          <div key={`grid-cell-${dIdx}`} style={{ borderRight: '1px solid #e5e5ea', height: '100%' }} />
+                        ))}
+                      </div>
+
+                      {/* Червоне виділення справжнього гепу */}
                       {gapWidthPercent > 0.2 && (
                         <div 
                           onClick={() => {
