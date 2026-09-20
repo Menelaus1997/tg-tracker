@@ -7,59 +7,7 @@ import { TeamManagement } from './components/TeamManagement';
 import { Finance } from './components/Finance';
 import { Settings } from './components/Settings';
 import { WindowFrame } from './WindowFrame';
-
-export type RoleType = string;
-
-export interface RolePermissions {
-  canViewCreateProject: boolean;
-  canViewAnalytics: boolean;
-  canViewTeam: boolean;
-  canViewSettings: boolean;
-  canViewFinance?: boolean;
-  canSeeAllProjects: boolean;
-  canEditProjects: boolean;
-  canDeleteProjects: boolean;
-  canManageStages: boolean;
-  canManageTimer: boolean;
-  canAssignTeam: boolean;
-  onlyAssignedStages?: boolean;
-  showDates?: boolean;
-  canManageSubtasks?: boolean;
-  showOnlyAssignedStages?: boolean;
-}
-
-export interface RoleConfig {
-  id: string;
-  name: RoleType;
-  permissions: RolePermissions;
-}
-
-export interface TeamMember {
-  id: string;
-  fullName: string;
-  telegramId?: string;
-  role: RoleType;
-  active?: boolean;
-}
-
-export interface Project {
-  id: string;
-  name: string;
-  color: string;
-  status: 'active' | 'archived' | 'trash';
-  stages?: any[];
-  teamMembers?: TeamMember[];
-  topicLink?: string;
-  threadId?: number;
-  passportRows?: any[];
-  totalLoggedSeconds?: number;
-  projectTeam?: any[];
-  structureTitle?: string;
-  tagsTitle?: string;
-  dataTitle?: string;
-  settingsTitle?: string;
-  expenses?: any[];
-}
+import { RoleConfig, TeamMember, Project } from './types';
 
 const INITIAL_ROLES: RoleConfig[] = [
   {
@@ -80,16 +28,20 @@ const INITIAL_ROLES: RoleConfig[] = [
 ];
 
 export const App: React.FC = () => {
-  // Примусове розгортання Telegram Mini App на весь екран одразу при завантаженні на iPhone
+  // Примусове розгортання Telegram Mini App на весь екран при завантаженні
   useEffect(() => {
     if (window.Telegram && window.Telegram.WebApp) {
-      window.Telegram.WebApp.expand();
+      const tg = window.Telegram.WebApp;
+      tg.ready();
+      tg.expand();
+      if (typeof tg.requestFullscreen === 'function') {
+        tg.requestFullscreen();
+      }
     }
   }, []);
 
-  const [activeTab, setActiveTab] = useState<number>(2); // 2 — Існуючі проєкти за замовчуванням
+  const [activeTab, setActiveTab] = useState<number>(2);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  
   const [currentRoleName, setCurrentRoleName] = useState<string>('Керівник');
 
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>(() => {
@@ -97,17 +49,14 @@ export const App: React.FC = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Глобальна функція нормалізації для виправлення е/є та і/и
   const normalizeStr = (str: string) => 
     str.toLowerCase().replace(/є/g, 'е').replace(/и/g, 'і').trim();
 
-  // Автоматичне оновлення імен виконавців у всіх проєктах при зміні teamMembers
   const [projects, setProjects] = useState<Project[]>(() => {
     const saved = localStorage.getItem('app_projects');
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Синхронізуємо імена в проєктах та витратах, коли змінюється команда
   useEffect(() => {
     if (!teamMembers.length || !projects.length) return;
 
@@ -115,7 +64,6 @@ export const App: React.FC = () => {
     const updatedProjects = projects.map(proj => {
       let projectChanged = false;
 
-      // 1. Оновлюємо імена у стадіях
       const updatedStages = (proj.stages || []).map(stage => {
         const contractors: string[] = stage.contractors || (stage.contractor ? [stage.contractor] : []);
         let stageChanged = false;
@@ -146,33 +94,8 @@ export const App: React.FC = () => {
         return stage;
       });
 
-      // 2. Оновлюємо імена у витратах / бюджеті (expenses)
-      const updatedExpenses = (proj.expenses || []).map(exp => {
-        if (!exp.id.startsWith('auto-')) return exp;
-
-        const baseName = exp.title.split('(')[0].trim();
-        const cleanExpName = normalizeStr(baseName);
-
-        const matched = teamMembers.find(m => {
-          const cleanMember = normalizeStr(m.fullName);
-          return cleanMember === cleanExpName || cleanMember.includes(cleanExpName) || cleanExpName.includes(cleanMember);
-        });
-
-        if (matched) {
-          const roleMatch = exp.title.match(/\s*\(([^)]+)\)$/);
-          const rolePart = roleMatch ? roleMatch[0] : '';
-          const newTitle = `${matched.fullName}${rolePart}`;
-          if (newTitle !== exp.title) {
-            projectChanged = true;
-            hasChanges = true;
-            return { ...exp, title: newTitle };
-          }
-        }
-        return exp;
-      });
-
       if (projectChanged) {
-        return { ...proj, stages: updatedStages, expenses: updatedExpenses };
+        return { ...proj, stages: updatedStages };
       }
       return proj;
     });
@@ -222,7 +145,7 @@ export const App: React.FC = () => {
 
   const handleCreateProject = (newProject: Project) => {
     setProjects([newProject, ...projects]);
-    setActiveTab(2); // Переходимо на вкладку існуючих проєктів
+    setActiveTab(2);
   };
 
   const handleSaveTemplate = (project: Project, templateName: string) => {
