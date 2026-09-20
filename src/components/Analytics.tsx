@@ -15,9 +15,22 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
   const [editingGapKey, setEditingGapKey] = useState<string | null>(null);
   const [tempComment, setTempComment] = useState<string>('');
 
+  // Підтягуємо збережені коментарі з localStorage та об'єкта проєкту при зміні активного проєкту
   useEffect(() => {
     if (activeProject) {
-      setGapComments((activeProject as any)?.gapComments || {});
+      const storageKey = `project_gaps_${activeProject.id}`;
+      const savedLocal = localStorage.getItem(storageKey);
+      let parsedLocal = {};
+      try {
+        parsedLocal = savedLocal ? JSON.parse(savedLocal) : {};
+      } catch (e) {
+        parsedLocal = {};
+      }
+
+      // Об'єднуємо дані з проєкту та localStorage
+      const projectComments = (activeProject as any)?.gapComments || {};
+      const merged = { ...parsedLocal, ...projectComments };
+      setGapComments(merged);
     }
   }, [selectedProjectId, activeProject]);
 
@@ -31,6 +44,13 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
     setGapComments(updatedComments);
     setEditingGapKey(null);
 
+    // Зберігаємо локально у браузері для захисту від втрати при переході між вкладками
+    if (activeProject) {
+      const storageKey = `project_gaps_${activeProject.id}`;
+      localStorage.setItem(storageKey, JSON.stringify(updatedComments));
+    }
+
+    // Передаємо наверх у батьківський компонент
     if (onUpdateProject && activeProject) {
       const updatedProject = {
         ...activeProject,
