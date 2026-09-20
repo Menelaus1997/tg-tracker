@@ -420,7 +420,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                       
                       <div style={{ position: 'relative', width: '100%', height: '31px', backgroundColor: 'transparent', borderRadius: '4px', overflow: 'visible', display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle }}>
                         
-                        {/* Червоний геп із текстом та попапом з галочкою */}
+                        {/* Червоний геп без хмаринки якщо текст відсутній */}
                         {gapSpanCount > 0 && (
                           <div 
                             onClick={(e) => {
@@ -445,19 +445,21 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                               overflow: 'visible'
                             }}
                           >
-                            <span style={{
-                              fontSize: '10px',
-                              fontWeight: 'bold',
-                              fontStyle: 'italic',
-                              color: '#ffffff',
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              padding: '0 4px',
-                              pointerEvents: 'none'
-                            }}>
-                              {savedComment ? savedComment : '💬'}
-                            </span>
+                            {savedComment && (
+                              <span style={{
+                                fontSize: '10px',
+                                fontWeight: 'bold',
+                                fontStyle: 'italic',
+                                color: '#ffffff',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                padding: '0 4px',
+                                pointerEvents: 'none'
+                              }}>
+                                {savedComment}
+                              </span>
+                            )}
 
                             {isEditing && (
                               <div style={{
@@ -499,7 +501,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                                     }}
                                     autoFocus
                                   />
-                                  {/* Кнопка-галочка для збереження замість старого ряду кнопок */}
                                   <button
                                     onClick={() => handleSaveComment(gapKey)}
                                     title="Зберегти"
