@@ -6,9 +6,8 @@ interface WindowFrameProps {
 
 export const WindowFrame: React.FC<WindowFrameProps> = ({ children }) => {
   const [isMaximized, setIsMaximized] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
 
-  // Стилі для вікна залежно від режиму (на весь екран чи середнє вікно по центру)
+  // Стилі для перемикання між компактним вікном та повноекранним режимом на ПК
   const windowStyle: React.CSSProperties = isMaximized ? {
     position: 'fixed',
     top: 0,
@@ -20,35 +19,12 @@ export const WindowFrame: React.FC<WindowFrameProps> = ({ children }) => {
   } : {
     position: 'relative',
     width: '100%',
-    maxWidth: '900px', // Зручна ширина для ПК
-    height: '85vh',
-    margin: '40px auto',
+    maxWidth: '900px',
+    height: '88vh',
+    margin: '20px auto',
     borderRadius: '12px',
     boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)',
   };
-
-  if (isMinimized) {
-    return (
-      <div style={{
-        position: 'fixed',
-        bottom: 0,
-        right: '20px',
-        width: '200px',
-        backgroundColor: '#f2f2f7',
-        border: '1px solid #d1d1d6',
-        borderRadius: '8px 8px 0 0',
-        padding: '8px 12px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        zIndex: 9999,
-        cursor: 'pointer'
-      }} onClick={() => setIsMinimized(false)}>
-        <span style={{ fontSize: '12px', fontStyle: 'italic', fontWeight: 'bold' }}>Design Tracker Bot</span>
-        <button onClick={(e) => { e.stopPropagation(); setIsMinimized(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>□</button>
-      </div>
-    );
-  }
 
   return (
     <div style={{
@@ -61,7 +37,7 @@ export const WindowFrame: React.FC<WindowFrameProps> = ({ children }) => {
       zIndex: 9999,
       transition: 'all 0.2s ease-in-out'
     }}>
-      {/* Верхня панель вікна у стилі Windows */}
+      {/* Верхня панель із назвою та однією кнопкою розгортання */}
       <div style={{
         height: '36px',
         backgroundColor: '#f2f2f7',
@@ -77,37 +53,28 @@ export const WindowFrame: React.FC<WindowFrameProps> = ({ children }) => {
           Design Tracker App
         </div>
 
-        {/* Кнопки керування: Згорнути, На весь екран, Закрити */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <button
-            onClick={() => setIsMinimized(true)}
-            title="Згорнути"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', color: '#3a3a3c', padding: '2px 6px' }}
-          >
-            —
-          </button>
+        {/* Лише кнопка розгортання на весь екран / згортання у вікно */}
+        <div>
           <button
             onClick={() => setIsMaximized(!isMaximized)}
             title={isMaximized ? "Згорнути у вікно" : "На весь екран"}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: '#3a3a3c', padding: '2px 6px' }}
-          >
-            {isMaximized ? '❐' : '□'}
-          </button>
-          <button
-            onClick={() => {
-              if (window.confirm('Закрити додаток?')) {
-                window.close();
-              }
+            style={{
+              background: 'none',
+              border: '1px solid #d1d1d6',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '12px',
+              color: '#3a3a3c',
+              padding: '2px 8px',
+              backgroundColor: '#ffffff'
             }}
-            title="Закрити"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', color: '#ff3b30', padding: '2px 6px' }}
           >
-            ✕
+            {isMaximized ? '❐ Згорнути' : '□ На весь екран'}
           </button>
         </div>
       </div>
 
-      {/* Вміст програми всередині вікна */}
+      {/* Вміст програми */}
       <div style={{ flex: 1, overflowY: 'auto', position: 'relative' }}>
         {children}
       </div>
