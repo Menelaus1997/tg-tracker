@@ -191,17 +191,21 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
   const TIMELINE_HEIGHT = '43px';
   const STAGE_ROW_HEIGHT = '43px';
 
+  const totalAnalyticsMinWidth = 300 + (totalDays * 36);
+
   return (
     <div style={{ padding: '16px', width: '100%', boxSizing: 'border-box', color: '#1c1c1e', fontFamily: "'SF Pro Condensed', -apple-system, sans-serif", fontSize: '11px' }}>
       
-      {/* Стилі для друку: прибирають колонтитули, виводять тільки блок аналітики та примусово вмикають кольори фону для діаграми */}
+      {/* Спеціальні стилі для друку: розтягують звіт на 100% ширини аркуша в альбомній орієнтації */}
       <style>{`
         @media print {
           @page {
             size: landscape;
-            margin: 5mm; /* Нульові/мінімальні поля прибирають системні колонтитули браузера з датою та посиланням */
+            margin: 5mm;
           }
           body, html {
+            width: 100% !important;
+            height: 100% !important;
             background-color: #ffffff !important;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
@@ -217,9 +221,16 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
             left: 0 !important;
             top: 0 !important;
             width: 100% !important;
+            max-width: 100% !important;
+            min-width: 100% !important;
             display: flex !important;
             flex-direction: row !important;
             background-color: #ffffff !important;
+            box-sizing: border-box !important;
+          }
+          #printable-analytics > div:nth-child(2) {
+            flex-grow: 1 !important;
+            overflow: visible !important;
           }
           .no-print {
             display: none !important;
@@ -263,7 +274,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
               display: 'flex', 
               gap: '12px', 
               alignItems: 'flex-start', 
-              minWidth: `${310 + totalDays * 36}px`, 
+              minWidth: `${totalAnalyticsMinWidth}px`, 
               backgroundColor: '#ffffff', 
               padding: '8px', 
               boxSizing: 'border-box' 
@@ -316,10 +327,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                     </option>
                   ))}
                 </select>
-                {/* Назва проєкту для друку (замість select) */}
-                <div style={{ display: 'none', fontSize: '13px', fontWeight: 'bold', fontStyle: 'italic' }}>
-                  {activeProject.name}
-                </div>
 
                 <div style={{ fontSize: '10px', color: '#8e8e93', fontStyle: 'italic', fontWeight: 'bold', paddingLeft: '2px' }}>
                   ID проєкту: <span style={{ color: '#007aff' }}>{activeProject.id}</span>
@@ -524,7 +531,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                         
                         <div style={{ position: 'relative', width: '100%', height: '31px', backgroundColor: 'transparent', borderRadius: '4px', overflow: 'visible', display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle }}>
                           
-                          {/* Червоний геп (пауза) */}
+                          {/* Червоний геп */}
                           {gapSpanCount > 0 && (
                             <div 
                               onClick={(e) => {
