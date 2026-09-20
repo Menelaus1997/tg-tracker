@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Project, TeamMember } from '../App';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface AnalyticsProps {
   projects: Project[];
@@ -14,6 +16,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
   const [gapComments, setGapComments] = useState<{ [key: string]: string }>({});
   const [editingGapKey, setEditingGapKey] = useState<string | null>(null);
   const [tempComment, setTempComment] = useState<string>('');
+  const [isExporting, setIsExporting] = useState<boolean>(false);
 
   const reportRef = useRef<HTMLDivElement>(null);
 
@@ -58,9 +61,49 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
     }
   };
 
-  const handleExportPDF = () => {
+  // Надійний експорт всього графіку в альбомний PDF без втрати кольорів та обрізань
+  const handleExportPDF = async () => {
+    if (!reportRef.current) return;
+    setIsExporting(true);
     setEditingGapKey(null);
-    window.print();
+
+    try {
+      const element = reportRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2, // Висока чіткість тексту та лінії
+        useCORS: true,
+        logging: false,
+        windowWidth: element.scrollWidth // Захоплює всю повну ширину таблиці з днями
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('landscape', 'mm', 'a4'); // Альбомна орієнтація А4
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      const imgWidth = pdfWidth;
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      // Додаємо сторінки, якщо графік дуже довгий по вертикалі
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pdfHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight;
+      }
+
+      pdf.save(`Analytics_${activeProject?.name || 'project'}.pdf`);
+    } catch (error) {
+      console.error('Помилка при генерації PDF:', error);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const getTeamMemberPhoto = (contractorEntry: string) => {
@@ -194,38 +237,11 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
   return (
     <div style={{ padding: '16px', maxWidth: '100%', overflowX: 'auto', color: '#1c1c1e', fontFamily: "'SF Pro Condensed', -apple-system, sans-serif", fontSize: '11px' }}>
       
-      {/* Вбудовані стилі для друку: приховують усе зайве та масштабують графік на один аркуш */}
-      <style>{`
-        @media print {
-          @page {
-            size: landscape;
-            margin: 5mm;
-          }
-          /* Приховуємо все на сторінці, окрім самого контенту аналітики */
-          body * {
-            visibility: hidden;
-          }
-          #printable-analytics, #printable-analytics * {
-            visibility: visible;
-          }
-          #printable-analytics {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100% !important;
-            transform: scale(0.92); /* Масштабування, щоб влізло по ширині */
-            transform-origin: top left;
-          }
-          .no-print {
-            display: none !important;
-          }
-        }
-      `}</style>
-
-      {/* Кнопка експорту в PDF (зникає при друку) */}
-      <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+      {/* Кнопка експорту в PDF */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
         <button
           onClick={handleExportPDF}
+          disabled={isExporting}
           style={{
             padding: '8px 16px',
             backgroundColor: '#007aff',
@@ -242,7 +258,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
             gap: '6px'
           }}
         >
-          📥 Зберегти в PDF / Друк
+          {isExporting ? 'Генерація PDF...' : '📥 Зберегти в PDF'}
         </button>
       </div>
 
@@ -251,8 +267,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
           Немає доступних проєктів.
         </div>
       ) : (
-        /* Головний контейнер блоків 1 та 2 для друку */
-        <div id="printable-analytics" ref={reportRef} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', minWidth: '1200px', width: '100%', backgroundColor: '#ffffff', padding: '8px' }}>
+        /* Контейнер, який повністю потрапить у PDF без зайвих елементів */
+        <div ref={reportRef} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', minWidth: '1200px', width: '100%', backgroundColor: '#ffffff', padding: '12px' }}>
           
           {/* БЛОК 1 */}
           <div style={{ 
@@ -538,7 +554,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                             )}
 
                             {isEditing && (
-                              <div className="no-print" style={{
+                              <div style={{
                                 position: 'absolute',
                                 ...(isNearBottom ? { bottom: '38px' } : { top: '38px' }),
                                 left: '0px',
@@ -583,7 +599,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                                     style={{
                                       backgroundColor: '#34c759',
                                       color: '#ffffff',
-                                      border: '1px solid #d1d1d6',
+                                      border: 'none',
                                       borderRadius: '6px',
                                       width: '28px',
                                       height: '28px',
