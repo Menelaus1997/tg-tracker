@@ -79,6 +79,13 @@ const INITIAL_ROLES: RoleConfig[] = [
 ];
 
 export const App: React.FC = () => {
+  // Примусове розгортання Telegram Mini App на весь екран одразу при завантаженні
+  useEffect(() => {
+    if (window.Telegram && window.Telegram.WebApp) {
+      window.Telegram.WebApp.expand();
+    }
+  }, []);
+
   const [activeTab, setActiveTab] = useState<number>(2); // 2 — Існуючі проєкти за замовчуванням
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   
