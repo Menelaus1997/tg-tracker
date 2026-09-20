@@ -417,10 +417,11 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                       
                       <div style={{ position: 'relative', width: '100%', height: '31px', backgroundColor: 'transparent', borderRadius: '4px', overflow: 'visible', display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle }}>
                         
-                        {/* Червоний геп із текстом та коментарем всередині */}
+                        {/* Червоний геп із текстом всередині та винесеним попом редагування */}
                         {gapSpanCount > 0 && (
                           <div 
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setEditingGapKey(gapKey);
                               setTempComment(savedComment || '');
                             }}
@@ -438,10 +439,9 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              overflow: 'hidden'
+                              overflow: 'visible'
                             }}
                           >
-                            {/* Текст усередині гепу (розмір 10px, жирний курсив, як і написи стадій) */}
                             <span style={{
                               fontSize: '10px',
                               fontWeight: 'bold',
@@ -459,45 +459,52 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                             {isEditing && (
                               <div style={{
                                 position: 'absolute',
-                                ...(isNearBottom ? { bottom: '35px' } : { top: '35px' }),
+                                ...(isNearBottom ? { bottom: '38px' } : { top: '38px' }),
                                 left: '0px',
-                                zIndex: 100,
+                                zIndex: 1000,
                                 backgroundColor: '#ffffff',
                                 border: '1px solid #d1d1d6',
                                 borderRadius: '8px',
-                                padding: '8px',
+                                padding: '10px',
                                 boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
-                                width: '220px',
+                                width: '240px',
                                 display: 'flex',
                                 flexDirection: 'column',
-                                gap: '6px',
+                                gap: '8px',
                                 cursor: 'default'
                               }} onClick={(e) => e.stopPropagation()}>
-                                <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#ff3b30' }}>Причина паузи / гепу:</span>
+                                <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#ff3b30' }}>Причина паузи / гепу:</span>
                                 <input
                                   type="text"
                                   value={tempComment}
                                   onChange={(e) => setTempComment(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      handleSaveComment(gapKey);
+                                    }
+                                  }}
                                   placeholder="Введіть причину..."
                                   style={{
-                                    padding: '4px 6px',
+                                    padding: '6px 8px',
                                     border: '1px solid #d1d1d6',
-                                    borderRadius: '4px',
-                                    fontSize: '11px',
-                                    outline: 'none'
+                                    borderRadius: '6px',
+                                    fontSize: '12px',
+                                    outline: 'none',
+                                    width: '100%',
+                                    boxSizing: 'border-box'
                                   }}
                                   autoFocus
                                 />
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '4px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
                                   <button 
                                     onClick={() => setEditingGapKey(null)}
-                                    style={{ padding: '2px 6px', fontSize: '10px', background: '#e5e5ea', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                                    style={{ padding: '4px 8px', fontSize: '11px', background: '#e5e5ea', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
                                   >
                                     Скасувати
                                   </button>
                                   <button 
                                     onClick={() => handleSaveComment(gapKey)}
-                                    style={{ padding: '2px 6px', fontSize: '10px', background: '#007aff', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                                    style={{ padding: '4px 8px', fontSize: '11px', background: '#007aff', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
                                   >
                                     Зберегти
                                   </button>
