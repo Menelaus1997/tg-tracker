@@ -53,8 +53,9 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
     return Math.round((completed / total) * 100);
   };
 
-  // Визначаємо мінімальну дату проєкту, а шкалу робимо рівно на 1 рік (365 днів) вперед
+  // Динамічне визначення мінімальної та максимальної дати проєкту
   let minTimestamp = Infinity;
+  let maxTimestamp = -Infinity;
 
   if (activeProject && activeProject.stages) {
     activeProject.stages.forEach((st: any) => {
@@ -62,25 +63,32 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
         const t = new Date(st.startDate).getTime();
         if (t < minTimestamp) minTimestamp = t;
       }
+      const endD = st.reviewDate || st.endDate;
+      if (endD) {
+        const t = new Date(endD).getTime();
+        if (t > maxTimestamp) maxTimestamp = t;
+      }
     });
   }
 
   if (minTimestamp === Infinity) minTimestamp = new Date().getTime();
+  if (maxTimestamp === -Infinity || maxTimestamp <= minTimestamp) {
+    maxTimestamp = minTimestamp + 30 * 24 * 60 * 60 * 1000; // за замовчуванням 30 днів
+  }
 
-  const startDateObj = new Date(minTimestamp);
-  startDateObj.setHours(0, 0, 0, 0);
-  const adjustedMinTimestamp = startDateObj.getTime();
+  // Додаємо невеликий запас у кілька днів на початку та в кінці для красивого відступу
+  minTimestamp -= 2 * 24 * 60 * 60 * 1000;
+  maxTimestamp += 3 * 24 * 60 * 60 * 1000;
 
-  // Рівно 365 днів (1 рік) від старту проєкту
-  const YEAR_DAYS = 365;
-  const maxTimestamp = adjustedMinTimestamp + YEAR_DAYS * 24 * 60 * 60 * 1000;
-  const totalProjectDurationMs = maxTimestamp - adjustedMinTimestamp;
+  const totalProjectDurationMs = maxTimestamp - minTimestamp || 1;
 
-  // Генеруємо масив днів на рік вперед
+  // Генеруємо масив днів рівно під тривалість проєкту
   const timelineDays: { dateStr: string; dayNum: number; monthName: string; isFirstOfMonth: boolean }[] = [];
-  let curr = new Date(adjustedMinTimestamp);
+  let curr = new Date(minTimestamp);
+  curr.setHours(0, 0, 0, 0);
+  const endLimit = new Date(maxTimestamp);
 
-  for (let i = 0; i < YEAR_DAYS; i++) {
+  while (curr <= endLimit) {
     timelineDays.push({
       dateStr: curr.toISOString().split('T')[0],
       dayNum: curr.getDate(),
@@ -90,7 +98,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
     curr.setDate(curr.getDate() + 1);
   }
 
-  let previousStageEndMs = adjustedMinTimestamp;
+  let previousStageEndMs = minTimestamp;
   const totalStagesCount = activeProject?.stages?.length || 0;
 
   return (
@@ -128,18 +136,18 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
           Немає доступних проєктів.
         </div>
       ) : (
-        <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d1d6', borderRadius: '12px', overflow: 'visible', minWidth: '1400px' }}>
+        <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d1d6', borderRadius: '12px', overflow: 'visible', width: '100%', minWidth: '900px' }}>
           
-          {/* Шапка: Назва проєкту + Календарна шкала на рік */}
+          {/* Шапка: Назва проєкту + Динамічна календарна шкала під період проєкту */}
           <div style={{ display: 'grid', gridTemplateColumns: '350px 1fr', backgroundColor: '#f2f2f7', borderBottom: '1px solid #d1d1d6', padding: '10px 12px', alignItems: 'center' }}>
             <div style={{ fontSize: '13px', fontWeight: 'bold', fontStyle: 'italic' }}>
               {activeProject.name}
             </div>
 
-            {/* Шкала днів на рік */}
-            <div style={{ display: 'flex', gap: '2px', padding: '0 4px', fontSize: '9px', color: '#8e8e93', fontWeight: 'bold', overflowX: 'auto' }}>
+            {/* Шкала днів, яка розтягується або стискається залежно від тривалості проєкту */}
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${timelineDays.length}, minmax(18px, 1fr))`, padding: '0 4px', fontSize: '9px', color: '#8e8e93', fontWeight: 'bold' }}>
               {timelineDays.map((d, idx) => (
-                <div key={idx} style={{ minWidth: '18px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div key={idx} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <span style={{ fontSize: '7px', color: '#007aff', whiteSpace: 'nowrap' }}>{d.isFirstOfMonth ? d.monthName : ''}</span>
                   <span>{d.dayNum}</span>
                 </div>
@@ -150,7 +158,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
           {/* Зведена шкала загального часу проєкту зверху */}
           <div style={{ display: 'grid', gridTemplateColumns: '350px 1fr', backgroundColor: '#fcfcfc', borderBottom: '1px solid #e5e5ea', padding: '8px 12px', alignItems: 'center' }}>
             <div style={{ fontSize: '11px', fontWeight: 'bold', fontStyle: 'italic', color: '#636366' }}>
-              Загальний таймлайн проєкту (1 рік)
+              Загальний таймлайн проєкту
             </div>
             <div style={{ position: 'relative', height: '14px', backgroundColor: '#e5e5ea', borderRadius: '7px', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', top: 0, bottom: 0, left: '0%', width: '100%', backgroundColor: '#007aff', opacity: 0.3, borderRadius: '7px' }} />
@@ -176,12 +184,12 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
 
                 let leftPercent = 0;
                 let widthPercent = 5;
-                let currentStartMs = adjustedMinTimestamp;
-                let currentEndMs = adjustedMinTimestamp;
+                let currentStartMs = minTimestamp;
+                let currentEndMs = minTimestamp;
 
                 if (stage.startDate) {
                   currentStartMs = new Date(stage.startDate).getTime();
-                  leftPercent = Math.max(0, Math.min(100, ((currentStartMs - adjustedMinTimestamp) / totalProjectDurationMs) * 100));
+                  leftPercent = Math.max(0, Math.min(100, ((currentStartMs - minTimestamp) / totalProjectDurationMs) * 100));
                 }
 
                 const endD = stage.reviewDate || stage.endDate;
@@ -198,13 +206,13 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
                 if (sIdx === 0) {
-                  if (currentStartMs - adjustedMinTimestamp > ONE_DAY_MS * 1.5) {
+                  if (currentStartMs - minTimestamp > ONE_DAY_MS * 1.5) {
                     gapLeftPercent = 0;
                     gapWidthPercent = leftPercent;
                   }
                 } else {
                   if (currentStartMs - previousStageEndMs > ONE_DAY_MS * 1.5) {
-                    gapLeftPercent = Math.max(0, Math.min(100, ((previousStageEndMs - adjustedMinTimestamp) / totalProjectDurationMs) * 100));
+                    gapLeftPercent = Math.max(0, Math.min(100, ((previousStageEndMs - minTimestamp) / totalProjectDurationMs) * 100));
                     gapWidthPercent = Math.max(0, leftPercent - gapLeftPercent);
                   }
                 }
@@ -240,10 +248,10 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                       </span>
                     </div>
 
-                    {/* Права частина: Шкала Ганта на рік */}
+                    {/* Права частина: Шкала Ганта під період проєкту */}
                     <div style={{ position: 'relative', height: '22px', backgroundColor: '#f2f2f7', borderRadius: '4px', overflow: 'visible' }}>
                       
-                      {/* Червоне виділення справжнього гепу */}
+                      {/* Червоне виділення гепу */}
                       {gapWidthPercent > 0.2 && (
                         <div 
                           onClick={() => {
