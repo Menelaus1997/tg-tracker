@@ -145,7 +145,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
   }
 
   const totalDays = timelineDays.length;
-  const gridTemplateColumnsStyle = `repeat(${totalDays}, 36px)`;
+  // Задаємо зручну ширину колонки для кожного дня
+  const gridTemplateColumnsStyle = `repeat(${totalDays}, 34px)`;
 
   const monthGroups: { label: string; span: number }[] = [];
   let currentMonthLabel = '';
@@ -248,102 +249,103 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
           Немає доступних проєктів.
         </div>
       ) : (
-        <div id="printable-analytics" ref={reportRef} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', width: '100%', backgroundColor: '#ffffff', padding: '8px', boxSizing: 'border-box' }}>
-          
-          {/* БЛОК 1: Список стадій (фіксована ширина зліва, яка не стискається) */}
-          <div style={{ 
-            width: '300px', 
-            minWidth: '300px', 
-            backgroundColor: '#ffffff', 
-            border: '1px solid #d1d1d6', 
-            borderRadius: '12px', 
-            overflow: 'hidden',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
-          }}>
+        /* Єдиний контейнер із можливістю горизонтального прогортання всього блоку аналітики */
+        <div style={{ width: '100%', overflowX: 'auto', paddingBottom: '16px' }}>
+          <div id="printable-analytics" ref={reportRef} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', minWidth: `${310 + totalDays * 34}px`, backgroundColor: '#ffffff', padding: '8px', boxSizing: 'border-box' }}>
+            
+            {/* БЛОК 1: Список стадій зліва */}
             <div style={{ 
-              backgroundColor: '#f2f2f7', 
-              borderBottom: '1px solid #d1d1d6', 
-              padding: '6px 10px', 
-              height: HEADER_HEIGHT, 
-              boxSizing: 'border-box', 
-              display: 'flex', 
-              flexDirection: 'column', 
-              justifyContent: 'center',
-              gap: '3px'
+              width: '300px', 
+              minWidth: '300px', 
+              backgroundColor: '#ffffff', 
+              border: '1px solid #d1d1d6', 
+              borderRadius: '12px', 
+              overflow: 'hidden',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
             }}>
-              <select
-                value={selectedProjectId}
-                onChange={(e) => handleSelectProject(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '3px 6px',
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #d1d1d6',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  fontWeight: 'bold',
-                  fontStyle: 'italic',
-                  outline: 'none',
-                  color: '#1c1c1e',
-                  cursor: 'pointer'
-                }}
-              >
-                {projects.map(p => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
+              <div style={{ 
+                backgroundColor: '#f2f2f7', 
+                borderBottom: '1px solid #d1d1d6', 
+                padding: '6px 10px', 
+                height: HEADER_HEIGHT, 
+                boxSizing: 'border-box', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                justifyContent: 'center',
+                gap: '3px'
+              }}>
+                <select
+                  value={selectedProjectId}
+                  onChange={(e) => handleSelectProject(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '3px 6px',
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #d1d1d6',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    fontStyle: 'italic',
+                    outline: 'none',
+                    color: '#1c1c1e',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {projects.map(p => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
 
-              <div style={{ fontSize: '10px', color: '#8e8e93', fontStyle: 'italic', fontWeight: 'bold', paddingLeft: '2px' }}>
-                ID проєкту: <span style={{ color: '#007aff' }}>{activeProject.id}</span>
+                <div style={{ fontSize: '10px', color: '#8e8e93', fontStyle: 'italic', fontWeight: 'bold', paddingLeft: '2px' }}>
+                  ID проєкту: <span style={{ color: '#007aff' }}>{activeProject.id}</span>
+                </div>
               </div>
-            </div>
 
-            <div style={{ backgroundColor: '#fcfcfc', borderBottom: '1px solid #e5e5ea', padding: '0 12px', height: TIMELINE_HEIGHT, boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}>
-              <span style={{ fontSize: '11px', fontWeight: 'bold', fontStyle: 'italic', color: '#636366' }}>Загальний таймлайн проєкту</span>
-            </div>
+              <div style={{ backgroundColor: '#fcfcfc', borderBottom: '1px solid #e5e5ea', padding: '0 12px', height: TIMELINE_HEIGHT, boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}>
+                <span style={{ fontSize: '11px', fontWeight: 'bold', fontStyle: 'italic', color: '#636366' }}>Загальний таймлайн проєкту</span>
+              </div>
 
-            {(!activeProject.stages || activeProject.stages.length === 0) ? (
-              <div style={{ padding: '20px', textAlign: 'center', color: '#8e8e93', fontStyle: 'italic' }}>Немає стадій</div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {activeProject.stages.map((stage: any, sIdx: number) => {
-                  const stageContractors: string[] = stage.contractors || (stage.contractor ? [stage.contractor] : []);
-                  const statusLabel = stage.currentStatus || 'В процесі';
+              {(!activeProject.stages || activeProject.stages.length === 0) ? (
+                <div style={{ padding: '20px', textAlign: 'center', color: '#8e8e93', fontStyle: 'italic' }}>Немає стадій</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  {activeProject.stages.map((stage: any, sIdx: number) => {
+                    const stageContractors: string[] = stage.contractors || (stage.contractor ? [stage.contractor] : []);
+                    const statusLabel = stage.currentStatus || 'В процесі';
 
-                  let statusBg = '#007aff';
-                  if (statusLabel.toLowerCase().includes('завершено')) statusBg = '#34c759';
-                  else if (statusLabel.toLowerCase().includes('паузі')) statusBg = '#ffcc00';
-                  else if (statusLabel.toLowerCase().includes('перевірці') || statusLabel.toLowerCase().includes('правки')) statusBg = '#ff9500';
+                    let statusBg = '#007aff';
+                    if (statusLabel.toLowerCase().includes('завершено')) statusBg = '#34c759';
+                    else if (statusLabel.toLowerCase().includes('паузі')) statusBg = '#ffcc00';
+                    else if (statusLabel.toLowerCase().includes('перевірці') || statusLabel.toLowerCase().includes('правки')) statusBg = '#ff9500';
 
-                  return (
-                    <div key={stage.id || sIdx} style={{ padding: '0 12px', height: STAGE_ROW_HEIGHT, boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e5e5ea', backgroundColor: '#fafafa' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
-                        <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: '#e5e5ea', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid #d1d1d6' }}>
-                          {stageContractors.length > 0 && getTeamMemberPhoto(stageContractors[0]) ? (
-                            <img src={getTeamMemberPhoto(stageContractors[0])!} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          ) : (
-                            <span style={{ fontSize: '8px', color: '#636366', fontWeight: 'bold' }}>👤</span>
-                          )}
+                    return (
+                      <div key={stage.id || sIdx} style={{ padding: '0 12px', height: STAGE_ROW_HEIGHT, boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e5e5ea', backgroundColor: '#fafafa' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+                          <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: '#e5e5ea', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid #d1d1d6' }}>
+                            {stageContractors.length > 0 && getTeamMemberPhoto(stageContractors[0]) ? (
+                              <img src={getTeamMemberPhoto(stageContractors[0])!} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                              <span style={{ fontSize: '8px', color: '#636366', fontWeight: 'bold' }}>👤</span>
+                            )}
+                          </div>
+                          <span style={{ fontWeight: 'bold', fontStyle: 'italic', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {sIdx + 1}. {stage.title}
+                          </span>
                         </div>
-                        <span style={{ fontWeight: 'bold', fontStyle: 'italic', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {sIdx + 1}. {stage.title}
+                        <span style={{ fontSize: '9px', padding: '2px 6px', borderRadius: '10px', backgroundColor: statusBg, color: '#fff', fontWeight: 'bold', fontStyle: 'italic', flexShrink: 0 }}>
+                          {statusLabel}
                         </span>
                       </div>
-                      <span style={{ fontSize: '9px', padding: '2px 6px', borderRadius: '10px', backgroundColor: statusBg, color: '#fff', fontWeight: 'bold', fontStyle: 'italic', flexShrink: 0 }}>
-                        {statusLabel}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
-          {/* БЛОК 2: Графік Ганта зі справжнім горизонтальним скролом */}
-          <div style={{ flexGrow: 1, overflowX: 'auto', overflowY: 'hidden', minWidth: 0, paddingBottom: '12px' }}>
-            <div style={{ minWidth: `${totalDays * 36}px` }}>
+            {/* БЛОК 2: Графік Ганта праворуч */}
+            <div style={{ flexGrow: 1, minWidth: `${totalDays * 34}px`, backgroundColor: 'transparent' }}>
               
               {/* Шапка Блоку 2 */}
               <div style={{ 
@@ -648,8 +650,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
               )}
 
             </div>
-          </div>
 
+          </div>
         </div>
       )}
     </div>
