@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Project, TeamMember } from '../App';
 
 interface AnalyticsProps {
@@ -11,16 +11,20 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
   const [selectedProjectId, setSelectedProjectId] = useState<string>(projects[0]?.id || '');
   const activeProject = projects.find(p => p.id === selectedProjectId) || projects[0];
 
-  const [gapComments, setGapComments] = useState<{ [key: string]: string }>(() => {
-    return (activeProject as any)?.gapComments || {};
-  });
+  const [gapComments, setGapComments] = useState<{ [key: string]: string }>({});
   const [editingGapKey, setEditingGapKey] = useState<string | null>(null);
   const [tempComment, setTempComment] = useState<string>('');
 
+  // Синхронізуємо коментарі щоразу, коли змінюється активний проєкт
+  useEffect(() => {
+    if (activeProject) {
+      setGapComments((activeProject as any)?.gapComments || {});
+    }
+  }, [selectedProjectId, activeProject]);
+
   const handleSelectProject = (id: string) => {
     setSelectedProjectId(id);
-    const p = projects.find(proj => proj.id === id);
-    setGapComments((p as any)?.gapComments || {});
+    setEditingGapKey(null);
   };
 
   const handleSaveComment = (gapKey: string) => {
@@ -417,7 +421,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                       
                       <div style={{ position: 'relative', width: '100%', height: '31px', backgroundColor: 'transparent', borderRadius: '4px', overflow: 'visible', display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle }}>
                         
-                        {/* Червоний геп із текстом всередині та винесеним попом редагування */}
+                        {/* Червоний геп із текстом та винесеним попапом */}
                         {gapSpanCount > 0 && (
                           <div 
                             onClick={(e) => {
