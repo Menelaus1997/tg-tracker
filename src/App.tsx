@@ -80,12 +80,20 @@ const INITIAL_ROLES: RoleConfig[] = [
 ];
 
 export const App: React.FC = () => {
+  
   // Примусове розгортання Telegram Mini App на весь екран одразу при завантаженні на iPhone
   useEffect(() => {
-    if (window.Telegram && window.Telegram.WebApp) {
-      window.Telegram.WebApp.expand();
+  if (window.Telegram && window.Telegram.WebApp) {
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand(); // Розгортає на максимальну доступну висоту
+    
+    // Примусово розгортає міні-апп на повний екран та прибирає зайві іконки/відступи
+    if (typeof tg.requestFullscreen === 'function') {
+      tg.requestFullscreen();
     }
-  }, []);
+  }
+}, []);
 
   const [activeTab, setActiveTab] = useState<number>(2); // 2 — Існуючі проєкти за замовчуванням
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
