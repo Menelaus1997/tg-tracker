@@ -7,7 +7,6 @@ interface WindowFrameProps {
 export const WindowFrame: React.FC<WindowFrameProps> = ({ children }) => {
   const [isMaximized, setIsMaximized] = useState(false);
 
-  // Коли isMaximized true — розтягуємо на 100% ширини і висоти. Коли false — робимо зручним вікном.
   const windowStyle: React.CSSProperties = isMaximized ? {
     width: '100%',
     height: '100%',
@@ -31,46 +30,44 @@ export const WindowFrame: React.FC<WindowFrameProps> = ({ children }) => {
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
-      boxSizing: 'border-box',
+      boxSizing: 'box-border',
       transition: 'all 0.2s ease-in-out'
     }}>
-      {/* Верхня панель з кнопкою перемикання екрана */}
+      {/* Верхня панель з білим фоном і лише іконкою квадратика */}
       <div style={{
         height: '36px',
-        backgroundColor: '#f2f2f7',
-        borderBottom: '1px solid #e5e5ea',
+        backgroundColor: '#ffffff',
+        borderBottom: '1px solid #f2f2f7',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: 'flex-end',
         padding: '0 12px',
         userSelect: 'none',
         flexShrink: 0
       }}>
-        <div style={{ fontSize: '12px', fontStyle: 'italic', color: '#3a3a3c', fontWeight: 'bold' }}>
-          Design Tracker App
-        </div>
-
-        <div>
-          <button
-            onClick={() => setIsMaximized(!isMaximized)}
-            title={isMaximized ? "Згорнути у вікно" : "На весь екран"}
-            style={{
-              background: 'none',
-              border: '1px solid #d1d1d6',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '12px',
-              color: '#3a3a3c',
-              padding: '2px 8px',
-              backgroundColor: '#ffffff'
-            }}
-          >
-            {isMaximized ? '❐ Згорнути' : '□ На весь екран'}
-          </button>
-        </div>
+        <button
+          onClick={() => setIsMaximized(!isMaximized)}
+          title={isMaximized ? "Згорнути у вікно" : "На весь екран"}
+          style={{
+            background: 'none',
+            border: '1px solid #d1d1d6',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            color: '#3a3a3c',
+            width: '26px',
+            height: '24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#ffffff'
+          }}
+        >
+          {isMaximized ? '❐' : '□'}
+        </button>
       </div>
 
-      {/* Вміст програми тепер розтягуватиметься на всю площу */}
+      {/* Вміст програми */}
       <div style={{ flex: 1, overflowY: 'auto', position: 'relative', width: '100%', height: '100%' }}>
         {children}
       </div>
