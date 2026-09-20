@@ -145,8 +145,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
   }
 
   const totalDays = timelineDays.length;
-  // Задаємо зручну ширину колонки для кожного дня
-  const gridTemplateColumnsStyle = `repeat(${totalDays}, 34px)`;
+  // Використовуємо 1fr, щоб колонки днів гарно адаптувалися під ширину екрана без горизонтального скролу
+  const gridTemplateColumnsStyle = `repeat(${totalDays}, 1fr)`;
 
   const monthGroups: { label: string; span: number }[] = [];
   let currentMonthLabel = '';
@@ -193,7 +193,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
   const STAGE_ROW_HEIGHT = '43px';
 
   return (
-    <div style={{ padding: '16px', width: '100%', boxSizing: 'border-box', color: '#1c1c1e', fontFamily: "'SF Pro Condensed', -apple-system, sans-serif", fontSize: '11px' }}>
+    <div style={{ padding: '16px', width: '100%', boxSizing: 'border-box', color: '#1c1c1e', fontFamily: "'SF Pro Condensed', -apple-system, sans-serif", fontSize: '11px', overflowX: 'hidden' }}>
       
       <style>{`
         @media print {
@@ -249,14 +249,13 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
           Немає доступних проєктів.
         </div>
       ) : (
-        /* Єдиний контейнер із можливістю горизонтального прогортання всього блоку аналітики */
-        <div style={{ width: '100%', overflowX: 'auto', paddingBottom: '16px' }}>
-          <div id="printable-analytics" ref={reportRef} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', minWidth: `${310 + totalDays * 34}px`, backgroundColor: '#ffffff', padding: '8px', boxSizing: 'border-box' }}>
+        <div style={{ width: '100%', overflowX: 'hidden', paddingBottom: '16px' }}>
+          <div id="printable-analytics" ref={reportRef} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', width: '100%', backgroundColor: '#ffffff', padding: '8px', boxSizing: 'border-box', overflowX: 'hidden' }}>
             
             {/* БЛОК 1: Список стадій зліва */}
             <div style={{ 
-              width: '300px', 
-              minWidth: '300px', 
+              width: '280px', 
+              minWidth: '280px', 
               backgroundColor: '#ffffff', 
               border: '1px solid #d1d1d6', 
               borderRadius: '12px', 
@@ -344,8 +343,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
               )}
             </div>
 
-            {/* БЛОК 2: Графік Ганта праворуч */}
-            <div style={{ flexGrow: 1, minWidth: `${totalDays * 34}px`, backgroundColor: 'transparent' }}>
+            {/* БЛОК 2: Графік Ганта праворуч без повзунка */}
+            <div style={{ flexGrow: 1, overflowX: 'hidden', minWidth: 0, backgroundColor: 'transparent' }}>
               
               {/* Шапка Блоку 2 */}
               <div style={{ 
@@ -368,7 +367,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                         gridColumn: `span ${mg.span}`, 
                         textAlign: 'center', 
                         padding: '4px 2px', 
-                        fontSize: '16px', 
+                        fontSize: '14px', 
                         fontWeight: 'bold', 
                         fontStyle: 'italic',
                         color: '#000000', 
@@ -385,7 +384,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
 
                 <div style={{ display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle, backgroundColor: '#f2f2f7', height: '28px', boxSizing: 'border-box' }}>
                   {timelineDays.map((d, idx) => (
-                    <div key={`day-${idx}`} style={{ textAlign: 'center', padding: '4px 0', fontSize: '15px', fontStyle: 'italic', fontWeight: 'bold', color: '#1c1c1e', borderRight: '1px solid #e5e5ea', overflow: 'hidden' }}>
+                    <div key={`day-${idx}`} style={{ textAlign: 'center', padding: '4px 0', fontSize: '12px', fontStyle: 'italic', fontWeight: 'bold', color: '#1c1c1e', borderRight: '1px solid #e5e5ea', overflow: 'hidden' }}>
                       {d.dayNum}
                     </div>
                   ))}
