@@ -28,7 +28,6 @@ const INITIAL_ROLES: RoleConfig[] = [
 ];
 
 export const App: React.FC = () => {
-  // Ініціалізація без примусового розгортання на весь екран (працює у віконному режимі з відступами)
   useEffect(() => {
     if (window.Telegram && window.Telegram.WebApp) {
       const tg = window.Telegram.WebApp;
