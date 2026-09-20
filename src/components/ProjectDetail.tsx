@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Project, Stage, SubStage, TeamMember } from '../App';
 
 interface ProjectDetailProps {
@@ -31,11 +31,6 @@ const DEFAULT_STATUSES: ProjectStatus[] = [
   { id: '2', label: 'На паузі', color: '#ffcc00' },
   { id: '3', label: 'На перевірці', color: '#ff9500' },
   { id: '4', label: 'Завершено', color: '#34c759' }
-];
-
-const DEFAULT_COLORS = [
-  '#34c759', '#00c7be', '#5856d6', '#007aff',
-  '#ff3b30', '#5c3d2e', '#ff9500', '#af52de', '#8e8e93', '#ffcc00'
 ];
 
 export const ProjectDetail: React.FC<ProjectDetailProps> = ({
@@ -90,7 +85,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [selectedTagId, setSelectedTagId] = useState<string>(statuses[0]?.id || '');
   const [globalPickerColor, setGlobalPickerColor] = useState<string>(statuses[0]?.color || '#007aff');
 
-  const [projectColor, setProjectColor] = useState<string>(project.color || DEFAULT_COLORS[0]);
+  const [projectColor] = useState<string>(project.color || '#007aff');
 
   const [isGeneralDataOpen, setIsGeneralDataOpen] = useState(true);
   const [generalRows, setGeneralRows] = useState<GeneralDataRow[]>(() => project.passportRows || [
@@ -146,7 +141,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   }, [teamDatabase]);
 
   const [collapsedStages, setCollapsedStages] = useState<{ [key: string]: boolean }>({});
-  const [collapsedSubStages, setCollapsedSubStages] = useState<{ [key: string]: boolean }>({});
 
   const [newStageTitle, setNewStageTitle] = useState('');
   const [newSubStageTitle, setNewSubStageTitle] = useState<{ [key: string]: string }>({});
@@ -227,17 +221,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     triggerAutoSave({ stages: updatedStages });
   };
 
-  const handleSelectColor = (colorHex: string) => {
-    setProjectColor(colorHex);
-    triggerAutoSave({ color: colorHex });
-  };
-
-  const handleCustomColorPicker = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newColor = e.target.value;
-    setProjectColor(newColor);
-    triggerAutoSave({ color: newColor });
-  };
-
   const handleAddRowAfter = (index: number) => {
     const newRow: GeneralDataRow = { id: Date.now().toString(), type: 'single', label: '', value: '', enableSecondRow: true };
     const updated = [...generalRows];
@@ -286,6 +269,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   };
 
   const handleDeleteGeneralRow = (id: string) => {
+    if (generalRows.length <= 1) return; // Не дозволяємо видалити єдиний останній рядок
     const updated = generalRows.filter(r => r.id !== id);
     setGeneralRows(updated);
     triggerAutoSave({ passportRows: updated });
@@ -534,7 +518,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         <span>←</span> <span>НАЗАД</span>
       </button>
 
-      {/* 1. Header Block */}
+      {/* 1. Header Block (Без палітри кольорів) */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '12px', borderRadius: '10px', marginBottom: '14px' }}>
         <div 
           onClick={() => setIsHeaderOpen(!isHeaderOpen)} 
@@ -568,62 +552,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 onBlur={(e) => triggerAutoSave({ id: e.target.value.trim() })}
                 style={cardInputStyle}
               />
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '4px', marginTop: '4px', overflowX: 'auto', paddingBottom: '2px' }}>
-              {DEFAULT_COLORS.slice(0, 8).map((c, idx) => {
-                const isSelected = projectColor === c;
-                return (
-                  <div
-                    key={idx}
-                    onClick={() => handleSelectColor(c)}
-                    style={{
-                      width: '22px',
-                      height: '22px',
-                      borderRadius: '50%',
-                      backgroundColor: c,
-                      border: '1px solid #d1d1d6',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0
-                    }}
-                  >
-                    {isSelected && <span style={{ color: '#fff', fontSize: '10px' }}>✓</span>}
-                  </div>
-                );
-              })}
-
-              <label
-                style={{
-                  width: '22px',
-                  height: '22px',
-                  borderRadius: '50%',
-                  backgroundColor: '#e5e5ea',
-                  border: '1px solid #d1d1d6',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  fontSize: '14px',
-                  color: '#007aff',
-                  position: 'relative',
-                  padding: 0,
-                  margin: 0,
-                  boxSizing: 'border-box'
-                }}
-                title="Додати власний колір"
-              >
-                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', lineHeight: 1 }}>+</span>
-                <input
-                  type="color"
-                  value={projectColor}
-                  onChange={handleCustomColorPicker}
-                  style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer', top: 0, left: 0 }}
-                />
-              </label>
             </div>
           </div>
         )}
@@ -807,7 +735,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         </div>
       )}
 
-      {/* Блок "Дані" */}
+      {/* Блок "Дані" з оновленою логікою кошика */}
       {isSuperAdmin && enableData && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '12px', borderRadius: '10px', marginBottom: '14px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -941,7 +869,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     {isSuperAdmin && (
                       <div style={{ display: 'flex', gap: '4px', alignItems: 'center', width: '60px', justifyContent: 'center', marginTop: '2px' }}>
                         <button onClick={() => handleAddRowAfter(index)} style={compactPlusBtnStyle}>+</button>
-                        <button onClick={() => handleDeleteGeneralRow(r.id)} style={{ ...compactPlusBtnStyle, color: '#ff3b30' }}>🗑️</button>
+                        {/* Кошик з'являється тільки якщо рядків більше за 1 */}
+                        {generalRows.length > 1 && (
+                          <button onClick={() => handleDeleteGeneralRow(r.id)} style={{ ...compactPlusBtnStyle, color: '#ff3b30' }}>🗑️</button>
+                        )}
                       </div>
                     )}
                   </div>
