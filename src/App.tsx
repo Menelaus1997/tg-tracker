@@ -28,15 +28,11 @@ const INITIAL_ROLES: RoleConfig[] = [
 ];
 
 export const App: React.FC = () => {
-  // Примусове розгортання Telegram Mini App на весь екран при завантаженні
+  // Ініціалізація без примусового розгортання на весь екран (працює у віконному режимі з відступами)
   useEffect(() => {
     if (window.Telegram && window.Telegram.WebApp) {
       const tg = window.Telegram.WebApp;
       tg.ready();
-      tg.expand();
-      if (typeof tg.requestFullscreen === 'function') {
-        tg.requestFullscreen();
-      }
     }
   }, []);
 
