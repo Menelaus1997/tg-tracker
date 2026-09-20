@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Project, Stage, SubStage, TeamMember } from '../App';
 
 interface ProjectDetailProps {
@@ -85,7 +85,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [selectedTagId, setSelectedTagId] = useState<string>(statuses[0]?.id || '');
   const [globalPickerColor, setGlobalPickerColor] = useState<string>(statuses[0]?.color || '#007aff');
 
-  const [projectColor] = useState<string>(project.color || '#007aff');
+  const projectColor = project.color || '#007aff';
 
   const [isGeneralDataOpen, setIsGeneralDataOpen] = useState(true);
   const [generalRows, setGeneralRows] = useState<GeneralDataRow[]>(() => project.passportRows || [
@@ -95,7 +95,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [isStructureOpen, setIsStructureOpen] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(true);
 
-  // Покращена авто-синхронізація імен виконавців з урахуванням різниці «е/є» та «і/и»
   const getSynchronizedStages = () => {
     const rawStages = (project.stages || []).map(s => ({
       ...s,
@@ -269,7 +268,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   };
 
   const handleDeleteGeneralRow = (id: string) => {
-    if (generalRows.length <= 1) return; // Не дозволяємо видалити єдиний останній рядок
+    if (generalRows.length <= 1) return;
     const updated = generalRows.filter(r => r.id !== id);
     setGeneralRows(updated);
     triggerAutoSave({ passportRows: updated });
@@ -518,7 +517,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         <span>←</span> <span>НАЗАД</span>
       </button>
 
-      {/* 1. Header Block (Без палітри кольорів) */}
+      {/* 1. Header Block */}
       <div style={{ backgroundColor: '#f2f2f7', padding: '12px', borderRadius: '10px', marginBottom: '14px' }}>
         <div 
           onClick={() => setIsHeaderOpen(!isHeaderOpen)} 
@@ -735,7 +734,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         </div>
       )}
 
-      {/* Блок "Дані" з оновленою логікою кошика */}
+      {/* Блок "Дані" */}
       {isSuperAdmin && enableData && (
         <div style={{ backgroundColor: '#f2f2f7', padding: '12px', borderRadius: '10px', marginBottom: '14px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -869,7 +868,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     {isSuperAdmin && (
                       <div style={{ display: 'flex', gap: '4px', alignItems: 'center', width: '60px', justifyContent: 'center', marginTop: '2px' }}>
                         <button onClick={() => handleAddRowAfter(index)} style={compactPlusBtnStyle}>+</button>
-                        {/* Кошик з'являється тільки якщо рядків більше за 1 */}
                         {generalRows.length > 1 && (
                           <button onClick={() => handleDeleteGeneralRow(r.id)} style={{ ...compactPlusBtnStyle, color: '#ff3b30' }}>🗑️</button>
                         )}
@@ -1022,7 +1020,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     {!isCollapsed && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px', paddingTop: '6px', borderTop: '1px solid #e5e5ea' }}>
                         
-                        {/* Підстадії */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
                           {st.subStages.map((sub, idx) => {
                             return (
