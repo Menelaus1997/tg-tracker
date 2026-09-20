@@ -161,7 +161,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
   const projSpanCount = Math.max(1, projEndIndex - projStartIndex);
   const projGridColumnStart = projStartIndex + 1;
 
-  const HEADER_HEIGHT = '60px'; // Синхронізована висота дворядкової шапки
+  const HEADER_HEIGHT = '60px';
   const TIMELINE_HEIGHT = '43px';
   const STAGE_ROW_HEIGHT = '43px';
 
@@ -175,7 +175,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
       ) : (
         <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', minWidth: '1200px', width: '100%' }}>
           
-          {/* БЛОК 1: Дворядкова шапка (Спадне меню + Унікальний шифр ID) */}
+          {/* БЛОК 1: Дворядкова шапка (Спадне меню + ID) */}
           <div style={{ 
             width: '320px', 
             flexShrink: 0, 
@@ -185,7 +185,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
             overflow: 'hidden',
             boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
           }}>
-            {/* Дворядковий контейнер шапки блоку 1 */}
             <div style={{ 
               backgroundColor: '#f2f2f7', 
               borderBottom: '1px solid #d1d1d6', 
@@ -197,7 +196,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
               justifyContent: 'center',
               gap: '3px'
             }}>
-              {/* Рядок 1: Спадне меню вибору проєкту */}
               <select
                 value={selectedProjectId}
                 onChange={(e) => handleSelectProject(e.target.value)}
@@ -222,7 +220,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                 ))}
               </select>
 
-              {/* Рядок 2: Унікальний шифр проекту (ID) */}
               <div style={{ fontSize: '10px', color: '#8e8e93', fontStyle: 'italic', fontWeight: 'bold', paddingLeft: '2px' }}>
                 ID проєкту: <span style={{ color: '#007aff' }}>{activeProject.id}</span>
               </div>
@@ -398,7 +395,12 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                   const GAP_THRESHOLD_MS = 2 * 24 * 60 * 60 * 1000;
 
                   if (sIdx > 0 && startMs > prevEndMs + GAP_THRESHOLD_MS) {
-                    const gStartIndex = Math.max(0, Math.floor((prevEndMs - adjustedMinTimestamp) / dayWidthMs));
+                    // Виправляємо початок гепу: беремо день закінчення попередньої стадії + 1 день
+                    const prevEndDateObj = new Date(prevEndMs);
+                    prevEndDateObj.setDate(prevEndDateObj.getDate() + 1);
+                    prevEndDateObj.setHours(0, 0, 0, 0);
+
+                    const gStartIndex = Math.max(0, Math.floor((prevEndDateObj.getTime() - adjustedMinTimestamp) / dayWidthMs));
                     const gEndIndex = Math.max(gStartIndex, Math.floor((startMs - adjustedMinTimestamp) / dayWidthMs));
                     if (gEndIndex > gStartIndex) {
                       gapGridStart = gStartIndex + 1;
