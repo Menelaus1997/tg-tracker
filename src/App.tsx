@@ -6,6 +6,7 @@ import { Analytics } from './components/Analytics';
 import { TeamManagement } from './components/TeamManagement';
 import { Finance } from './components/Finance';
 import { Settings } from './components/Settings';
+import { WindowFrame } from './WindowFrame';
 
 export type RoleType = string;
 
@@ -79,7 +80,7 @@ const INITIAL_ROLES: RoleConfig[] = [
 ];
 
 export const App: React.FC = () => {
-  // Примусове розгортання Telegram Mini App на весь екран одразу при завантаженні
+  // Примусове розгортання Telegram Mini App на весь екран одразу при завантаженні на iPhone
   useEffect(() => {
     if (window.Telegram && window.Telegram.WebApp) {
       window.Telegram.WebApp.expand();
@@ -251,88 +252,89 @@ export const App: React.FC = () => {
   const CreateProjectComponent = (CreateProject as any).CreateProject || CreateProject;
 
   return (
-    <div style={{ paddingBottom: '70px', minHeight: '100vh', backgroundColor: '#ffffff', fontFamily }}>
-      {selectedProjectId && activeProject ? (
-        <ProjectDetail
-          project={activeProject}
-          onUpdateProject={(updated) => {
-            setProjects(projects.map((p) => (p.id === activeProject.id || p.id === updated.id ? updated : p)));
-          }}
-          onSaveAsTemplate={handleSaveTemplate}
-          onBack={() => setSelectedProjectId(null)}
-          teamDatabase={teamMembers}
-          availableRoles={roles.map((r) => r.name)}
-          currentUserRole={currentRoleName}
-          rolesConfig={roles}
-        />
-      ) : (
-        <>
-          {activeTab === 1 && (
-            <CreateProjectComponent
-              onCreateProject={handleCreateProject}
-              templates={templates}
-              onUpdateTemplates={setTemplates}
-            />
-          )}
-          {activeTab === 2 && (
-            <ProjectListComponent
-              projects={projects}
-              onSelectProject={(id: string) => setSelectedProjectId(id)}
-              onUpdateProjects={setProjects}
-              isSuperAdmin={true}
-              onPermanentDelete={(id: string) => setProjects(projects.filter((p) => p.id !== id))}
-            />
-          )}
-          {activeTab === 4 && <Analytics projects={projects} teamDatabase={teamMembers} />}
-          
-          {activeTab === 5 && (
-            <TeamManagement
-              members={teamMembers}
-              onUpdateMembers={setTeamMembers}
-              roles={roles}
-              onSaveRole={(r) => {
-                const exists = roles.some((ro) => ro.id === r.id);
-                setRoles(exists ? roles.map((ro) => (ro.id === r.id ? r : ro)) : [...roles, r]);
-              }}
-              onDeleteRole={(id) => setRoles(roles.filter((r) => r.id !== id))}
-              availableRoles={roles.map((r) => r.name)}
-            />
-          )}
+    <WindowFrame>
+      <div style={{ paddingBottom: '70px', minHeight: '100vh', backgroundColor: '#ffffff', fontFamily }}>
+        {selectedProjectId && activeProject ? (
+          <ProjectDetail
+            project={activeProject}
+            onUpdateProject={(updated) => {
+              setProjects(projects.map((p) => (p.id === activeProject.id || p.id === updated.id ? updated : p)));
+            }}
+            onSaveAsTemplate={handleSaveTemplate}
+            onBack={() => setSelectedProjectId(null)}
+            teamDatabase={teamMembers}
+            availableRoles={roles.map((r) => r.name)}
+            currentUserRole={currentRoleName}
+            rolesConfig={roles}
+          />
+        ) : (
+          <>
+            {activeTab === 1 && (
+              <CreateProjectComponent
+                onCreateProject={handleCreateProject}
+                templates={templates}
+                onUpdateTemplates={setTemplates}
+              />
+            )}
+            {activeTab === 2 && (
+              <ProjectListComponent
+                projects={projects}
+                onSelectProject={(id: string) => setSelectedProjectId(id)}
+                onUpdateProjects={setProjects}
+                isSuperAdmin={true}
+                onPermanentDelete={(id: string) => setProjects(projects.filter((p) => p.id !== id))}
+              />
+            )}
+            {activeTab === 4 && <Analytics projects={projects} teamDatabase={teamMembers} />}
+            
+            {activeTab === 5 && (
+              <TeamManagement
+                members={teamMembers}
+                onUpdateMembers={setTeamMembers}
+                roles={roles}
+                onSaveRole={(r) => {
+                  const exists = roles.some((ro) => ro.id === r.id);
+                  setRoles(exists ? roles.map((ro) => (ro.id === r.id ? r : ro)) : [...roles, r]);
+                }}
+                onDeleteRole={(id) => setRoles(roles.filter((r) => r.id !== id))}
+                availableRoles={roles.map((r) => r.name)}
+              />
+            )}
 
-          {/* Передаємо оновлену функцію onUpdateProject у вкладку Фінанси */}
-          {activeTab === 6 && (
-            <Finance
-              projects={projects}
-              onUpdateProject={(updatedProject) => {
-                setProjects(projects.map((p) => (p.id === updatedProject.id ? updatedProject : p)));
-              }}
-            />
-          )}
+            {activeTab === 6 && (
+              <Finance
+                projects={projects}
+                onUpdateProject={(updatedProject) => {
+                  setProjects(projects.map((p) => (p.id === updatedProject.id ? updatedProject : p)));
+                }}
+              />
+            )}
 
-          {activeTab === 7 && (
-            <Settings
-              botToken={botToken}
-              groupId={groupId}
-              fontFamily={fontFamily}
-              onSaveSettings={handleSaveSettings}
-              adminCredentials={adminCredentials}
-              onUpdateCredentials={handleUpdateCredentials}
-            />
-          )}
-        </>
-      )}
+            {activeTab === 7 && (
+              <Settings
+                botToken={botToken}
+                groupId={groupId}
+                fontFamily={fontFamily}
+                onSaveSettings={handleSaveSettings}
+                adminCredentials={adminCredentials}
+                onUpdateCredentials={handleUpdateCredentials}
+              />
+            )}
+          </>
+        )}
 
-      {!selectedProjectId && (
-        <div style={navBarStyle}>
-          <button onClick={() => setActiveTab(1)} style={navBtnStyle(activeTab === 1)} title="Створити проєкт">➕</button>
-          <button onClick={() => setActiveTab(2)} style={navBtnStyle(activeTab === 2)} title="Проєкти">📁</button>
-          <button onClick={() => setActiveTab(4)} style={navBtnStyle(activeTab === 4)} title="Аналітика">📈</button>
-          <button onClick={() => setActiveTab(5)} style={navBtnStyle(activeTab === 5)} title="Команда">👥</button>
-          <button onClick={() => setActiveTab(6)} style={navBtnStyle(activeTab === 6)} title="Фінанси">💰</button>
-          <button onClick={() => setActiveTab(7)} style={navBtnStyle(activeTab === 7)} title="Налаштування">⚙️</button>
-        </div>
-      )}
-    </div>
+        {!selectedProjectId && (
+          <div style={navBarStyle}>
+            <button onClick={() => setActiveTab(1)} style={navBtnStyle(activeTab === 1)} title="Створити проєкт">➕</button>
+            <button onClick={() => setActiveTab(2)} style={navBtnStyle(activeTab === 2)} title="Проєкти">📁</button>
+            <button onClick={() => setActiveTab(4)} style={navBtnStyle(activeTab === 4)} title="Аналітика">📈</button>
+            <button onClick={() => setActiveTab(5)} style={navBtnStyle(activeTab === 5)} title="Команда">👥</button>
+            <button onClick={() => setActiveTab(6)} style={navBtnStyle(activeTab === 6)} title="Фінанси">💰</button>
+            <button onClick={() => setActiveTab(7)} style={navBtnStyle(activeTab === 7)} title="Налаштування">⚙️</button>
+          </div>
+        )}
+      </div>
+    </WindowFrame>
   );
 };
 
