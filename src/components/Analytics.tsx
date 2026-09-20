@@ -53,6 +53,27 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
     return Math.round((completed / total) * 100);
   };
 
+  const calculateProjectProgress = (project: Project) => {
+    if (!project.stages || project.stages.length === 0) return 0;
+    let totalSubtasks = 0;
+    let completedSubtasks = 0;
+
+    project.stages.forEach(stage => {
+      if (stage.subStages && stage.subStages.length > 0) {
+        stage.subStages.forEach((sub: any) => {
+          totalSubtasks++;
+          if (sub.completed) completedSubtasks++;
+        });
+      } else {
+        totalSubtasks++;
+        if (stage.currentStatus === 'Завершено') completedSubtasks++;
+      }
+    });
+
+    if (totalSubtasks === 0) return 0;
+    return Math.round((completedSubtasks / totalSubtasks) * 100);
+  };
+
   let minTimestamp = Infinity;
   let maxTimestamp = -Infinity;
 
@@ -120,6 +141,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
   }
 
   const totalStagesCount = activeProject?.stages?.length || 0;
+  const projectProgress = activeProject ? calculateProjectProgress(activeProject) : 0;
 
   return (
     <div style={{ padding: '16px', maxWidth: '100%', overflowX: 'auto', color: '#1c1c1e', fontFamily: "'SF Pro Condensed', -apple-system, sans-serif", fontSize: '11px' }}>
@@ -213,7 +235,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
             )}
           </div>
 
-          {/* БЛОК 2: Графік Ганта від краю до краю */}
+          {/* БЛОК 2: Графік Ганта від краю до краю без відступів */}
           <div style={{ 
             flexGrow: 1, 
             backgroundColor: '#ffffff', 
@@ -261,14 +283,26 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
 
             </div>
 
-            {/* Загальний таймлайн проєкту */}
-            <div style={{ backgroundColor: '#fcfcfc', borderBottom: '1px solid #e5e5ea', padding: '8px 12px', height: '31px', boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}>
-              <div style={{ position: 'relative', width: '100%', height: '14px', backgroundColor: '#e5e5ea', borderRadius: '7px', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: 0, bottom: 0, left: '0%', width: '100%', backgroundColor: '#007aff', opacity: 0.3, borderRadius: '7px' }} />
+            {/* Загальний таймлайн проєкту з відсотком готовності всередині */}
+            <div style={{ backgroundColor: '#fcfcfc', borderBottom: '1px solid #e5e5ea', padding: '8px 0', height: '31px', boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}>
+              <div style={{ position: 'relative', width: '100%', height: '14px', backgroundColor: '#e5e5ea', borderRadius: '7px', overflow: 'hidden', display: 'flex', alignItems: 'center' }}>
+                <div style={{ width: `${projectProgress}%`, height: '100%', backgroundColor: '#007aff', transition: 'width 0.3s' }} />
+                <span style={{
+                  position: 'absolute',
+                  width: '100%',
+                  textAlign: 'center',
+                  fontSize: '9px',
+                  fontWeight: 'bold',
+                  fontStyle: 'italic',
+                  color: projectProgress > 50 ? '#ffffff' : '#1c1c1e',
+                  pointerEvents: 'none'
+                }}>
+                  {projectProgress}%
+                </span>
               </div>
             </div>
 
-            {/* Графік Ганта по стадіях (товщі смужки з відсотками) */}
+            {/* Графік Ганта по стадіях */}
             {(!activeProject.stages || activeProject.stages.length === 0) ? (
               <div style={{ padding: '20px', textAlign: 'center', color: '#8e8e93', fontStyle: 'italic' }}>Немає стадій</div>
             ) : (
@@ -276,9 +310,10 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                 {activeProject.stages.map((stage: any, sIdx: number) => {
                   const statusLabel = stage.currentStatus || 'В процесі';
                   const progressPct = calculateStageProgress(stage);
+                  const isCompleted = statusLabel.toLowerCase().includes('завершено');
 
                   let statusBg = '#007aff';
-                  if (statusLabel.toLowerCase().includes('завершено')) statusBg = '#34c759';
+                  if (isCompleted) statusBg = '#34c759';
                   else if (statusLabel.toLowerCase().includes('паузі')) statusBg = '#ffcc00';
                   else if (statusLabel.toLowerCase().includes('перевірці') || statusLabel.toLowerCase().includes('правки')) statusBg = '#ff9500';
 
@@ -322,9 +357,9 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                   const isNearBottom = sIdx >= totalStagesCount - 2;
 
                   return (
-                    <div key={stage.id || sIdx} style={{ padding: '8px 12px', height: '43px', boxSizing: 'border-box', borderBottom: '1px solid #e5e5ea', backgroundColor: '#fafafa', overflow: 'visible', display: 'flex', alignItems: 'center' }}>
+                    <div key={stage.id || sIdx} style={{ padding: '8px 0', height: '43px', boxSizing: 'border-box', borderBottom: '1px solid #e5e5ea', backgroundColor: '#fafafa', overflow: 'visible', display: 'flex', alignItems: 'center' }}>
                       
-                      {/* Контейнер рядка Ганта (товща смужка висотою 28px) */}
+                      {/* Контейнер рядка Ганта від краю до краю без відступів */}
                       <div style={{ position: 'relative', width: '100%', height: '28px', backgroundColor: '#f2f2f7', borderRadius: '4px', overflow: 'visible', display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle }}>
                         
                         {/* Фонова сітка клітинок */}
@@ -430,7 +465,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                           </div>
                         )}
 
-                        {/* Товста смужка стадії з відсотком всередині */}
+                        {/* Товста смужка стадії (без % якщо статус "Завершено") */}
                         <div 
                           style={{ 
                             gridColumn: `${gridColumnStart} / span ${spanCount}`,
@@ -453,18 +488,20 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                               transition: 'width 0.3s' 
                             }} 
                           />
-                          <span style={{
-                            position: 'absolute',
-                            width: '100%',
-                            textAlign: 'center',
-                            fontSize: '10px',
-                            fontWeight: 'bold',
-                            fontStyle: 'italic',
-                            color: progressPct > 50 ? '#ffffff' : '#1c1c1e',
-                            pointerEvents: 'none'
-                          }}>
-                            {progressPct}%
-                          </span>
+                          {!isCompleted && (
+                            <span style={{
+                              position: 'absolute',
+                              width: '100%',
+                              textAlign: 'center',
+                              fontSize: '10px',
+                              fontWeight: 'bold',
+                              fontStyle: 'italic',
+                              color: progressPct > 50 ? '#ffffff' : '#1c1c1e',
+                              pointerEvents: 'none'
+                            }}>
+                              {progressPct}%
+                            </span>
+                          )}
                         </div>
 
                       </div>
