@@ -7,37 +7,34 @@ interface WindowFrameProps {
 export const WindowFrame: React.FC<WindowFrameProps> = ({ children }) => {
   const [isMaximized, setIsMaximized] = useState(false);
 
-  // Стилі для перемикання між компактним вікном та повноекранним режимом на ПК
+  // Коли isMaximized true — розтягуємо на 100% ширини і висоти. Коли false — робимо зручним вікном.
   const windowStyle: React.CSSProperties = isMaximized ? {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    width: '100vw',
-    height: '100vh',
+    width: '100%',
+    height: '100%',
+    maxWidth: 'none',
+    maxHeight: 'none',
     borderRadius: 0,
-    boxShadow: 'none',
+    margin: 0,
   } : {
-    position: 'relative',
     width: '100%',
     maxWidth: '900px',
     height: '88vh',
     margin: '20px auto',
     borderRadius: '12px',
-    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)',
   };
 
   return (
     <div style={{
       ...windowStyle,
       backgroundColor: '#ffffff',
-      border: '1px solid #d1d1d6',
+      border: isMaximized ? 'none' : '1px solid #d1d1d6',
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
-      zIndex: 9999,
+      boxSizing: 'border-box',
       transition: 'all 0.2s ease-in-out'
     }}>
-      {/* Верхня панель із назвою та однією кнопкою розгортання */}
+      {/* Верхня панель з кнопкою перемикання екрана */}
       <div style={{
         height: '36px',
         backgroundColor: '#f2f2f7',
@@ -53,7 +50,6 @@ export const WindowFrame: React.FC<WindowFrameProps> = ({ children }) => {
           Design Tracker App
         </div>
 
-        {/* Лише кнопка розгортання на весь екран / згортання у вікно */}
         <div>
           <button
             onClick={() => setIsMaximized(!isMaximized)}
@@ -74,8 +70,8 @@ export const WindowFrame: React.FC<WindowFrameProps> = ({ children }) => {
         </div>
       </div>
 
-      {/* Вміст програми */}
-      <div style={{ flex: 1, overflowY: 'auto', position: 'relative' }}>
+      {/* Вміст програми тепер розтягуватиметься на всю площу */}
+      <div style={{ flex: 1, overflowY: 'auto', position: 'relative', width: '100%', height: '100%' }}>
         {children}
       </div>
     </div>
