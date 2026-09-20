@@ -7,24 +7,21 @@ interface WindowFrameProps {
 export const WindowFrame: React.FC<WindowFrameProps> = ({ children }) => {
   return (
     <div style={{
-      // Ширина вікна з відступами з боків
-      width: 'calc(100vw - 40px)',
-      maxWidth: '1300px',
-      // Висота вікна з відступами зверху та знизу (близько 20 мм / 40-50px)
-      height: 'calc(100vh - 45px)',
-      maxHeight: '900px',
-      // Центруємо вікно: відступи зверху, знизу та по боках
-      margin: '22px auto',
+      // Робимо вікно на весь доступний простір робочої площини (номер 1)
+      width: '100vw',
+      height: '100vh',
+      maxWidth: 'none',
+      maxHeight: 'none',
+      borderRadius: 0,
+      margin: 0,
       backgroundColor: '#ffffff',
-      border: '1px solid #d1d1d6',
-      borderRadius: '16px',
-      boxShadow: '0 12px 36px rgba(0, 0, 0, 0.16)',
+      border: 'none',
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
       boxSizing: 'border-box',
     }}>
-      {/* Внутрішній контент зі скролом */}
+      {/* Вміст додатку тепер розтягується на всю площину (номер 2 дорівнює номеру 1) */}
       <div style={{ 
         flex: 1, 
         overflowY: 'auto', 
@@ -33,7 +30,7 @@ export const WindowFrame: React.FC<WindowFrameProps> = ({ children }) => {
         width: '100%', 
         height: '100%',
         boxSizing: 'border-box',
-        paddingTop: '10px',
+        padding: 0,
       }}>
         {children}
       </div>
