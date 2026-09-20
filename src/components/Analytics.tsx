@@ -155,7 +155,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
                                 • {sub.title}
                               </span>
                               <span style={{ fontSize: '10px', color: sub.completed ? '#34c759' : '#ff9500', fontWeight: 'bold' }}>
-                                {sub.completed ? 'Виконано' в процесі'}
+                                {sub.completed ? 'Виконано' : 'В процесі'}
                               </span>
                             </div>
                           ))}
