@@ -17,13 +17,13 @@ export const WindowFrame: React.FC<WindowFrameProps> = ({ children }) => {
       border: 'none',
       display: 'flex',
       flexDirection: 'column',
-      overflow: 'hidden',
+      overflow: 'hidden', // Головне: ховаємо загальний скрол вікна
       boxSizing: 'border-box',
     }}>
       <div style={{ 
         flex: 1, 
         overflowY: 'auto', 
-        overflowX: 'hidden',
+        overflowX: 'hidden', // Забороняємо виїжджати вбік усьому вікну
         position: 'relative', 
         width: '100%', 
         height: '100%',
