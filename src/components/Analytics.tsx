@@ -79,26 +79,26 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
   minTimestamp -= 1 * 24 * 60 * 60 * 1000;
   maxTimestamp += 3 * 24 * 60 * 60 * 1000;
 
-  const totalProjectDurationMs = maxTimestamp - minTimestamp || 1;
+  const totalDaysCount = Math.round((maxTimestamp - minTimestamp) / (1000 * 60 * 60 * 24)) + 1;
 
   // Генеруємо масив днів для шкали
-  const timelineDays: { dateStr: string; dayNum: number; monthName: string; yearNum: number }[] = [];
+  const timelineDays: { dateStr: string; dayNum: number; monthYearLabel: string }[] = [];
   let curr = new Date(minTimestamp);
   curr.setHours(0, 0, 0, 0);
   const endLimit = new Date(maxTimestamp);
 
   while (curr <= endLimit) {
+    const monthName = curr.toLocaleString('uk-UA', { month: 'long' });
+    const yearNum = curr.getFullYear();
     timelineDays.push({
       dateStr: curr.toISOString().split('T')[0],
       dayNum: curr.getDate(),
-      monthName: curr.toLocaleString('uk-UA', { month: 'long' }),
-      yearNum: curr.getFullYear()
+      monthYearLabel: `${monthName} ${yearNum}`
     });
     curr.setDate(curr.getDate() + 1);
   }
 
-  let previousStageEndMs = minTimestamp;
-  const totalStagesCount = activeProject?.stages?.length || 0;
+  const gridTemplateColumnsStyle = `repeat(${timelineDays.length}, minmax(28px, 1fr))`;
 
   return (
     <div style={{ padding: '16px', maxWidth: '100%', overflowX: 'auto', color: '#1c1c1e', fontFamily: "'SF Pro Condensed', -apple-system, sans-serif", fontSize: '11px' }}>
@@ -137,47 +137,35 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
       ) : (
         <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d1d6', borderRadius: '12px', overflow: 'visible', width: '100%', minWidth: '1000px' }}>
           
-          {/* Шапка: 3 ряди (Числа, Місяць, Рік) з клітинками */}
-          <div style={{ display: 'grid', gridTemplateColumns: '350px 1fr', backgroundColor: '#f2f2f7', borderBottom: '1px solid #d1d1d6' }}>
+          {/* Шапка: 2 рядки (Місяць з роком + Числа) */}
+          <div style={{ display: 'grid', gridTemplateColumns: `350px 1fr`, backgroundColor: '#f2f2f7', borderBottom: '1px solid #d1d1d6' }}>
             
             <div style={{ padding: '10px 12px', fontSize: '13px', fontWeight: 'bold', fontStyle: 'italic', display: 'flex', alignItems: 'center', borderRight: '1px solid #d1d1d6' }}>
               {activeProject.name}
             </div>
 
-            {/* 3 ряди для чисел, місяця та року */}
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${timelineDays.length}, minmax(24px, 1fr))` }}>
+            {/* Контейнер шапки з 2 рядками */}
+            <div style={{ display: 'grid', gridTemplateRows: 'auto auto' }}>
               
-              {/* Рядок 1: Числа */}
-              <div style={{ gridColumn: `1 / span ${timelineDays.length}`, display: 'grid', gridTemplateColumns: `repeat(${timelineDays.length}, minmax(24px, 1fr))`, borderBottom: '1px solid #e5e5ea', backgroundColor: '#f9f9fb' }}>
+              {/* Рядок 1: Назва місяця з роком (наприклад, червень 2026) */}
+              <div style={{ display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle, borderBottom: '1px solid #e5e5ea', backgroundColor: '#f9f9fb' }}>
+                {timelineDays.map((d, idx) => {
+                  const showLabel = idx === 0 || timelineDays[idx - 1].monthYearLabel !== d.monthYearLabel;
+                  return (
+                    <div key={`month-${idx}`} style={{ textAlign: 'left', padding: '4px 2px', fontSize: '10px', fontWeight: 'bold', color: '#007aff', borderRight: '1px solid #e5e5ea', whiteSpace: 'nowrap', overflow: 'hidden' }}>
+                      {showLabel ? d.monthYearLabel : ''}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Рядок 2: Числові значення днів */}
+              <div style={{ display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle, backgroundColor: '#f2f2f7' }}>
                 {timelineDays.map((d, idx) => (
                   <div key={`day-${idx}`} style={{ textAlign: 'center', padding: '4px 0', fontSize: '10px', fontWeight: 'bold', color: '#1c1c1e', borderRight: '1px solid #e5e5ea' }}>
                     {d.dayNum}
                   </div>
                 ))}
-              </div>
-
-              {/* Рядок 2: Місяць повністю */}
-              <div style={{ gridColumn: `1 / span ${timelineDays.length}`, display: 'grid', gridTemplateColumns: `repeat(${timelineDays.length}, minmax(24px, 1fr))`, borderBottom: '1px solid #e5e5ea', backgroundColor: '#f2f2f7' }}>
-                {timelineDays.map((d, idx) => {
-                  const showMonth = idx === 0 || timelineDays[idx - 1].monthName !== d.monthName;
-                  return (
-                    <div key={`month-${idx}`} style={{ textAlign: 'center', padding: '3px 2px', fontSize: '9px', fontWeight: 'bold', color: '#007aff', borderRight: '1px solid #e5e5ea', whiteSpace: 'nowrap', overflow: 'hidden' }}>
-                      {showMonth ? d.monthName : ''}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Рядок 3: Рік проєкту */}
-              <div style={{ gridColumn: `1 / span ${timelineDays.length}`, display: 'grid', gridTemplateColumns: `repeat(${timelineDays.length}, minmax(24px, 1fr))`, backgroundColor: '#eaeaf0' }}>
-                {timelineDays.map((d, idx) => {
-                  const showYear = idx === 0 || timelineDays[idx - 1].yearNum !== d.yearNum;
-                  return (
-                    <div key={`year-${idx}`} style={{ textAlign: 'center', padding: '3px 2px', fontSize: '9px', fontWeight: 'bold', color: '#636366', borderRight: '1px solid #d1d1d6', whiteSpace: 'nowrap', overflow: 'hidden' }}>
-                      {showYear ? d.yearNum : ''}
-                    </div>
-                  );
-                })}
               </div>
 
             </div>
@@ -210,43 +198,42 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                 else if (statusLabel.toLowerCase().includes('паузі')) statusBg = '#ffcc00';
                 else if (statusLabel.toLowerCase().includes('перевірці') || statusLabel.toLowerCase().includes('правки')) statusBg = '#ff9500';
 
-                let leftPercent = 0;
-                let widthPercent = 5;
-                let currentStartMs = minTimestamp;
-                let currentEndMs = minTimestamp;
-
-                if (stage.startDate) {
-                  currentStartMs = new Date(stage.startDate).getTime();
-                  leftPercent = Math.max(0, Math.min(100, ((currentStartMs - minTimestamp) / totalProjectDurationMs) * 100));
-                }
-
+                // Розрахунок позицій у відсотках або днях для ідеального збігу з сіткою
+                const startMs = stage.startDate ? new Date(stage.startDate).getTime() : minTimestamp;
                 const endD = stage.reviewDate || stage.endDate;
-                if (stage.startDate && endD) {
-                  currentEndMs = new Date(endD).getTime();
-                  const durationMs = Math.max(currentEndMs - currentStartMs, 24 * 60 * 60 * 1000);
-                  widthPercent = Math.max(1, Math.min(100 - leftPercent, (durationMs / totalProjectDurationMs) * 100));
-                } else {
-                  currentEndMs = currentStartMs + 24 * 60 * 60 * 1000;
-                }
+                const endMs = endD ? new Date(endD).getTime() : startMs + 24 * 60 * 60 * 1000;
 
-                // Визначаємо справжній геп (паузу понад 2 дні відносно попередньої стадії)
-                let gapLeftPercent = 0;
-                let gapWidthPercent = 0;
-                const GAP_THRESHOLD_MS = 2 * 24 * 60 * 60 * 1000;
+                const startIndex = Math.max(0, Math.round((startMs - minTimestamp) / (1000 * 60 * 60 * 24)));
+                const durationDays = Math.max(1, Math.round((endMs - startMs) / (1000 * 60 * 60 * 24)));
 
-                if (sIdx > 0) {
-                  // Перевіряємо, чи починається ця стадія пізніше за кінець попередньої з урахуванням порогу
-                  if (currentStartMs > previousStageEndMs + GAP_THRESHOLD_MS) {
-                    gapLeftPercent = Math.max(0, Math.min(100, ((previousStageEndMs - minTimestamp) / totalProjectDurationMs) * 100));
-                    gapWidthPercent = Math.max(0, leftPercent - gapLeftPercent);
+                const leftPercent = (startIndex / timelineDays.length) * 100;
+                const widthPercent = (durationDays / timelineDays.length) * 100;
+
+                // Пошук реального попереднього завершення для гепу
+                let prevEndMs = minTimestamp;
+                for (let i = 0; i < sIdx; i++) {
+                  const stPrev = activeProject.stages[i];
+                  const stPrevEnd = stPrev.reviewDate || stPrev.endDate;
+                  if (stPrevEnd) {
+                    const t = new Date(stPrevEnd).getTime();
+                    if (t > prevEndMs) prevEndMs = t;
                   }
                 }
 
-                previousStageEndMs = Math.max(previousStageEndMs, currentEndMs);
+                let gapLeftPercent = 0;
+                let gapWidthPercent = 0;
+                const GAP_THRESHOLD_MS = 2 * 24 * 60 * 60 * 1000; // більше 2 днів вважається гепом
+
+                if (sIdx > 0 && startMs > prevEndMs + GAP_THRESHOLD_MS) {
+                  const gapStartIndex = Math.max(0, Math.round((prevEndMs - minTimestamp) / (1000 * 60 * 60 * 24)));
+                  gapLeftPercent = (gapStartIndex / timelineDays.length) * 100;
+                  gapWidthPercent = leftPercent - gapLeftPercent;
+                }
+
                 const gapKey = `stage_${stage.id || sIdx}_gap`;
                 const savedComment = gapComments[gapKey];
                 const isEditing = editingGapKey === gapKey;
-                const isNearBottom = sIdx >= totalStagesCount - 2;
+                const isNearBottom = sIdx >= totalDaysCount - 2;
 
                 return (
                   <div key={stage.id || sIdx} style={{ display: 'grid', gridTemplateColumns: '350px 1fr', padding: '10px 12px', alignItems: 'center', borderBottom: '1px solid #e5e5ea', backgroundColor: '#fafafa', overflow: 'visible' }}>
@@ -276,8 +263,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                     {/* Права частина: Сітка днів та смужки Ганта */}
                     <div style={{ position: 'relative', height: '22px', backgroundColor: '#f2f2f7', borderRadius: '4px', overflow: 'visible' }}>
                       
-                      {/* Фонова сітка клітинок */}
-                      <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: `repeat(${timelineDays.length}, minmax(24px, 1fr))`, pointerEvents: 'none' }}>
+                      {/* Фонова сітка клітинок, яка повністю збігається з шапкою */}
+                      <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle, pointerEvents: 'none' }}>
                         {timelineDays.map((_, dIdx) => (
                           <div key={`grid-cell-${dIdx}`} style={{ borderRight: '1px solid #e5e5ea', height: '100%' }} />
                         ))}
