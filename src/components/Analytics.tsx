@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Project, TeamMember } from '../App';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface AnalyticsProps {
   projects: Project[];
@@ -14,8 +16,11 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
   const [gapComments, setGapComments] = useState<{ [key: string]: string }>({});
   const [editingGapKey, setEditingGapKey] = useState<string | null>(null);
   const [tempComment, setTempComment] = useState<string>('');
+  const [isExporting, setIsExporting] = useState<boolean>(false);
 
-  // Підтягуємо збережені коментарі з localStorage та об'єкта проєкту при зміні активного проєкту
+  // Реф для захоплення області аналітики у PDF
+  const reportRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (activeProject) {
       const storageKey = `project_gaps_${activeProject.id}`;
@@ -27,7 +32,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
         parsedLocal = {};
       }
 
-      // Об'єднуємо дані з проєкту та localStorage
       const projectComments = (activeProject as any)?.gapComments || {};
       const merged = { ...parsedLocal, ...projectComments };
       setGapComments(merged);
@@ -44,19 +48,45 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
     setGapComments(updatedComments);
     setEditingGapKey(null);
 
-    // Зберігаємо локально у браузері для захисту від втрати при переході між вкладками
     if (activeProject) {
       const storageKey = `project_gaps_${activeProject.id}`;
       localStorage.setItem(storageKey, JSON.stringify(updatedComments));
     }
 
-    // Передаємо наверх у батьківський компонент
     if (onUpdateProject && activeProject) {
       const updatedProject = {
         ...activeProject,
         gapComments: updatedComments
       };
       onUpdateProject(updatedProject);
+    }
+  };
+
+  // Функція експорту в PDF
+  const handleExportPDF = async () => {
+    if (!reportRef.current) return;
+    setIsExporting(true);
+    setEditingGapKey(null); // Закриваємо відкриті інпути перед експортом
+
+    try {
+      const element = reportRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2, // Висока якість зображення
+        useCORS: true,
+        logging: false
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('landscape', 'mm', 'a4'); // Альбомна орієнтація найкраще підходить для Ганта
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
+      pdf.save(`Analytics_${activeProject?.name || 'project'}.pdf`);
+    } catch (error) {
+      console.error('Помилка при генерації PDF:', error);
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -191,12 +221,38 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
   return (
     <div style={{ padding: '16px', maxWidth: '100%', overflowX: 'auto', color: '#1c1c1e', fontFamily: "'SF Pro Condensed', -apple-system, sans-serif", fontSize: '11px' }}>
       
+      {/* Кнопка експорту в PDF */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+        <button
+          onClick={handleExportPDF}
+          disabled={isExporting}
+          style={{
+            padding: '8px 16px',
+            backgroundColor: '#007aff',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            fontStyle: 'italic',
+            cursor: 'pointer',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}
+        >
+          {isExporting ? 'Створення PDF...' : '📥 Зберегти в PDF'}
+        </button>
+      </div>
+
       {!activeProject ? (
         <div style={{ textAlign: 'center', color: '#8e8e93', padding: '40px 0', fontStyle: 'italic' }}>
           Немає доступних проєктів.
         </div>
       ) : (
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', minWidth: '1200px', width: '100%' }}>
+        /* Область, яка буде збережена в PDF */
+        <div ref={reportRef} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', minWidth: '1200px', width: '100%', backgroundColor: '#ffffff', padding: '8px' }}>
           
           {/* БЛОК 1 */}
           <div style={{ 
@@ -440,7 +496,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                       
                       <div style={{ position: 'relative', width: '100%', height: '31px', backgroundColor: 'transparent', borderRadius: '4px', overflow: 'visible', display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle }}>
                         
-                        {/* Червоний геп без хмаринки якщо текст відсутній */}
+                        {/* Червоний геп */}
                         {gapSpanCount > 0 && (
                           <div 
                             onClick={(e) => {
