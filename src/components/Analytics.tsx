@@ -4,11 +4,39 @@ import { Project, TeamMember } from '../App';
 interface AnalyticsProps {
   projects: Project[];
   teamDatabase: TeamMember[];
+  onUpdateProject?: (project: Project) => void;
 }
 
-export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase }) => {
+export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, onUpdateProject }) => {
   const [selectedProjectId, setSelectedProjectId] = useState<string>(projects[0]?.id || '');
   const activeProject = projects.find(p => p.id === selectedProjectId) || projects[0];
+
+  // Стан для редагування коментарів до гепів (ключ: `${stageId}_gap`, значення: текст коментаря)
+  const [gapComments, setGapComments] = useState<{ [key: string]: string }>(() => {
+    return (activeProject as any)?.gapComments || {};
+  });
+  const [editingGapKey, setEditingGapKey] = useState<string | null>(null);
+  const [tempComment, setTempComment] = useState<string>('');
+
+  const handleSelectProject = (id: string) => {
+    setSelectedProjectId(id);
+    const p = projects.find(proj => proj.id === id);
+    setGapComments((p as any)?.gapComments || {});
+  };
+
+  const handleSaveComment = (gapKey: string) => {
+    const updatedComments = { ...gapComments, [gapKey]: tempComment };
+    setGapComments(updatedComments);
+    setEditingGapKey(null);
+
+    if (onUpdateProject && activeProject) {
+      const updatedProject = {
+        ...activeProject,
+        gapComments: updatedComments
+      };
+      onUpdateProject(updatedProject);
+    }
+  };
 
   // Пошук фото виконавця з бази Telegram
   const getTeamMemberPhoto = (contractorEntry: string) => {
@@ -68,7 +96,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase }) 
     curr.setDate(curr.getDate() + 1);
   }
 
-  // Зберігаємо дату закінчення попередньої стадії для розрахунку гепу
   let previousStageEndMs = minTimestamp;
 
   return (
@@ -79,7 +106,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase }) 
         <label style={{ fontSize: '11px', color: '#8e8e93', fontStyle: 'italic', display: 'block', marginBottom: '4px' }}>Виберіть проєкт:</label>
         <select
           value={selectedProjectId}
-          onChange={(e) => setSelectedProjectId(e.target.value)}
+          onChange={(e) => handleSelectProject(e.target.value)}
           style={{
             width: '100%',
             padding: '8px 12px',
@@ -173,26 +200,27 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase }) 
                   currentEndMs = currentStartMs + 24 * 60 * 60 * 1000;
                 }
 
-                // Розрахунок гепу (розриву) між кінцем попередньої стадії та початком поточної
+                // Розрахунок гепу (розриву) тільки якщо різниця більша за 1 день (24 години + невеликий запас)
                 let gapLeftPercent = 0;
                 let gapWidthPercent = 0;
+                const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
                 if (sIdx === 0) {
-                  // Для першої стадії геп від початку шкали до старту стадії
-                  if (currentStartMs > minTimestamp) {
+                  if (currentStartMs - minTimestamp > ONE_DAY_MS * 1.5) {
                     gapLeftPercent = 0;
                     gapWidthPercent = leftPercent;
                   }
                 } else {
-                  // Для наступних стадій геп від кінця попередньої стадії до старту поточної
-                  if (currentStartMs > previousStageEndMs) {
+                  if (currentStartMs - previousStageEndMs > ONE_DAY_MS * 1.5) {
                     gapLeftPercent = Math.max(0, Math.min(100, ((previousStageEndMs - minTimestamp) / totalProjectDurationMs) * 100));
                     gapWidthPercent = Math.max(0, leftPercent - gapLeftPercent);
                   }
                 }
 
-                // Оновлюємо кінець попередньої стадії для наступної ітерації
                 previousStageEndMs = Math.max(previousStageEndMs, currentEndMs);
+                const gapKey = `stage_${stage.id || sIdx}_gap`;
+                const savedComment = gapComments[gapKey];
+                const isEditing = editingGapKey === gapKey;
 
                 return (
                   <div key={stage.id || sIdx} style={{ display: 'grid', gridTemplateColumns: '350px 1fr', padding: '10px 12px', alignItems: 'center', borderBottom: '1px solid #e5e5ea', backgroundColor: '#fafafa' }}>
@@ -221,13 +249,17 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase }) 
                       </span>
                     </div>
 
-                    {/* Права частина: Хронологічна смужка Ганта з червоним виділенням гепу */}
-                    <div style={{ position: 'relative', height: '18px', backgroundColor: '#f2f2f7', borderRadius: '4px', overflow: 'hidden' }}>
+                    {/* Права частина: Хронологічна смужка Ганта з інтерактивним червоним гепом */}
+                    <div style={{ position: 'relative', height: '22px', backgroundColor: '#f2f2f7', borderRadius: '4px', overflow: 'visible' }}>
                       
-                      {/* Червоне виділення розриву (гепу) між стадіями */}
+                      {/* Червоне виділення справжнього гепу (паузи) з можливістю залишити коментар */}
                       {gapWidthPercent > 0.5 && (
                         <div 
-                          title="Розрив / Пауза між стадіями"
+                          onClick={() => {
+                            setEditingGapKey(gapKey);
+                            setTempComment(savedComment || '');
+                          }}
+                          title={savedComment ? `Коментар: ${savedComment}` : "Клікніть, щоб додати коментар до гепу (паузи)"}
                           style={{
                             position: 'absolute',
                             top: '2px',
@@ -236,10 +268,95 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase }) 
                             width: `${gapWidthPercent}%`,
                             backgroundColor: '#ff3b30',
                             borderRadius: '3px',
-                            opacity: 0.85,
-                            zIndex: 2
+                            opacity: 0.9,
+                            zIndex: 2,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#fff',
+                            fontSize: '9px',
+                            fontWeight: 'bold',
+                            boxShadow: '0 0 4px rgba(255, 59, 48, 0.6)'
                           }}
-                        />
+                        >
+                          {savedComment ? '💬' : '⚠️'}
+                        </div>
+                      )}
+
+                      {/* Вікно введення коментаря до гепу */}
+                      {isEditing && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '26px',
+                          left: `${gapLeftPercent}%`,
+                          zIndex: 10,
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #d1d1d6',
+                          borderRadius: '8px',
+                          padding: '8px',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                          width: '220px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '6px'
+                        }}>
+                          <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#ff3b30' }}>Причина паузи / гепу:</span>
+                          <input
+                            type="text"
+                            value={tempComment}
+                            onChange={(e) => setTempComment(e.target.value)}
+                            placeholder="Введіть причину..."
+                            style={{
+                              padding: '4px 6px',
+                              border: '1px solid #d1d1d6',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                              outline: 'none'
+                            }}
+                          />
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '4px' }}>
+                            <button 
+                              onClick={() => setEditingGapKey(null)}
+                              style={{ padding: '2px 6px', fontSize: '10px', background: '#e5e5ea', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                            >
+                              Скасувати
+                            </button>
+                            <button 
+                              onClick={() => handleSaveComment(gapKey)}
+                              style={{ padding: '2px 6px', fontSize: '10px', background: '#007aff', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                            >
+                              Зберегти
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Якщо коментар вже збережено, виводимо його текст поруч або мітка */}
+                      {savedComment && !isEditing && (
+                        <div 
+                          onClick={() => {
+                            setEditingGapKey(gapKey);
+                            setTempComment(savedComment);
+                          }}
+                          style={{
+                            position: 'absolute',
+                            top: '22px',
+                            left: `${gapLeftPercent}%`,
+                            fontSize: '9px',
+                            color: '#ff3b30',
+                            fontStyle: 'italic',
+                            cursor: 'pointer',
+                            maxWidth: '150px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            zIndex: 1
+                          }}
+                          title={savedComment}
+                        >
+                          💬 {savedComment}
+                        </div>
                       )}
 
                       {/* Основна смужка стадії */}
