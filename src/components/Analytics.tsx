@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Project, TeamMember } from '../App';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 
 interface AnalyticsProps {
   projects: Project[];
@@ -16,9 +14,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
   const [gapComments, setGapComments] = useState<{ [key: string]: string }>({});
   const [editingGapKey, setEditingGapKey] = useState<string | null>(null);
   const [tempComment, setTempComment] = useState<string>('');
-  const [isExporting, setIsExporting] = useState<boolean>(false);
 
-  // Реф для захоплення області аналітики у PDF
   const reportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -62,32 +58,10 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
     }
   };
 
-  // Функція експорту в PDF
-  const handleExportPDF = async () => {
-    if (!reportRef.current) return;
-    setIsExporting(true);
-    setEditingGapKey(null); // Закриваємо відкриті інпути перед експортом
-
-    try {
-      const element = reportRef.current;
-      const canvas = await html2canvas(element, {
-        scale: 2, // Висока якість зображення
-        useCORS: true,
-        logging: false
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('landscape', 'mm', 'a4'); // Альбомна орієнтація найкраще підходить для Ганта
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-      pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
-      pdf.save(`Analytics_${activeProject?.name || 'project'}.pdf`);
-    } catch (error) {
-      console.error('Помилка при генерації PDF:', error);
-    } finally {
-      setIsExporting(false);
-    }
+  // Функція збереження в PDF через вбудований діалог друку браузера
+  const handleExportPDF = () => {
+    setEditingGapKey(null);
+    window.print();
   };
 
   const getTeamMemberPhoto = (contractorEntry: string) => {
@@ -222,10 +196,9 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
     <div style={{ padding: '16px', maxWidth: '100%', overflowX: 'auto', color: '#1c1c1e', fontFamily: "'SF Pro Condensed', -apple-system, sans-serif", fontSize: '11px' }}>
       
       {/* Кнопка експорту в PDF */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+      <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
         <button
           onClick={handleExportPDF}
-          disabled={isExporting}
           style={{
             padding: '8px 16px',
             backgroundColor: '#007aff',
@@ -242,7 +215,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
             gap: '6px'
           }}
         >
-          {isExporting ? 'Створення PDF...' : '📥 Зберегти в PDF'}
+          📥 Зберегти в PDF / Друк
         </button>
       </div>
 
@@ -251,7 +224,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
           Немає доступних проєктів.
         </div>
       ) : (
-        /* Область, яка буде збережена в PDF */
         <div ref={reportRef} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', minWidth: '1200px', width: '100%', backgroundColor: '#ffffff', padding: '8px' }}>
           
           {/* БЛОК 1 */}
@@ -538,7 +510,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                             )}
 
                             {isEditing && (
-                              <div style={{
+                              <div className="no-print" style={{
                                 position: 'absolute',
                                 ...(isNearBottom ? { bottom: '38px' } : { top: '38px' }),
                                 left: '0px',
