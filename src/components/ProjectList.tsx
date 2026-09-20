@@ -116,21 +116,11 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div
-                    style={{
-                      width: '14px',
-                      height: '14px',
-                      borderRadius: '50%',
-                      backgroundColor: p.color || '#007aff',
-                      border: '1px solid #d1d1d6',
-                      flexShrink: 0
-                    }}
-                  />
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                     <div style={{ fontWeight: 'bold', fontSize: '14px', fontStyle: 'italic', color: '#1c1c1e', lineHeight: 1 }}>{p.name || 'Без назви'}</div>
                     <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#8e8e93', lineHeight: 1 }}>ID: {p.id || 'не вказано'}</div>
                     
-                    {/* Дата у закругленому прямокутнику на 3 тони світлішому за фон (#f2f2f7 -> #ffffff) */}
+                    {/* Дата у закругленому прямокутнику */}
                     {(startDateStr || endDateStr) && (
                       <div
                         style={{
