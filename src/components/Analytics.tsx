@@ -168,20 +168,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
   return (
     <div style={{ padding: '16px', maxWidth: '100%', overflowX: 'auto', color: '#1c1c1e', fontFamily: "'SF Pro Condensed', -apple-system, sans-serif", fontSize: '11px' }}>
       
-      {/* Зовнішній вибір проєкту залишено також зверху для зручності */}
-      <div style={{ marginBottom: '16px', maxWidth: '400px', display: 'none' }}>
-        <select
-          value={selectedProjectId}
-          onChange={(e) => handleSelectProject(e.target.value)}
-        >
-          {projects.map(p => (
-            <option key={p.id} value={p.id}>
-              {p.name} (ID: {p.id})
-            </option>
-          ))}
-        </select>
-      </div>
-
       {!activeProject ? (
         <div style={{ textAlign: 'center', color: '#8e8e93', padding: '40px 0', fontStyle: 'italic' }}>
           Немає доступних проєктів.
@@ -189,7 +175,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
       ) : (
         <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', minWidth: '1200px', width: '100%' }}>
           
-          {/* БЛОК 1: Назва проєкту зі спадним меню + Назви стадій та теги */}
+          {/* БЛОК 1: Вибір проєкту + Назви стадій та теги */}
           <div style={{ 
             width: '320px', 
             flexShrink: 0, 
@@ -199,7 +185,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
             overflow: 'hidden',
             boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
           }}>
-            {/* Рядок вибору проєкту у вигляді спадного меню */}
+            {/* Випадаючий список проєктів */}
             <div style={{ backgroundColor: '#f2f2f7', borderBottom: '1px solid #d1d1d6', padding: '0 12px', height: HEADER_HEIGHT, boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}>
               <select
                 value={selectedProjectId}
@@ -267,7 +253,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
             )}
           </div>
 
-          {/* БЛОК 2: Графік Ганта та шкала */}
+          {/* БЛОК 2: Графік Ганта та шкала (повністю без відступів зліва/справа) */}
           <div style={{ flexGrow: 1, backgroundColor: 'transparent', overflow: 'visible' }}>
             
             {/* Шапка Блоку 2 */}
@@ -316,7 +302,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
 
             </div>
 
-            {/* Рядок загального таймлайну проєкту */}
+            {/* Рядок загального таймлайну проєкту (без внутрішніх відступів padding: 0) */}
             <div style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e5e5ea', borderLeft: '1px solid #d1d1d6', borderRight: '1px solid #d1d1d6', padding: '0', height: TIMELINE_HEIGHT, boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}>
               <div style={{ position: 'relative', width: '100%', height: '31px', backgroundColor: 'transparent', borderRadius: '4px', overflow: 'visible', display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle }}>
                 <div 
@@ -356,7 +342,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
               </div>
             </div>
 
-            {/* Графік Ганта по стадіях із правильним заповненням повзунків */}
+            {/* Графік Ганта по стадіях (без внутрішніх відступів padding: 0) */}
             {(!activeProject.stages || activeProject.stages.length === 0) ? (
               <div style={{ padding: '20px', textAlign: 'center', color: '#8e8e93', fontStyle: 'italic' }}>Немає стадій</div>
             ) : (
@@ -410,7 +396,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                   const isNearBottom = sIdx >= totalStagesCount - 2;
 
                   return (
-                    <div key={stage.id || sIdx} style={{ padding: '0 12px', height: STAGE_ROW_HEIGHT, boxSizing: 'border-box', backgroundColor: sIdx % 2 === 1 ? '#fafafa' : '#ffffff', overflow: 'visible', display: 'flex', alignItems: 'center', borderBottom: sIdx === activeProject.stages.length - 1 ? 'none' : '1px solid #e5e5ea' }}>
+                    <div key={stage.id || sIdx} style={{ padding: '0', height: STAGE_ROW_HEIGHT, boxSizing: 'border-box', backgroundColor: sIdx % 2 === 1 ? '#fafafa' : '#ffffff', overflow: 'visible', display: 'flex', alignItems: 'center', borderBottom: sIdx === activeProject.stages.length - 1 ? 'none' : '1px solid #e5e5ea' }}>
                       
                       <div style={{ position: 'relative', width: '100%', height: '31px', backgroundColor: 'transparent', borderRadius: '4px', overflow: 'visible', display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle }}>
                         
@@ -511,7 +497,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                           </div>
                         )}
 
-                        {/* Смужка стадії із заповненням відсотків всередині сітки Ганта */}
+                        {/* Смужка стадії */}
                         <div 
                           style={{ 
                             gridColumn: `${gridColumnStart} / span ${spanCount}`,
