@@ -175,7 +175,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
       ) : (
         <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', minWidth: '1200px', width: '100%' }}>
           
-          {/* БЛОК 1: Дворядкова шапка (Спадне меню + ID) */}
+          {/* БЛОК 1 */}
           <div style={{ 
             width: '320px', 
             flexShrink: 0, 
@@ -343,7 +343,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                     position: 'absolute',
                     width: '100%',
                     textAlign: 'center',
-                    fontSize: '11px',
+                    fontSize: '10px',
                     fontWeight: 'bold',
                     fontStyle: 'italic',
                     color: projectProgress > 50 ? '#ffffff' : '#1c1c1e',
@@ -395,7 +395,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                   const GAP_THRESHOLD_MS = 2 * 24 * 60 * 60 * 1000;
 
                   if (sIdx > 0 && startMs > prevEndMs + GAP_THRESHOLD_MS) {
-                    // Виправляємо початок гепу: беремо день закінчення попередньої стадії + 1 день
                     const prevEndDateObj = new Date(prevEndMs);
                     prevEndDateObj.setDate(prevEndDateObj.getDate() + 1);
                     prevEndDateObj.setHours(0, 0, 0, 0);
@@ -418,7 +417,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                       
                       <div style={{ position: 'relative', width: '100%', height: '31px', backgroundColor: 'transparent', borderRadius: '4px', overflow: 'visible', display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle }}>
                         
-                        {/* Червоний геп */}
+                        {/* Червоний геп із текстом та коментарем всередині */}
                         {gapSpanCount > 0 && (
                           <div 
                             onClick={() => {
@@ -435,9 +434,28 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                               zIndex: 2,
                               cursor: 'pointer',
                               boxShadow: '0 0 4px rgba(255, 59, 48, 0.4)',
-                              position: 'relative'
+                              position: 'relative',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              overflow: 'hidden'
                             }}
                           >
+                            {/* Текст усередині гепу (розмір 10px, жирний курсив, як і написи стадій) */}
+                            <span style={{
+                              fontSize: '10px',
+                              fontWeight: 'bold',
+                              fontStyle: 'italic',
+                              color: '#ffffff',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              padding: '0 4px',
+                              pointerEvents: 'none'
+                            }}>
+                              {savedComment ? savedComment : '💬'}
+                            </span>
+
                             {isEditing && (
                               <div style={{
                                 position: 'absolute',
@@ -484,32 +502,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                                     Зберегти
                                   </button>
                                 </div>
-                              </div>
-                            )}
-
-                            {savedComment && !isEditing && (
-                              <div 
-                                style={{
-                                  position: 'absolute',
-                                  ...(isNearBottom ? { bottom: '31px' } : { top: '31px' }),
-                                  left: '0px',
-                                  fontSize: '9px',
-                                  color: '#ff3b30',
-                                  fontStyle: 'italic',
-                                  cursor: 'pointer',
-                                  maxWidth: '160px',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap',
-                                  zIndex: 10,
-                                  backgroundColor: 'rgba(255,255,255,0.9)',
-                                  padding: '1px 4px',
-                                  borderRadius: '4px',
-                                  border: '1px solid rgba(255,59,48,0.3)'
-                                }}
-                                title={savedComment}
-                              >
-                                💬 {savedComment}
                               </div>
                             )}
                           </div>
