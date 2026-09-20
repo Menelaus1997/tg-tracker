@@ -7,7 +7,6 @@ interface WindowFrameProps {
 export const WindowFrame: React.FC<WindowFrameProps> = ({ children }) => {
   return (
     <div style={{
-      // Робимо вікно на весь доступний простір робочої площини (номер 1)
       width: '100vw',
       height: '100vh',
       maxWidth: 'none',
@@ -21,7 +20,6 @@ export const WindowFrame: React.FC<WindowFrameProps> = ({ children }) => {
       overflow: 'hidden',
       boxSizing: 'border-box',
     }}>
-      {/* Вміст додатку тепер розтягується на всю площину (номер 2 дорівнює номеру 1) */}
       <div style={{ 
         flex: 1, 
         overflowY: 'auto', 
