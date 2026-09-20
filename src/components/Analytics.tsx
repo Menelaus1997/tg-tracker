@@ -11,7 +11,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
   const [selectedProjectId, setSelectedProjectId] = useState<string>(projects[0]?.id || '');
   const activeProject = projects.find(p => p.id === selectedProjectId) || projects[0];
 
-  // Стан для редагування коментарів до гепів (ключ: `${stageId}_gap`, значення: текст коментаря)
   const [gapComments, setGapComments] = useState<{ [key: string]: string }>(() => {
     return (activeProject as any)?.gapComments || {};
   });
@@ -38,7 +37,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
     }
   };
 
-  // Пошук фото виконавця з бази Telegram
   const getTeamMemberPhoto = (contractorEntry: string) => {
     if (!contractorEntry) return null;
     const cleanName = contractorEntry.replace(/\s*\([^)]+\)$/, '').trim().toLowerCase();
@@ -46,7 +44,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
     return member?.photoUrl || null;
   };
 
-  // Розрахунок загального прогресу стадії
   const calculateStageProgress = (stage: any) => {
     if (!stage.subStages || stage.subStages.length === 0) {
       return stage.currentStatus === 'Завершено' ? 100 : 0;
@@ -56,7 +53,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
     return Math.round((completed / total) * 100);
   };
 
-  // Визначаємо мінімальну та максимальну дату в проєкті для побудови шкали
   let minTimestamp = Infinity;
   let maxTimestamp = -Infinity;
 
@@ -81,7 +77,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
 
   const totalProjectDurationMs = maxTimestamp - minTimestamp || 1;
 
-  // Генеруємо масив днів для шапки
   const timelineDays: { dateStr: string; dayNum: number; monthName: string }[] = [];
   let curr = new Date(minTimestamp);
   const endLimit = new Date(maxTimestamp);
@@ -97,6 +92,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
   }
 
   let previousStageEndMs = minTimestamp;
+  const totalStagesCount = activeProject?.stages?.length || 0;
 
   return (
     <div style={{ padding: '16px', maxWidth: '100%', overflowX: 'auto', color: '#1c1c1e', fontFamily: "'SF Pro Condensed', -apple-system, sans-serif", fontSize: '11px' }}>
@@ -133,7 +129,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
           Немає доступних проєктів.
         </div>
       ) : (
-        <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d1d6', borderRadius: '12px', overflow: 'hidden', minWidth: '900px' }}>
+        <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d1d6', borderRadius: '12px', overflow: 'visible', minWidth: '900px' }}>
           
           {/* Шапка: Назва проєкту + Календарна шкала днів з місяцями */}
           <div style={{ display: 'grid', gridTemplateColumns: '350px 1fr', backgroundColor: '#f2f2f7', borderBottom: '1px solid #d1d1d6', padding: '10px 12px', alignItems: 'center' }}>
@@ -168,19 +164,17 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
               У проєкті ще немає стадій.
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'visible' }}>
               {activeProject.stages.map((stage: any, sIdx: number) => {
                 const stageContractors: string[] = stage.contractors || (stage.contractor ? [stage.contractor] : []);
                 const statusLabel = stage.currentStatus || 'В процесі';
                 const progressPct = calculateStageProgress(stage);
 
-                // Кольори статусів
                 let statusBg = '#007aff';
                 if (statusLabel.toLowerCase().includes('завершено')) statusBg = '#34c759';
                 else if (statusLabel.toLowerCase().includes('паузі')) statusBg = '#ffcc00';
                 else if (statusLabel.toLowerCase().includes('перевірці') || statusLabel.toLowerCase().includes('правки')) statusBg = '#ff9500';
 
-                // Розрахунок позиції стадії
                 let leftPercent = 0;
                 let widthPercent = 10;
                 let currentStartMs = minTimestamp;
@@ -200,7 +194,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                   currentEndMs = currentStartMs + 24 * 60 * 60 * 1000;
                 }
 
-                // Розрахунок гепу (розриву) тільки якщо різниця більша за 1 день (24 години + невеликий запас)
                 let gapLeftPercent = 0;
                 let gapWidthPercent = 0;
                 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -222,14 +215,16 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                 const savedComment = gapComments[gapKey];
                 const isEditing = editingGapKey === gapKey;
 
+                // Якщо стадія знаходиться в нижній половині списку, відкриваємо вікно коментаря ЗВЕРХУ
+                const isNearBottom = sIdx >= totalStagesCount - 2;
+
                 return (
-                  <div key={stage.id || sIdx} style={{ display: 'grid', gridTemplateColumns: '350px 1fr', padding: '10px 12px', alignItems: 'center', borderBottom: '1px solid #e5e5ea', backgroundColor: '#fafafa' }}>
+                  <div key={stage.id || sIdx} style={{ display: 'grid', gridTemplateColumns: '350px 1fr', padding: '10px 12px', alignItems: 'center', borderBottom: '1px solid #e5e5ea', backgroundColor: '#fafafa', overflow: 'visible' }}>
                     
                     {/* Ліва частина: Аватарка + Назва + Статус */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', paddingRight: '12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
                         
-                        {/* Аватарка виконавця */}
                         <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: '#e5e5ea', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid #d1d1d6' }}>
                           {stageContractors.length > 0 && getTeamMemberPhoto(stageContractors[0]) ? (
                             <img src={getTeamMemberPhoto(stageContractors[0])!} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -243,16 +238,15 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                         </span>
                       </div>
 
-                      {/* Статус стадії */}
                       <span style={{ fontSize: '9px', padding: '2px 6px', borderRadius: '10px', backgroundColor: statusBg, color: '#fff', fontWeight: 'bold', fontStyle: 'italic', flexShrink: 0 }}>
                         {statusLabel}
                       </span>
                     </div>
 
-                    {/* Права частина: Хронологічна смужка Ганта з інтерактивним червоним гепом */}
+                    {/* Права частина: Хронологічна смужка Ганта з червоним гепом */}
                     <div style={{ position: 'relative', height: '22px', backgroundColor: '#f2f2f7', borderRadius: '4px', overflow: 'visible' }}>
                       
-                      {/* Червоне виділення справжнього гепу (паузи) з можливістю залишити коментар */}
+                      {/* Червоне виділення гепу без значка попередження */}
                       {gapWidthPercent > 0.5 && (
                         <div 
                           onClick={() => {
@@ -271,31 +265,23 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                             opacity: 0.9,
                             zIndex: 2,
                             cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#fff',
-                            fontSize: '9px',
-                            fontWeight: 'bold',
-                            boxShadow: '0 0 4px rgba(255, 59, 48, 0.6)'
+                            boxShadow: '0 0 4px rgba(255, 59, 48, 0.4)'
                           }}
-                        >
-                          {savedComment ? '💬' : '⚠️'}
-                        </div>
+                        />
                       )}
 
-                      {/* Вікно введення коментаря до гепу */}
+                      {/* Вікно введення коментаря (автоматично зверху або знизу в залежності від позиції стадії) */}
                       {isEditing && (
                         <div style={{
                           position: 'absolute',
-                          top: '26px',
+                          ...(isNearBottom ? { bottom: '26px' } : { top: '26px' }),
                           left: `${gapLeftPercent}%`,
-                          zIndex: 10,
+                          zIndex: 100,
                           backgroundColor: '#ffffff',
                           border: '1px solid #d1d1d6',
                           borderRadius: '8px',
                           padding: '8px',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                          boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
                           width: '220px',
                           display: 'flex',
                           flexDirection: 'column',
@@ -314,6 +300,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                               fontSize: '11px',
                               outline: 'none'
                             }}
+                            autoFocus
                           />
                           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '4px' }}>
                             <button 
@@ -332,7 +319,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                         </div>
                       )}
 
-                      {/* Якщо коментар вже збережено, виводимо його текст поруч або мітка */}
+                      {/* Текст збереженого коментаря */}
                       {savedComment && !isEditing && (
                         <div 
                           onClick={() => {
@@ -341,17 +328,21 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                           }}
                           style={{
                             position: 'absolute',
-                            top: '22px',
+                            ...(isNearBottom ? { bottom: '24px' } : { top: '22px' }),
                             left: `${gapLeftPercent}%`,
                             fontSize: '9px',
                             color: '#ff3b30',
                             fontStyle: 'italic',
                             cursor: 'pointer',
-                            maxWidth: '150px',
+                            maxWidth: '160px',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
-                            zIndex: 1
+                            zIndex: 10,
+                            backgroundColor: 'rgba(255,255,255,0.9)',
+                            padding: '1px 4px',
+                            borderRadius: '4px',
+                            border: '1px solid rgba(255,59,48,0.3)'
                           }}
                           title={savedComment}
                         >
