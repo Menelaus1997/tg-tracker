@@ -235,7 +235,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
             )}
           </div>
 
-          {/* БЛОК 2: Графік Ганта від краю до краю без відступів */}
+          {/* БЛОК 2: Графік Ганта від краю до краю без внутрішньої сітки */}
           <div style={{ 
             flexGrow: 1, 
             backgroundColor: '#ffffff', 
@@ -283,15 +283,15 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
 
             </div>
 
-            {/* Загальний таймлайн проєкту з відсотком готовності всередині */}
-            <div style={{ backgroundColor: '#fcfcfc', borderBottom: '1px solid #e5e5ea', padding: '8px 0', height: '31px', boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}>
-              <div style={{ position: 'relative', width: '100%', height: '14px', backgroundColor: '#e5e5ea', borderRadius: '7px', overflow: 'hidden', display: 'flex', alignItems: 'center' }}>
+            {/* Загальний таймлайн проєкту з відсотком готовності */}
+            <div style={{ backgroundColor: '#fcfcfc', borderBottom: '1px solid #e5e5ea', padding: '6px 0', height: '31px', boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}>
+              <div style={{ position: 'relative', width: '100%', height: '19px', backgroundColor: '#e5e5ea', borderRadius: '4px', overflow: 'hidden', display: 'flex', alignItems: 'center' }}>
                 <div style={{ width: `${projectProgress}%`, height: '100%', backgroundColor: '#007aff', transition: 'width 0.3s' }} />
                 <span style={{
                   position: 'absolute',
                   width: '100%',
                   textAlign: 'center',
-                  fontSize: '9px',
+                  fontSize: '10px',
                   fontWeight: 'bold',
                   fontStyle: 'italic',
                   color: projectProgress > 50 ? '#ffffff' : '#1c1c1e',
@@ -302,7 +302,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
               </div>
             </div>
 
-            {/* Графік Ганта по стадіях */}
+            {/* Графік Ганта по стадіях (на повну ширину клітинок) */}
             {(!activeProject.stages || activeProject.stages.length === 0) ? (
               <div style={{ padding: '20px', textAlign: 'center', color: '#8e8e93', fontStyle: 'italic' }}>Немає стадій</div>
             ) : (
@@ -357,16 +357,11 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                   const isNearBottom = sIdx >= totalStagesCount - 2;
 
                   return (
-                    <div key={stage.id || sIdx} style={{ padding: '8px 0', height: '43px', boxSizing: 'border-box', borderBottom: '1px solid #e5e5ea', backgroundColor: '#fafafa', overflow: 'visible', display: 'flex', alignItems: 'center' }}>
+                    <div key={stage.id || sIdx} style={{ padding: '6px 0', height: '43px', boxSizing: 'border-box', borderBottom: '1px solid #e5e5ea', backgroundColor: '#fafafa', overflow: 'visible', display: 'flex', alignItems: 'center' }}>
                       
-                      {/* Контейнер рядка Ганта від краю до краю без відступів */}
-                      <div style={{ position: 'relative', width: '100%', height: '28px', backgroundColor: '#f2f2f7', borderRadius: '4px', overflow: 'visible', display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle }}>
+                      {/* Контейнер рядка Ганта (без внутрішніх ліній сітки, смужки на всю висоту) */}
+                      <div style={{ position: 'relative', width: '100%', height: '31px', backgroundColor: 'transparent', borderRadius: '4px', overflow: 'visible', display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle }}>
                         
-                        {/* Фонова сітка клітинок */}
-                        {timelineDays.map((_, dIdx) => (
-                          <div key={`grid-cell-${dIdx}`} style={{ borderRight: '1px solid #e5e5ea', height: '100%' }} />
-                        ))}
-
                         {/* Червоний геп */}
                         {gapSpanCount > 0 && (
                           <div 
@@ -378,7 +373,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                             style={{
                               gridColumn: `${gapGridStart} / span ${gapSpanCount}`,
                               gridRow: 1,
-                              margin: '2px 0',
                               backgroundColor: '#ff3b30',
                               borderRadius: '4px',
                               opacity: 0.9,
@@ -391,7 +385,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                             {isEditing && (
                               <div style={{
                                 position: 'absolute',
-                                ...(isNearBottom ? { bottom: '32px' } : { top: '32px' }),
+                                ...(isNearBottom ? { bottom: '35px' } : { top: '35px' }),
                                 left: '0px',
                                 zIndex: 100,
                                 backgroundColor: '#ffffff',
@@ -441,7 +435,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                               <div 
                                 style={{
                                   position: 'absolute',
-                                  ...(isNearBottom ? { bottom: '28px' } : { top: '28px' }),
+                                  ...(isNearBottom ? { bottom: '31px' } : { top: '31px' }),
                                   left: '0px',
                                   fontSize: '9px',
                                   color: '#ff3b30',
@@ -465,12 +459,11 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                           </div>
                         )}
 
-                        {/* Товста смужка стадії (без % якщо статус "Завершено") */}
+                        {/* Повнорозмірна смужка стадії на всю висоту та ширину клітинок */}
                         <div 
                           style={{ 
                             gridColumn: `${gridColumnStart} / span ${spanCount}`,
                             gridRow: 1,
-                            margin: '2px 0',
                             backgroundColor: '#d1d1d6', 
                             borderRadius: '4px',
                             overflow: 'hidden',
