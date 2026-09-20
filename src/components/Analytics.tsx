@@ -68,6 +68,9 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase }) 
     curr.setDate(curr.getDate() + 1);
   }
 
+  // Зберігаємо дату закінчення попередньої стадії для розрахунку гепу
+  let previousStageEndMs = minTimestamp;
+
   return (
     <div style={{ padding: '16px', maxWidth: '100%', overflowX: 'auto', color: '#1c1c1e', fontFamily: "'SF Pro Condensed', -apple-system, sans-serif", fontSize: '11px' }}>
       
@@ -150,26 +153,46 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase }) 
                 else if (statusLabel.toLowerCase().includes('паузі')) statusBg = '#ffcc00';
                 else if (statusLabel.toLowerCase().includes('перевірці') || statusLabel.toLowerCase().includes('правки')) statusBg = '#ff9500';
 
-                // Розрахунок позиції смужки Ганта
+                // Розрахунок позиції стадії
                 let leftPercent = 0;
                 let widthPercent = 10;
+                let currentStartMs = minTimestamp;
+                let currentEndMs = minTimestamp;
 
                 if (stage.startDate) {
-                  const startMs = new Date(stage.startDate).getTime();
-                  leftPercent = Math.max(0, Math.min(100, ((startMs - minTimestamp) / totalProjectDurationMs) * 100));
+                  currentStartMs = new Date(stage.startDate).getTime();
+                  leftPercent = Math.max(0, Math.min(100, ((currentStartMs - minTimestamp) / totalProjectDurationMs) * 100));
                 }
 
                 const endD = stage.reviewDate || stage.endDate;
                 if (stage.startDate && endD) {
-                  const startMs = new Date(stage.startDate).getTime();
-                  const endMs = new Date(endD).getTime();
-                  const durationMs = Math.max(endMs - startMs, 24 * 60 * 60 * 1000);
+                  currentEndMs = new Date(endD).getTime();
+                  const durationMs = Math.max(currentEndMs - currentStartMs, 24 * 60 * 60 * 1000);
                   widthPercent = Math.max(2, Math.min(100 - leftPercent, (durationMs / totalProjectDurationMs) * 100));
+                } else {
+                  currentEndMs = currentStartMs + 24 * 60 * 60 * 1000;
                 }
 
-                // Обчислюємо розмір та позицію для сірої зони паузи (від початку шкали 0% до початку стадії leftPercent)
-                const pauseLeft = 0;
-                const pauseWidth = Math.max(0, leftPercent);
+                // Розрахунок гепу (розриву) між кінцем попередньої стадії та початком поточної
+                let gapLeftPercent = 0;
+                let gapWidthPercent = 0;
+
+                if (sIdx === 0) {
+                  // Для першої стадії геп від початку шкали до старту стадії
+                  if (currentStartMs > minTimestamp) {
+                    gapLeftPercent = 0;
+                    gapWidthPercent = leftPercent;
+                  }
+                } else {
+                  // Для наступних стадій геп від кінця попередньої стадії до старту поточної
+                  if (currentStartMs > previousStageEndMs) {
+                    gapLeftPercent = Math.max(0, Math.min(100, ((previousStageEndMs - minTimestamp) / totalProjectDurationMs) * 100));
+                    gapWidthPercent = Math.max(0, leftPercent - gapLeftPercent);
+                  }
+                }
+
+                // Оновлюємо кінець попередньої стадії для наступної ітерації
+                previousStageEndMs = Math.max(previousStageEndMs, currentEndMs);
 
                 return (
                   <div key={stage.id || sIdx} style={{ display: 'grid', gridTemplateColumns: '350px 1fr', padding: '10px 12px', alignItems: 'center', borderBottom: '1px solid #e5e5ea', backgroundColor: '#fafafa' }}>
@@ -198,22 +221,23 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase }) 
                       </span>
                     </div>
 
-                    {/* Права частина: Хронологічна смужка Ганта з сірою зоною паузи */}
+                    {/* Права частина: Хронологічна смужка Ганта з червоним виділенням гепу */}
                     <div style={{ position: 'relative', height: '18px', backgroundColor: '#f2f2f7', borderRadius: '4px', overflow: 'hidden' }}>
                       
-                      {/* Сіра зона паузи (від початку таймлайну до старту стадії) */}
-                      {pauseWidth > 0 && (
+                      {/* Червоне виділення розриву (гепу) між стадіями */}
+                      {gapWidthPercent > 0.5 && (
                         <div 
-                          title="Пауза / Простій перед стадією"
+                          title="Розрив / Пауза між стадіями"
                           style={{
                             position: 'absolute',
                             top: '2px',
                             bottom: '2px',
-                            left: `${pauseLeft}%`,
-                            width: `${pauseWidth}%`,
-                            backgroundColor: '#e0e0e0',
+                            left: `${gapLeftPercent}%`,
+                            width: `${gapWidthPercent}%`,
+                            backgroundColor: '#ff3b30',
                             borderRadius: '3px',
-                            opacity: 0.8
+                            opacity: 0.85,
+                            zIndex: 2
                           }}
                         />
                       )}
