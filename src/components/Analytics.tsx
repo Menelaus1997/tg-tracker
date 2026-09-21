@@ -17,12 +17,13 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
   const [tempComment, setTempComment] = useState<string>('');
   const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
 
-  // Стан для перетягування країв стадії (Resize)
+  // Повністю робочий стан для перетягування (зміни розміру) країв стадії
   const [resizingStage, setResizingStage] = useState<{
     stageIndex: number;
     edge: 'start' | 'end';
     initialClientX: number;
-    initialDate: string;
+    initialStartDate: string;
+    initialEndDate: string;
   } | null>(null);
 
   const reportRef = useRef<HTMLDivElement>(null);
@@ -170,9 +171,9 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
 
   const totalDays = timelineDays.length;
   const gridTemplateColumnsStyle = `repeat(${totalDays}, 32px)`;
-  const dayWidthPx = 32; // Ширина однієї колонки дня в пікселях
+  const dayWidthPx = 32;
 
-  // Логіка обробки перетягування країв стадії
+  // Логіка перетягування ручок зміщення дат стадій
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!resizingStage || !activeProject || !onUpdateProject) return;
@@ -182,19 +183,21 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
 
       const updatedStages = [...activeProject.stages];
       const stageToUpdate = { ...updatedStages[resizingStage.stageIndex] };
-      const baseDate = new Date(resizingStage.initialDate);
-
-      if (isNaN(baseDate.getTime())) return;
 
       if (resizingStage.edge === 'start') {
+        const baseDate = new Date(resizingStage.initialStartDate);
+        if (isNaN(baseDate.getTime())) return;
         baseDate.setDate(baseDate.getDate() + dayShift);
         stageToUpdate.startDate = baseDate.toISOString().split('T')[0];
       } else {
+        const baseDate = new Date(resizingStage.initialEndDate || resizingStage.initialStartDate);
+        if (isNaN(baseDate.getTime())) return;
         baseDate.setDate(baseDate.getDate() + dayShift);
+        const newEndStr = baseDate.toISOString().split('T')[0];
         if (stageToUpdate.reviewDate) {
-          stageToUpdate.reviewDate = baseDate.toISOString().split('T')[0];
+          stageToUpdate.reviewDate = newEndStr;
         } else {
-          stageToUpdate.endDate = baseDate.toISOString().split('T')[0];
+          stageToUpdate.endDate = newEndStr;
         }
       }
 
@@ -302,7 +305,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
         }
       `}</style>
 
-      {/* Кнопка друку */}
+      {/* Кнопка друку з білою іконкою принтера */}
       <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
         <button
           onClick={handleExportPDF}
@@ -523,13 +526,13 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
 
               </div>
 
-              {/* Жовта вертикальна лінія */}
+              {/* Жовта вертикальна лінія (рівно по нижню межу стадій) */}
               {selectedDayIndex !== null && (
                 <div style={{
                   position: 'absolute',
                   top: HEADER_HEIGHT,
                   left: `${selectedDayIndex * 32}px`,
-                  height: `calc(${TIMELINE_HEIGHT} + ${activeProject.stages.length * 42}px)`,
+                  height: `calc(${TIMELINE_HEIGHT} + ${activeProject.stages.length * STAGE_ROW_HEIGHT}px)`,
                   width: '32px',
                   backgroundColor: 'rgba(255, 235, 59, 0.2)',
                   zIndex: 5,
@@ -591,7 +594,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
                 </div>
               </div>
 
-              {/* Графік Ганта по стадіях із ручками перетягування (Resize Handles) */}
+              {/* Графік Ганта по стадіях із БІЛИМИ ручками зміни розміру (Resize Handles) */}
               {(!activeProject.stages || activeProject.stages.length === 0) ? (
                 <div style={{ padding: '20px', textAlign: 'center', color: '#8e8e93', fontStyle: 'italic' }}>Немає стадій</div>
               ) : (
@@ -784,7 +787,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
                                 printColorAdjust: 'exact'
                               }} 
                             >
-                              {/* Ліва ручка для зміни дати початку (тягнути вліво/вправо) */}
+                              {/* Біла ручка зліва для зміни дати початку */}
                               <div
                                 className="no-print"
                                 onMouseDown={(e) => {
@@ -793,21 +796,23 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
                                     stageIndex: sIdx,
                                     edge: 'start',
                                     initialClientX: e.clientX,
-                                    initialDate: stage.startDate
+                                    initialStartDate: stage.startDate,
+                                    initialEndDate: stage.reviewDate || stage.endDate
                                   });
                                 }}
                                 title="Потягніть, щоб змінити дату початку"
                                 style={{
                                   position: 'absolute',
-                                  left: '-4px',
+                                  left: '-5px',
                                   top: '-2px',
                                   bottom: '-2px',
-                                  width: '8px',
-                                  backgroundColor: '#ff3b30',
+                                  width: '7px',
+                                  backgroundColor: '#ffffff',
+                                  border: '1.5px solid #007aff',
                                   borderRadius: '3px',
                                   cursor: 'ew-resize',
                                   zIndex: 10,
-                                  boxShadow: '0 0 3px rgba(0,0,0,0.3)'
+                                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
                                 }}
                               />
 
@@ -819,7 +824,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
                                   transition: 'width 0.3s',
                                   WebkitPrintColorAdjust: 'exact',
                                   printColorAdjust: 'exact'
-                                 }} 
+                                }} 
                               />
                               {!isCompleted && (
                                 <span style={{
@@ -836,7 +841,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
                                 </span>
                               )}
 
-                              {/* Права ручка для зміни дати кінця (тягнути вліво/вправо) */}
+                              {/* Біла ручка справа для зміни дати кінця */}
                               <div
                                 className="no-print"
                                 onMouseDown={(e) => {
@@ -845,21 +850,23 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
                                     stageIndex: sIdx,
                                     edge: 'end',
                                     initialClientX: e.clientX,
-                                    initialDate: stage.reviewDate || stage.endDate || stage.startDate
+                                    initialStartDate: stage.startDate,
+                                    initialEndDate: stage.reviewDate || stage.endDate
                                   });
                                 }}
                                 title="Потягніть, щоб змінити дату завершення"
                                 style={{
                                   position: 'absolute',
-                                  right: '-4px',
+                                  right: '-5px',
                                   top: '-2px',
                                   bottom: '-2px',
-                                  width: '8px',
-                                  backgroundColor: '#ff3b30',
+                                  width: '7px',
+                                  backgroundColor: '#ffffff',
+                                  border: '1.5px solid #007aff',
                                   borderRadius: '3px',
                                   cursor: 'ew-resize',
                                   zIndex: 10,
-                                  boxShadow: '0 0 3px rgba(0,0,0,0.3)'
+                                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
                                 }}
                               />
                             </div>
