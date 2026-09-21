@@ -203,8 +203,14 @@ export const App: React.FC = () => {
                 onPermanentDelete={(id: string) => setProjects(projects.filter((p) => p.id !== id))}
               />
             )}
-            {activeTab === 4 && <Analytics projects={projects} teamDatabase={teamMembers} />}
-            
+            {activeTab === 4 && (
+              <Analytics 
+                projects={projects} 
+                teamDatabase={teamMembers} 
+                onUpdateProject={(updatedProject) => {
+                setProjects(projects.map((p) => (p.id === updatedProject.id ? updatedProject : p)));}}
+                  />
+                    )}            
             {activeTab === 5 && (
               <TeamManagement
                 members={teamMembers}
