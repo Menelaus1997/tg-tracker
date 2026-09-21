@@ -205,7 +205,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
 
   const HEADER_HEIGHT = '48px';
   const TIMELINE_HEIGHT = '34px';
-  const STAGE_ROW_HEIGHT = '42px'; // Збільшено трохи висоту, щоб вмістити дати знизу
+  const STAGE_ROW_HEIGHT = '42px';
   const totalAnalyticsMinWidth = 270 + (totalDays * 32);
 
   return (
@@ -248,27 +248,26 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
         }
       `}</style>
 
-      {/* Кнопка експорту в PDF */}
+      {/* Кнопка друку у вигляді білої іконки з принтером */}
       <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
         <button
           onClick={handleExportPDF}
+          title="Зберегти в PDF / Друк"
           style={{
-            padding: '6px 12px',
-            backgroundColor: '#007aff',
-            color: '#ffffff',
-            border: 'none',
+            padding: '6px 10px',
+            backgroundColor: '#ffffff',
+            color: '#636366',
+            border: '1px solid #d1d1d6',
             borderRadius: '6px',
-            fontSize: '11px',
-            fontWeight: 'bold',
-            fontStyle: 'italic',
+            fontSize: '13px',
             cursor: 'pointer',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px'
+            justifyContent: 'center'
           }}
         >
-          📥 Зберегти в PDF / Друк
+          🖨️
         </button>
       </div>
 
@@ -304,7 +303,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
               flexShrink: 0
             }}>
               <div style={{ 
-                backgroundColor: '#f2f2f7', 
+                backgroundColor: '#ffffff', 
                 borderBottom: '1px solid #d1d1d6', 
                 padding: '4px 8px', 
                 height: HEADER_HEIGHT, 
@@ -344,7 +343,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
                 </div>
               </div>
 
-              <div style={{ backgroundColor: '#fcfcfc', borderBottom: '1px solid #e5e5ea', padding: '0 10px', height: TIMELINE_HEIGHT, boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}>
+              <div style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e5e5ea', padding: '0 10px', height: TIMELINE_HEIGHT, boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}>
                 <span style={{ fontSize: '10px', fontWeight: 'bold', fontStyle: 'italic', color: '#636366' }}>Загальний таймлайн проєкту</span>
               </div>
 
@@ -367,7 +366,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
                     const dateRangeText = (sDateFormatted && eDateFormatted) ? `${sDateFormatted} — ${eDateFormatted}` : (sDateFormatted || '');
 
                     return (
-                      <div key={stage.id || sIdx} style={{ padding: '4px 10px', height: STAGE_ROW_HEIGHT, boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e5e5ea', backgroundColor: '#fafafa' }}>
+                      <div key={stage.id || sIdx} style={{ padding: '4px 10px', height: STAGE_ROW_HEIGHT, boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e5e5ea', backgroundColor: '#ffffff' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden', flexGrow: 1 }}>
                           <div style={{ width: '18px', height: '18px', borderRadius: '50%', backgroundColor: '#e5e5ea', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid #d1d1d6' }}>
                             {stageContractors.length > 0 && getTeamMemberPhoto(stageContractors[0]) ? (
@@ -400,11 +399,11 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
             {/* БЛОК 2: Графік Ганта праворуч */}
             <div style={{ flexGrow: 1, minWidth: `${totalDays * 32}px`, backgroundColor: 'transparent', position: 'relative' }}>
               
-              {/* Шапка Блоку 2 */}
+              {/* Шапка Блоку 2 (без сірого фону, білий чистий фон) */}
               <div style={{ 
                 display: 'grid', 
                 gridTemplateRows: 'auto auto', 
-                backgroundColor: '#f2f2f7', 
+                backgroundColor: '#ffffff', 
                 border: '1px solid #d1d1d6', 
                 borderRadius: '10px 10px 0 0', 
                 overflow: 'hidden',
@@ -415,14 +414,14 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
                 printColorAdjust: 'exact'
               }}>
                 
-                <div style={{ display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle, borderBottom: '1px solid #e5e5ea', backgroundColor: '#f9f9fb' }}>
+                {/* Назви місяців (жирний шрифт, геом. центр, без фону) */}
+                <div style={{ display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle, borderBottom: '1px solid #e5e5ea', backgroundColor: '#ffffff', height: '26px', alignItems: 'center' }}>
                   {monthGroups.map((mg, gIdx) => (
                     <div 
                       key={`mg-${gIdx}`} 
                       style={{ 
                         gridColumn: `span ${mg.span}`, 
                         textAlign: 'center', 
-                        padding: '2px 2px', 
                         fontSize: '11px', 
                         fontWeight: 'bold', 
                         fontStyle: 'italic',
@@ -438,7 +437,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
                   ))}
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle, backgroundColor: '#f2f2f7', height: '22px', boxSizing: 'border-box' }}>
+                {/* Числа днів (жирні, білий фон, геом. центр ячейки) */}
+                <div style={{ display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle, backgroundColor: '#ffffff', height: '22px', alignItems: 'center' }}>
                   {timelineDays.map((d, localIdx) => {
                     const isSelected = selectedDayIndex === localIdx;
                     return (
@@ -447,13 +447,16 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
                         onClick={() => setSelectedDayIndex(isSelected ? null : localIdx)}
                         style={{ 
                           textAlign: 'center', 
-                          padding: '2px 0', 
                           fontSize: '10px', 
                           fontStyle: 'italic', 
                           fontWeight: 'bold', 
                           color: isSelected ? '#b26a00' : '#1c1c1e', 
-                          backgroundColor: isSelected ? 'rgba(255, 239, 179, 0.8)' : 'transparent',
+                          backgroundColor: isSelected ? 'rgba(255, 239, 179, 0.8)' : '#ffffff',
                           borderRight: '1px solid #e5e5ea', 
+                          height: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
                           overflow: 'hidden',
                           cursor: 'pointer',
                           transition: 'background-color 0.2s'
@@ -468,14 +471,14 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
 
               </div>
 
-              {/* Безперервна нерозривна жовта вертикальна лінія на всю висоту діаграми Ганта */}
+              {/* Безперервна нерозривна прозора жовта вертикальна лінія, обмежена рівно по нижню межу останньої стадії */}
               {selectedDayIndex !== null && (
                 <div style={{
                   position: 'absolute',
                   top: HEADER_HEIGHT,
                   left: `${selectedDayIndex * 32}px`,
+                  height: `calc(${TIMELINE_HEIGHT} + ${activeProject.stages.length * 42}px)`,
                   width: '32px',
-                  height: '100%',
                   backgroundColor: 'rgba(255, 235, 59, 0.2)',
                   zIndex: 5,
                   pointerEvents: 'none'
@@ -600,7 +603,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
                     const isNearBottom = sIdx >= totalStagesCount - 2;
 
                     return (
-                      <div key={stage.id || sIdx} style={{ padding: '4px 0', height: STAGE_ROW_HEIGHT, boxSizing: 'border-box', backgroundColor: sIdx % 2 === 1 ? '#fafafa' : '#ffffff', overflow: 'visible', display: 'flex', alignItems: 'center', borderBottom: sIdx === activeProject.stages.length - 1 ? 'none' : '1px solid #e5e5ea', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact', position: 'relative' }}>
+                      <div key={stage.id || sIdx} style={{ padding: '4px 0', height: STAGE_ROW_HEIGHT, boxSizing: 'border-box', backgroundColor: '#ffffff', overflow: 'visible', display: 'flex', alignItems: 'center', borderBottom: sIdx === activeProject.stages.length - 1 ? 'none' : '1px solid #e5e5ea', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact', position: 'relative' }}>
                         
                         <div style={{ position: 'relative', width: '100%', height: '24px', backgroundColor: 'transparent', borderRadius: '4px', overflow: 'visible', display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle }}>
                           
