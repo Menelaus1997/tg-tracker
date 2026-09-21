@@ -7,15 +7,14 @@ interface AnalyticsProps {
   onUpdateProject?: (project: Project) => void;
 }
 
-export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, onUpdateProject }) => {
-  const [selectedProjectId, setSelectedProjectId] = useState<string>(projects[0]?.id || '');
-  const activeProject = projects.find(p => p.id === selectedProjectId) || projects[0];
+export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabase = [], onUpdateProject }) => {
+  const safeProjects = Array.isArray(projects) ? projects : [];
+  const [selectedProjectId, setSelectedProjectId] = useState<string>(safeProjects[0]?.id || '');
+  const activeProject = safeProjects.find(p => p.id === selectedProjectId) || safeProjects[0];
 
   const [gapComments, setGapComments] = useState<{ [key: string]: string }>({});
   const [editingGapKey, setEditingGapKey] = useState<string | null>(null);
   const [tempComment, setTempComment] = useState<string>('');
-
-  // Стан для виділеної вертикальної лінії (індекс дня в таймлайні)
   const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
 
   const reportRef = useRef<HTMLDivElement>(null);
@@ -71,29 +70,30 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
   const getTeamMemberPhoto = (contractorEntry: string) => {
     if (!contractorEntry) return null;
     const cleanName = contractorEntry.replace(/\s*\([^)]+\)$/, '').trim().toLowerCase();
-    const member = teamDatabase.find(m => m.fullName.toLowerCase().includes(cleanName));
+    const member = teamDatabase.find(m => m?.fullName?.toLowerCase().includes(cleanName));
     return member?.photoUrl || null;
   };
 
   const calculateStageProgress = (stage: any) => {
-    if (!stage.subStages || stage.subStages.length === 0) {
-      return stage.currentStatus === 'Завершено' ? 100 : 0;
+    if (!stage || !stage.subStages || stage.subStages.length === 0) {
+      return stage?.currentStatus === 'Завершено' ? 100 : 0;
     }
     const total = stage.subStages.length;
-    const completed = stage.subStages.filter((sub: any) => sub.completed).length;
+    const completed = stage.subStages.filter((sub: any) => sub?.completed).length;
     return Math.round((completed / total) * 100);
   };
 
   const calculateProjectProgress = (project: Project) => {
-    if (!project.stages || project.stages.length === 0) return 0;
+    if (!project || !project.stages || project.stages.length === 0) return 0;
     let totalSubtasks = 0;
     let completedSubtasks = 0;
 
     project.stages.forEach(stage => {
+      if (!stage) return;
       if (stage.subStages && stage.subStages.length > 0) {
         stage.subStages.forEach((sub: any) => {
           totalSubtasks++;
-          if (sub.completed) completedSubtasks++;
+          if (sub?.completed) completedSubtasks++;
         });
       } else {
         totalSubtasks++;
@@ -108,16 +108,17 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
   let minTimestamp = Infinity;
   let maxTimestamp = -Infinity;
 
-  if (activeProject && activeProject.stages) {
+  if (activeProject && Array.isArray(activeProject.stages)) {
     activeProject.stages.forEach((st: any) => {
+      if (!st) return;
       if (st.startDate) {
         const t = new Date(st.startDate).getTime();
-        if (t < minTimestamp) minTimestamp = t;
+        if (!isNaN(t) && t < minTimestamp) minTimestamp = t;
       }
       const endD = st.reviewDate || st.endDate;
       if (endD) {
         const t = new Date(endD).getTime();
-        if (t > maxTimestamp) maxTimestamp = t;
+        if (!isNaN(t) && t > maxTimestamp) maxTimestamp = t;
       }
     });
   }
@@ -151,21 +152,20 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
 
   const totalDays = timelineDays.length;
 
-  // Стан для повзунка періоду (зрізу днів), як у Worksection
   const [visibleRange, setVisibleRange] = useState<{ start: number; end: number }>({
     start: 0,
-    end: totalDays
+    end: totalDays > 0 ? totalDays : 1
   });
 
   useEffect(() => {
-    setVisibleRange({ start: 0, end: totalDays });
+    setVisibleRange({ start: 0, end: totalDays > 0 ? totalDays : 1 });
   }, [totalDays, selectedProjectId]);
 
-  const startIndex = Math.max(0, Math.min(visibleRange.start, totalDays - 1));
+  const startIndex = Math.max(0, Math.min(visibleRange.start, Math.max(0, totalDays - 1)));
   const endIndex = Math.max(startIndex + 1, Math.min(visibleRange.end, totalDays));
 
   const slicedDays = timelineDays.slice(startIndex, endIndex);
-  const slicedTotalDays = slicedDays.length;
+  const slicedTotalDays = slicedDays.length > 0 ? slicedDays.length : 1;
   const gridTemplateColumnsStyle = `repeat(${slicedTotalDays}, 32px)`;
 
   const monthGroups: { label: string; span: number }[] = [];
@@ -192,12 +192,13 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
 
   const firstStageStart = minTimestamp;
   let lastStageEnd = minTimestamp;
-  if (activeProject && activeProject.stages) {
+  if (activeProject && Array.isArray(activeProject.stages)) {
     activeProject.stages.forEach((st: any) => {
+      if (!st) return;
       const endD = st.reviewDate || st.endDate;
       if (endD) {
         const t = new Date(endD).setHours(23,59,59,999);
-        if (t > lastStageEnd) lastStageEnd = t;
+        if (!isNaN(t) && t > lastStageEnd) lastStageEnd = t;
       }
     });
   }
@@ -205,12 +206,12 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
   const dayWidthMs = 24 * 60 * 60 * 1000;
   const projStartIndex = Math.max(0, Math.floor((firstStageStart - adjustedMinTimestamp) / dayWidthMs));
   const projEndIndex = Math.max(projStartIndex + 1, Math.ceil((lastStageEnd - adjustedMinTimestamp) / dayWidthMs));
+  const projSpanCount = Math.max(1, projEndIndex - projStartIndex);
 
-  // Зменшені висоти рядків для компактності
   const HEADER_HEIGHT = '48px';
   const TIMELINE_HEIGHT = '34px';
   const STAGE_ROW_HEIGHT = '34px';
-  const totalAnalyticsMinWidth = 280 + (slicedTotalDays * 32);
+  const totalAnalyticsMinWidth = 270 + (slicedTotalDays * 32);
 
   return (
     <div style={{ padding: '12px', width: '100%', boxSizing: 'border-box', color: '#1c1c1e', fontFamily: "'SF Pro Condensed', -apple-system, sans-serif", fontSize: '11px' }}>
@@ -252,7 +253,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
         }
       `}</style>
 
-      {/* Панель керування та повзунок періоду в стилі Worksection */}
+      {/* Панель керування періодом */}
       <div className="no-print" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '10px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', fontWeight: 'bold', color: '#3a3a3c' }}>
@@ -315,7 +316,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
               display: 'flex', 
               gap: '10px', 
               alignItems: 'flex-start', 
-              minWidth: `${280 + slicedTotalDays * 32}px`, 
+              minWidth: `${totalAnalyticsMinWidth}px`, 
               backgroundColor: '#ffffff', 
               padding: '4px', 
               boxSizing: 'border-box' 
@@ -362,7 +363,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                     cursor: 'pointer'
                   }}
                 >
-                  {projects.map(p => (
+                  {safeProjects.map(p => (
                     <option key={p.id} value={p.id}>
                       {p.name}
                     </option>
@@ -383,6 +384,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   {activeProject.stages.map((stage: any, sIdx: number) => {
+                    if (!stage) return null;
                     const stageContractors: string[] = stage.contractors || (stage.contractor ? [stage.contractor] : []);
                     const statusLabel = stage.currentStatus || 'В процесі';
 
@@ -415,10 +417,10 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
               )}
             </div>
 
-            {/* БЛОК 2: Графік Ганта праворуч із меншими шрифтами та виділенням днів */}
+            {/* БЛОК 2: Графік Ганта праворуч */}
             <div style={{ flexGrow: 1, minWidth: `${slicedTotalDays * 32}px`, backgroundColor: 'transparent', position: 'relative' }}>
               
-              {/* Шапка Блоку 2 (зменшений шрифт у стилі стадій) */}
+              {/* Шапка Блоку 2 */}
               <div style={{ 
                 display: 'grid', 
                 gridTemplateRows: 'auto auto', 
@@ -477,7 +479,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                           cursor: 'pointer',
                           transition: 'background-color 0.2s'
                         }}
-                        title={`Натисніть, щоб виділити дату ${d.dateStr}`}
+                        title={`Виділити дату ${d.dateStr}`}
                       >
                         {d.dayNum}
                       </div>
@@ -491,7 +493,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
               <div style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e5e5ea', borderLeft: '1px solid #d1d1d6', borderRight: '1px solid #d1d1d6', padding: '0', height: TIMELINE_HEIGHT, boxSizing: 'border-box', display: 'flex', alignItems: 'center', position: 'relative' }}>
                 <div style={{ position: 'relative', width: '100%', height: '24px', backgroundColor: 'transparent', borderRadius: '4px', overflow: 'visible', display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle }}>
                   
-                  {/* Рендеримо жовту вертикальну лінію на весь графік, якщо день вибрано */}
                   {selectedDayIndex !== null && selectedDayIndex >= startIndex && selectedDayIndex < endIndex && (
                     <div style={{
                       position: 'absolute',
@@ -564,6 +565,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                 <div style={{ display: 'flex', flexDirection: 'column', overflow: 'visible', backgroundColor: '#ffffff', borderBottom: '1px solid #d1d1d6', borderLeft: '1px solid #d1d1d6', borderRight: '1px solid #d1d1d6', borderRadius: '0 0 10px 10px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', position: 'relative' }}>
                   
                   {activeProject.stages.map((stage: any, sIdx: number) => {
+                    if (!stage) return null;
                     const statusLabel = stage.currentStatus || 'В процесі';
                     const progressPct = calculateStageProgress(stage);
                     const isCompleted = statusLabel.toLowerCase().includes('завершено');
@@ -587,10 +589,11 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                     let prevEndMs = adjustedMinTimestamp;
                     for (let i = 0; i < sIdx; i++) {
                       const stPrev = activeProject.stages[i];
+                      if (!stPrev) continue;
                       const stPrevEnd = stPrev.reviewDate || stPrev.endDate;
                       if (stPrevEnd) {
                         const t = new Date(stPrevEnd).getTime();
-                        if (t > prevEndMs) prevEndMs = t;
+                        if (!isNaN(t) && t > prevEndMs) prevEndMs = t;
                       }
                     }
 
@@ -623,7 +626,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                         
                         <div style={{ position: 'relative', width: '100%', height: '24px', backgroundColor: 'transparent', borderRadius: '4px', overflow: 'visible', display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle }}>
                           
-                          {/* Жовта вертикальна лінія на рядку стадії */}
                           {selectedDayIndex !== null && selectedDayIndex >= startIndex && selectedDayIndex < endIndex && (
                             <div style={{
                               position: 'absolute',
@@ -639,7 +641,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                             }} />
                           )}
 
-                          {/* Червоний геп */}
                           {gapSpan > 0 && (
                             <div 
                               onClick={(e) => {
@@ -749,7 +750,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                             </div>
                           )}
 
-                          {/* Смужка стадії */}
                           {colStart <= slicedTotalDays && colEnd >= 1 && (
                             <div 
                               style={{ 
@@ -769,29 +769,29 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                               <div 
                                 style={{ 
                                   width: `${progressPct}%`, 
-                                height: '100%', 
-                                backgroundColor: statusBg,
-                                transition: 'width 0.3s',
-                                WebkitPrintColorAdjust: 'exact',
-                                printColorAdjust: 'exact'
-                              }} 
-                            />
-                            {!isCompleted && (
-                              <span style={{
-                                position: 'absolute',
-                                width: '100%',
-                                textAlign: 'center',
-                                fontSize: '9px',
-                                fontWeight: 'bold',
-                                fontStyle: 'italic',
-                                color: progressPct > 50 ? '#ffffff' : '#1c1c1e',
-                                pointerEvents: 'none'
-                              }}>
-                                {progressPct}%
-                              </span>
-                            )}
-                          </div>
-                        )}
+                                  height: '100%', 
+                                  backgroundColor: statusBg,
+                                  transition: 'width 0.3s',
+                                  WebkitPrintColorAdjust: 'exact',
+                                  printColorAdjust: 'exact'
+                                }} 
+                              />
+                              {!isCompleted && (
+                                <span style={{
+                                  position: 'absolute',
+                                  width: '100%',
+                                  textAlign: 'center',
+                                  fontSize: '9px',
+                                  fontWeight: 'bold',
+                                  fontStyle: 'italic',
+                                  color: progressPct > 50 ? '#ffffff' : '#1c1c1e',
+                                  pointerEvents: 'none'
+                                }}>
+                                  {progressPct}%
+                                </span>
+                              )}
+                            </div>
+                          )}
 
                         </div>
 
