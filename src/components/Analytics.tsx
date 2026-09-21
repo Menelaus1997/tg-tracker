@@ -17,7 +17,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
   const [tempComment, setTempComment] = useState<string>('');
   const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
 
-  // Повністю робочий стан для перетягування (зміни розміру) країв стадії
   const [resizingStage, setResizingStage] = useState<{
     stageIndex: number;
     edge: 'start' | 'end';
@@ -173,7 +172,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
   const gridTemplateColumnsStyle = `repeat(${totalDays}, 32px)`;
   const dayWidthPx = 32;
 
-  // Логіка перетягування ручок зміщення дат стадій
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!resizingStage || !activeProject || !onUpdateProject) return;
@@ -185,19 +183,27 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
       const stageToUpdate = { ...updatedStages[resizingStage.stageIndex] };
 
       if (resizingStage.edge === 'start') {
-        const baseDate = new Date(resizingStage.initialStartDate);
+        const baseDate = new Date(resizingStage.initialStartDate || new Date());
         if (isNaN(baseDate.getTime())) return;
         baseDate.setDate(baseDate.getDate() + dayShift);
         stageToUpdate.startDate = baseDate.toISOString().split('T')[0];
+        
+        const currentEnd = stageToUpdate.reviewDate || stageToUpdate.endDate;
+        if (currentEnd && new Date(stageToUpdate.startDate) > new Date(currentEnd)) {
+          if (stageToUpdate.reviewDate) stageToUpdate.reviewDate = stageToUpdate.startDate;
+          if (stageToUpdate.endDate) stageToUpdate.endDate = stageToUpdate.startDate;
+        }
       } else {
-        const baseDate = new Date(resizingStage.initialEndDate || resizingStage.initialStartDate);
+        const baseDate = new Date(resizingStage.initialEndDate || resizingStage.initialStartDate || new Date());
         if (isNaN(baseDate.getTime())) return;
         baseDate.setDate(baseDate.getDate() + dayShift);
         const newEndStr = baseDate.toISOString().split('T')[0];
-        if (stageToUpdate.reviewDate) {
-          stageToUpdate.reviewDate = newEndStr;
-        } else {
-          stageToUpdate.endDate = newEndStr;
+        
+        stageToUpdate.endDate = newEndStr;
+        stageToUpdate.reviewDate = newEndStr;
+
+        if (stageToUpdate.startDate && new Date(newEndStr) < new Date(stageToUpdate.startDate)) {
+          stageToUpdate.startDate = newEndStr;
         }
       }
 
@@ -305,7 +311,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
         }
       `}</style>
 
-      {/* Кнопка друку з білою іконкою принтера */}
       <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
         <button
           onClick={handleExportPDF}
@@ -347,8 +352,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
               boxSizing: 'border-box' 
             }}
           >
-            
-            {/* БЛОК 1: Список стадій зліва */}
             <div style={{ 
               width: '270px', 
               minWidth: '270px', 
@@ -443,7 +446,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
                             )}
                           </div>
                         </div>
-                        <span style={{ fontSize: '8px', padding: '1px 5px', borderRadius: '8px', backgroundColor: statusBg, color: '#fff', fontWeight: 'bold', fontStyle: 'italic', flexShrink: 0, WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
+                        <span style={{ fontSize: '8px', padding: '1px 5px', borderRadius: '8px', backgroundColor: statusBg, color: '#fff', fontWeight: 'bold', fontStyle: 'italic', flexShrink: 0 }}>
                           {statusLabel}
                         </span>
                       </div>
@@ -453,10 +456,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
               )}
             </div>
 
-            {/* БЛОК 2: Графік Ганта праворуч */}
             <div style={{ flexGrow: 1, minWidth: `${totalDays * 32}px`, backgroundColor: 'transparent', position: 'relative' }}>
-              
-              {/* Шапка Блоку 2 */}
               <div style={{ 
                 display: 'grid', 
                 gridTemplateRows: 'auto auto', 
@@ -466,11 +466,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
                 overflow: 'hidden',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
                 height: HEADER_HEIGHT,
-                boxSizing: 'border-box',
-                WebkitPrintColorAdjust: 'exact',
-                printColorAdjust: 'exact'
+                boxSizing: 'border-box'
               }}>
-                
                 <div style={{ display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle, borderBottom: '1px solid #e5e5ea', backgroundColor: '#ffffff', height: '26px', alignItems: 'center' }}>
                   {monthGroups.map((mg, gIdx) => (
                     <div 
@@ -513,20 +510,16 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
                           alignItems: 'center',
                           justifyContent: 'center',
                           overflow: 'hidden',
-                          cursor: 'pointer',
-                          transition: 'background-color 0.2s'
+                          cursor: 'pointer'
                         }}
-                        title={`Виділити дату ${d.dateStr}`}
                       >
                         {d.dayNum}
                       </div>
                     );
                   })}
                 </div>
-
               </div>
 
-              {/* Жовта вертикальна лінія (рівно по нижню межу стадій) */}
               {selectedDayIndex !== null && (
                 <div style={{
                   position: 'absolute',
@@ -540,10 +533,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
                 }} />
               )}
 
-              {/* Рядок таймлайну проєкту */}
               <div style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e5e5ea', borderLeft: '1px solid #d1d1d6', borderRight: '1px solid #d1d1d6', padding: '0', height: TIMELINE_HEIGHT, boxSizing: 'border-box', display: 'flex', alignItems: 'center', position: 'relative' }}>
                 <div style={{ position: 'relative', width: '100%', height: '24px', backgroundColor: 'transparent', borderRadius: '4px', overflow: 'visible', display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle }}>
-
                   {(() => {
                     const pStartCol = Math.max(1, projStartIndex + 1);
                     const pEndCol = Math.min(totalDays + 1, projStartIndex + projSpanCount + 1);
@@ -561,31 +552,11 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
                           zIndex: 2,
                           position: 'relative',
                           display: 'flex',
-                          alignItems: 'center',
-                          WebkitPrintColorAdjust: 'exact',
-                          printColorAdjust: 'exact'
+                          alignItems: 'center'
                         }} 
                       >
-                        <div 
-                          style={{ 
-                            width: `${projectProgress}%`, 
-                            height: '100%', 
-                            backgroundColor: '#005ec4',
-                            transition: 'width 0.3s',
-                            WebkitPrintColorAdjust: 'exact',
-                            printColorAdjust: 'exact'
-                          }} 
-                        />
-                        <span style={{
-                          position: 'absolute',
-                          width: '100%',
-                          textAlign: 'center',
-                          fontSize: '9px',
-                          fontWeight: 'bold',
-                          fontStyle: 'italic',
-                          color: '#ffffff',
-                          pointerEvents: 'none'
-                        }}>
+                        <div style={{ width: `${projectProgress}%`, height: '100%', backgroundColor: '#005ec4', transition: 'width 0.3s' }} />
+                        <span style={{ position: 'absolute', width: '100%', textAlign: 'center', fontSize: '9px', fontWeight: 'bold', fontStyle: 'italic', color: '#ffffff', pointerEvents: 'none' }}>
                           {projectProgress}%
                         </span>
                       </div>
@@ -594,12 +565,10 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
                 </div>
               </div>
 
-              {/* Графік Ганта по стадіях із БІЛИМИ ручками зміни розміру (Resize Handles) */}
               {(!activeProject.stages || activeProject.stages.length === 0) ? (
                 <div style={{ padding: '20px', textAlign: 'center', color: '#8e8e93', fontStyle: 'italic' }}>Немає стадій</div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', overflow: 'visible', backgroundColor: '#ffffff', borderBottom: '1px solid #d1d1d6', borderLeft: '1px solid #d1d1d6', borderRight: '1px solid #d1d1d6', borderRadius: '0 0 10px 10px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', position: 'relative' }}>
-                  
                   {activeProject.stages.map((stage: any, sIdx: number) => {
                     if (!stage) return null;
                     const statusLabel = stage.currentStatus || 'В процесі';
@@ -658,8 +627,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
                     const isNearBottom = sIdx >= totalStagesCount - 2;
 
                     return (
-                      <div key={stage.id || sIdx} style={{ padding: '4px 0', height: STAGE_ROW_HEIGHT, boxSizing: 'border-box', backgroundColor: '#ffffff', overflow: 'visible', display: 'flex', alignItems: 'center', borderBottom: sIdx === activeProject.stages.length - 1 ? 'none' : '1px solid #e5e5ea', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact', position: 'relative' }}>
-                        
+                      <div key={stage.id || sIdx} style={{ padding: '4px 0', height: STAGE_ROW_HEIGHT, boxSizing: 'border-box', backgroundColor: '#ffffff', overflow: 'visible', display: 'flex', alignItems: 'center', borderBottom: sIdx === activeProject.stages.length - 1 ? 'none' : '1px solid #e5e5ea', position: 'relative' }}>
                         <div style={{ position: 'relative', width: '100%', height: '24px', backgroundColor: 'transparent', borderRadius: '4px', overflow: 'visible', display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle }}>
                           
                           {gapSpan > 0 && (
@@ -683,23 +651,11 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                overflow: 'visible',
-                                WebkitPrintColorAdjust: 'exact',
-                                printColorAdjust: 'exact'
+                                overflow: 'visible'
                               }}
                             >
                               {savedComment && (
-                                <span style={{
-                                  fontSize: '9px',
-                                  fontWeight: 'bold',
-                                  fontStyle: 'italic',
-                                  color: '#ffffff',
-                                  whiteSpace: 'nowrap',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  padding: '0 4px',
-                                  pointerEvents: 'none'
-                                }}>
+                                <span style={{ fontSize: '9px', fontWeight: 'bold', fontStyle: 'italic', color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', padding: '0 4px', pointerEvents: 'none' }}>
                                   {savedComment}
                                 </span>
                               )}
@@ -728,43 +684,13 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
                                       value={tempComment}
                                       onChange={(e) => setTempComment(e.target.value)}
                                       onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          handleSaveComment(gapKey);
-                                        }
+                                        if (e.key === 'Enter') handleSaveComment(gapKey);
                                       }}
                                       placeholder="Введіть причину..."
-                                      style={{
-                                        padding: '4px 6px',
-                                        border: '1px solid #d1d1d6',
-                                        borderRadius: '4px',
-                                        fontSize: '10px',
-                                        outline: 'none',
-                                        flexGrow: 1,
-                                        boxSizing: 'border-box'
-                                      }}
+                                      style={{ padding: '4px 6px', border: '1px solid #d1d1d6', borderRadius: '4px', fontSize: '10px', outline: 'none', flexGrow: 1, boxSizing: 'border-box' }}
                                       autoFocus
                                     />
-                                    <button
-                                      onClick={() => handleSaveComment(gapKey)}
-                                      title="Зберегти"
-                                      style={{
-                                        backgroundColor: '#34c759',
-                                        color: '#ffffff',
-                                        border: '1px solid #d1d1d6',
-                                        borderRadius: '4px',
-                                        width: '24px',
-                                        height: '24px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        cursor: 'pointer',
-                                        fontSize: '12px',
-                                        fontWeight: 'bold',
-                                        flexShrink: 0
-                                      }}
-                                    >
-                                      ✓
-                                    </button>
+                                    <button onClick={() => handleSaveComment(gapKey)} style={{ backgroundColor: '#34c759', color: '#ffffff', border: '1px solid #d1d1d6', borderRadius: '4px', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', flexShrink: 0 }}>✓</button>
                                   </div>
                                 </div>
                               )}
@@ -782,12 +708,9 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
                                 zIndex: 2,
                                 position: 'relative',
                                 display: 'flex',
-                                alignItems: 'center',
-                                WebkitPrintColorAdjust: 'exact',
-                                printColorAdjust: 'exact'
+                                alignItems: 'center'
                               }} 
                             >
-                              {/* Біла ручка зліва для зміни дати початку */}
                               <div
                                 className="no-print"
                                 onMouseDown={(e) => {
@@ -816,32 +739,13 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
                                 }}
                               />
 
-                              <div 
-                                style={{ 
-                                  width: `${progressPct}%`, 
-                                  height: '100%', 
-                                  backgroundColor: statusBg,
-                                  transition: 'width 0.3s',
-                                  WebkitPrintColorAdjust: 'exact',
-                                  printColorAdjust: 'exact'
-                                }} 
-                              />
+                              <div style={{ width: `${progressPct}%`, height: '100%', backgroundColor: statusBg, transition: 'width 0.3s' }} />
                               {!isCompleted && (
-                                <span style={{
-                                  position: 'absolute',
-                                  width: '100%',
-                                  textAlign: 'center',
-                                  fontSize: '9px',
-                                  fontWeight: 'bold',
-                                  fontStyle: 'italic',
-                                  color: progressPct > 50 ? '#ffffff' : '#1c1c1e',
-                                  pointerEvents: 'none'
-                                }}>
+                                <span style={{ position: 'absolute', width: '100%', textAlign: 'center', fontSize: '9px', fontWeight: 'bold', fontStyle: 'italic', color: progressPct > 50 ? '#ffffff' : '#1c1c1e', pointerEvents: 'none' }}>
                                   {progressPct}%
                                 </span>
                               )}
 
-                              {/* Біла ручка справа для зміни дати кінця */}
                               <div
                                 className="no-print"
                                 onMouseDown={(e) => {
@@ -871,17 +775,13 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects = [], teamDatabas
                               />
                             </div>
                           )}
-
                         </div>
-
                       </div>
                     );
                   })}
                 </div>
               )}
-
             </div>
-
           </div>
         </div>
       )}
