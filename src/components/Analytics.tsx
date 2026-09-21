@@ -15,6 +15,9 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
   const [editingGapKey, setEditingGapKey] = useState<string | null>(null);
   const [tempComment, setTempComment] = useState<string>('');
 
+  // Стан для виділеної вертикальної лінії (індекс дня в таймлайні)
+  const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
+
   const reportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -31,12 +34,14 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
       const projectComments = (activeProject as any)?.gapComments || {};
       const merged = { ...parsedLocal, ...projectComments };
       setGapComments(merged);
+      setSelectedDayIndex(null);
     }
   }, [selectedProjectId, activeProject]);
 
   const handleSelectProject = (id: string) => {
     setSelectedProjectId(id);
     setEditingGapKey(null);
+    setSelectedDayIndex(null);
   };
 
   const handleSaveComment = (gapKey: string) => {
@@ -145,13 +150,29 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
   }
 
   const totalDays = timelineDays.length;
-  const gridTemplateColumnsStyle = `repeat(${totalDays}, 36px)`;
+
+  // Стан для повзунка періоду (зрізу днів), як у Worksection
+  const [visibleRange, setVisibleRange] = useState<{ start: number; end: number }>({
+    start: 0,
+    end: totalDays
+  });
+
+  useEffect(() => {
+    setVisibleRange({ start: 0, end: totalDays });
+  }, [totalDays, selectedProjectId]);
+
+  const startIndex = Math.max(0, Math.min(visibleRange.start, totalDays - 1));
+  const endIndex = Math.max(startIndex + 1, Math.min(visibleRange.end, totalDays));
+
+  const slicedDays = timelineDays.slice(startIndex, endIndex);
+  const slicedTotalDays = slicedDays.length;
+  const gridTemplateColumnsStyle = `repeat(${slicedTotalDays}, 32px)`;
 
   const monthGroups: { label: string; span: number }[] = [];
   let currentMonthLabel = '';
   let currentSpan = 0;
 
-  timelineDays.forEach((d) => {
+  slicedDays.forEach((d) => {
     if (d.monthYearLabel === currentMonthLabel) {
       currentSpan++;
     } else {
@@ -184,19 +205,16 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
   const dayWidthMs = 24 * 60 * 60 * 1000;
   const projStartIndex = Math.max(0, Math.floor((firstStageStart - adjustedMinTimestamp) / dayWidthMs));
   const projEndIndex = Math.max(projStartIndex + 1, Math.ceil((lastStageEnd - adjustedMinTimestamp) / dayWidthMs));
-  const projSpanCount = Math.max(1, projEndIndex - projStartIndex);
-  const projGridColumnStart = projStartIndex + 1;
 
-  const HEADER_HEIGHT = '60px';
-  const TIMELINE_HEIGHT = '43px';
-  const STAGE_ROW_HEIGHT = '43px';
-
-  const totalAnalyticsMinWidth = 300 + (totalDays * 36);
+  // Зменшені висоти рядків для компактності
+  const HEADER_HEIGHT = '48px';
+  const TIMELINE_HEIGHT = '34px';
+  const STAGE_ROW_HEIGHT = '34px';
+  const totalAnalyticsMinWidth = 280 + (slicedTotalDays * 32);
 
   return (
-    <div style={{ padding: '16px', width: '100%', boxSizing: 'border-box', color: '#1c1c1e', fontFamily: "'SF Pro Condensed', -apple-system, sans-serif", fontSize: '11px' }}>
+    <div style={{ padding: '12px', width: '100%', boxSizing: 'border-box', color: '#1c1c1e', fontFamily: "'SF Pro Condensed', -apple-system, sans-serif", fontSize: '11px' }}>
       
-      {/* Спеціальні стилі для друку: розтягують звіт на 100% ширини аркуша в альбомній орієнтації */}
       <style>{`
         @media print {
           @page {
@@ -228,37 +246,60 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
             background-color: #ffffff !important;
             box-sizing: border-box !important;
           }
-          #printable-analytics > div:nth-child(2) {
-            flex-grow: 1 !important;
-            overflow: visible !important;
-          }
           .no-print {
             display: none !important;
           }
         }
       `}</style>
 
-      <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
-        <button
-          onClick={handleExportPDF}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: '#007aff',
-            color: '#ffffff',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '12px',
-            fontWeight: 'bold',
-            fontStyle: 'italic',
-            cursor: 'pointer',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px'
-          }}
-        >
-          📥 Зберегти в PDF / Друк
-        </button>
+      {/* Панель керування та повзунок періоду в стилі Worksection */}
+      <div className="no-print" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '10px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', fontWeight: 'bold', color: '#3a3a3c' }}>
+            <span>період:</span>
+            <input 
+              type="range" 
+              min={0} 
+              max={Math.max(0, totalDays - 10)} 
+              value={visibleRange.start} 
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                const currentLength = visibleRange.end - visibleRange.start;
+                setVisibleRange({ start: val, end: Math.min(totalDays, val + currentLength) });
+              }}
+              style={{ width: '120px', cursor: 'pointer' }}
+              title="Змістити початок періоду"
+            />
+            <span>днів показано: {slicedTotalDays} із {totalDays}</span>
+            <button 
+              onClick={() => setVisibleRange({ start: 0, end: totalDays })}
+              style={{ padding: '2px 6px', fontSize: '10px', borderRadius: '4px', border: '1px solid #d1d1d6', background: '#f2f2f7', cursor: 'pointer' }}
+            >
+              Скинути
+            </button>
+          </div>
+
+          <button
+            onClick={handleExportPDF}
+            style={{
+              padding: '6px 12px',
+              backgroundColor: '#007aff',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              fontStyle: 'italic',
+              cursor: 'pointer',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            📥 Зберегти в PDF / Друк
+          </button>
+        </div>
       </div>
 
       {!activeProject ? (
@@ -272,22 +313,22 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
             ref={reportRef} 
             style={{ 
               display: 'flex', 
-              gap: '12px', 
+              gap: '10px', 
               alignItems: 'flex-start', 
-              minWidth: `${totalAnalyticsMinWidth}px`, 
+              minWidth: `${280 + slicedTotalDays * 32}px`, 
               backgroundColor: '#ffffff', 
-              padding: '8px', 
+              padding: '4px', 
               boxSizing: 'border-box' 
             }}
           >
             
             {/* БЛОК 1: Список стадій зліва */}
             <div style={{ 
-              width: '300px', 
-              minWidth: '300px', 
+              width: '270px', 
+              minWidth: '270px', 
               backgroundColor: '#ffffff', 
               border: '1px solid #d1d1d6', 
-              borderRadius: '12px', 
+              borderRadius: '10px', 
               overflow: 'hidden',
               boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
               flexShrink: 0
@@ -295,13 +336,13 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
               <div style={{ 
                 backgroundColor: '#f2f2f7', 
                 borderBottom: '1px solid #d1d1d6', 
-                padding: '6px 10px', 
+                padding: '4px 8px', 
                 height: HEADER_HEIGHT, 
                 boxSizing: 'border-box', 
                 display: 'flex', 
                 flexDirection: 'column', 
                 justifyContent: 'center',
-                gap: '3px'
+                gap: '2px'
               }}>
                 <select
                   className="no-print"
@@ -309,11 +350,11 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                   onChange={(e) => handleSelectProject(e.target.value)}
                   style={{
                     width: '100%',
-                    padding: '3px 6px',
+                    padding: '2px 4px',
                     backgroundColor: '#ffffff',
                     border: '1px solid #d1d1d6',
                     borderRadius: '4px',
-                    fontSize: '12px',
+                    fontSize: '11px',
                     fontWeight: 'bold',
                     fontStyle: 'italic',
                     outline: 'none',
@@ -328,17 +369,17 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                   ))}
                 </select>
 
-                <div style={{ fontSize: '10px', color: '#8e8e93', fontStyle: 'italic', fontWeight: 'bold', paddingLeft: '2px' }}>
+                <div style={{ fontSize: '9px', color: '#8e8e93', fontStyle: 'italic', fontWeight: 'bold', paddingLeft: '2px' }}>
                   ID проєкту: <span style={{ color: '#007aff' }}>{activeProject.id}</span>
                 </div>
               </div>
 
-              <div style={{ backgroundColor: '#fcfcfc', borderBottom: '1px solid #e5e5ea', padding: '0 12px', height: TIMELINE_HEIGHT, boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}>
-                <span style={{ fontSize: '11px', fontWeight: 'bold', fontStyle: 'italic', color: '#636366' }}>Загальний таймлайн проєкту</span>
+              <div style={{ backgroundColor: '#fcfcfc', borderBottom: '1px solid #e5e5ea', padding: '0 10px', height: TIMELINE_HEIGHT, boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}>
+                <span style={{ fontSize: '10px', fontWeight: 'bold', fontStyle: 'italic', color: '#636366' }}>Загальний таймлайн проєкту</span>
               </div>
 
               {(!activeProject.stages || activeProject.stages.length === 0) ? (
-                <div style={{ padding: '20px', textAlign: 'center', color: '#8e8e93', fontStyle: 'italic' }}>Немає стадій</div>
+                <div style={{ padding: '15px', textAlign: 'center', color: '#8e8e93', fontStyle: 'italic' }}>Немає стадій</div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   {activeProject.stages.map((stage: any, sIdx: number) => {
@@ -351,20 +392,20 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                     else if (statusLabel.toLowerCase().includes('перевірці') || statusLabel.toLowerCase().includes('правки')) statusBg = '#ff9500';
 
                     return (
-                      <div key={stage.id || sIdx} style={{ padding: '0 12px', height: STAGE_ROW_HEIGHT, boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e5e5ea', backgroundColor: '#fafafa' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
-                          <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: '#e5e5ea', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid #d1d1d6' }}>
+                      <div key={stage.id || sIdx} style={{ padding: '0 10px', height: STAGE_ROW_HEIGHT, boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e5e5ea', backgroundColor: '#fafafa' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
+                          <div style={{ width: '18px', height: '18px', borderRadius: '50%', backgroundColor: '#e5e5ea', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid #d1d1d6' }}>
                             {stageContractors.length > 0 && getTeamMemberPhoto(stageContractors[0]) ? (
                               <img src={getTeamMemberPhoto(stageContractors[0])!} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             ) : (
-                              <span style={{ fontSize: '8px', color: '#636366', fontWeight: 'bold' }}>👤</span>
+                              <span style={{ fontSize: '7px', color: '#636366', fontWeight: 'bold' }}>👤</span>
                             )}
                           </div>
-                          <span style={{ fontWeight: 'bold', fontStyle: 'italic', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <span style={{ fontSize: '10px', fontWeight: 'bold', fontStyle: 'italic', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {sIdx + 1}. {stage.title}
                           </span>
                         </div>
-                        <span style={{ fontSize: '9px', padding: '2px 6px', borderRadius: '10px', backgroundColor: statusBg, color: '#fff', fontWeight: 'bold', fontStyle: 'italic', flexShrink: 0, WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
+                        <span style={{ fontSize: '8px', padding: '1px 5px', borderRadius: '8px', backgroundColor: statusBg, color: '#fff', fontWeight: 'bold', fontStyle: 'italic', flexShrink: 0, WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
                           {statusLabel}
                         </span>
                       </div>
@@ -374,16 +415,16 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
               )}
             </div>
 
-            {/* БЛОК 2: Графік Ганта праворуч */}
-            <div style={{ flexGrow: 1, minWidth: `${totalDays * 36}px`, backgroundColor: 'transparent' }}>
+            {/* БЛОК 2: Графік Ганта праворуч із меншими шрифтами та виділенням днів */}
+            <div style={{ flexGrow: 1, minWidth: `${slicedTotalDays * 32}px`, backgroundColor: 'transparent', position: 'relative' }}>
               
-              {/* Шапка Блоку 2 */}
+              {/* Шапка Блоку 2 (зменшений шрифт у стилі стадій) */}
               <div style={{ 
                 display: 'grid', 
                 gridTemplateRows: 'auto auto', 
                 backgroundColor: '#f2f2f7', 
                 border: '1px solid #d1d1d6', 
-                borderRadius: '12px 12px 0 0', 
+                borderRadius: '10px 10px 0 0', 
                 overflow: 'hidden',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
                 height: HEADER_HEIGHT,
@@ -399,11 +440,11 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                       style={{ 
                         gridColumn: `span ${mg.span}`, 
                         textAlign: 'center', 
-                        padding: '4px 2px', 
-                        fontSize: '16px', 
+                        padding: '2px 2px', 
+                        fontSize: '11px', 
                         fontWeight: 'bold', 
                         fontStyle: 'italic',
-                        color: '#000000', 
+                        color: '#1c1c1e', 
                         borderRight: '1px solid #e5e5ea', 
                         whiteSpace: 'nowrap', 
                         overflow: 'hidden',
@@ -415,57 +456,104 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                   ))}
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle, backgroundColor: '#f2f2f7', height: '28px', boxSizing: 'border-box' }}>
-                  {timelineDays.map((d, idx) => (
-                    <div key={`day-${idx}`} style={{ textAlign: 'center', padding: '4px 0', fontSize: '15px', fontStyle: 'italic', fontWeight: 'bold', color: '#1c1c1e', borderRight: '1px solid #e5e5ea', overflow: 'hidden' }}>
-                      {d.dayNum}
-                    </div>
-                  ))}
+                <div style={{ display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle, backgroundColor: '#f2f2f7', height: '22px', boxSizing: 'border-box' }}>
+                  {slicedDays.map((d, localIdx) => {
+                    const globalIdx = startIndex + localIdx;
+                    const isSelected = selectedDayIndex === globalIdx;
+                    return (
+                      <div 
+                        key={`day-${localIdx}`} 
+                        onClick={() => setSelectedDayIndex(isSelected ? null : globalIdx)}
+                        style={{ 
+                          textAlign: 'center', 
+                          padding: '2px 0', 
+                          fontSize: '10px', 
+                          fontStyle: 'italic', 
+                          fontWeight: 'bold', 
+                          color: isSelected ? '#b26a00' : '#1c1c1e', 
+                          backgroundColor: isSelected ? '#ffefb3' : 'transparent',
+                          borderRight: '1px solid #e5e5ea', 
+                          overflow: 'hidden',
+                          cursor: 'pointer',
+                          transition: 'background-color 0.2s'
+                        }}
+                        title={`Натисніть, щоб виділити дату ${d.dateStr}`}
+                      >
+                        {d.dayNum}
+                      </div>
+                    );
+                  })}
                 </div>
 
               </div>
 
               {/* Рядок загального таймлайну проєкту */}
-              <div style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e5e5ea', borderLeft: '1px solid #d1d1d6', borderRight: '1px solid #d1d1d6', padding: '0', height: TIMELINE_HEIGHT, boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}>
-                <div style={{ position: 'relative', width: '100%', height: '31px', backgroundColor: 'transparent', borderRadius: '4px', overflow: 'visible', display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle }}>
-                  <div 
-                    style={{ 
-                      gridColumn: `${projGridColumnStart} / span ${projSpanCount}`,
-                      gridRow: 1,
-                      backgroundColor: '#007aff', 
-                      borderRadius: '4px',
-                      overflow: 'hidden',
-                      zIndex: 1,
-                      position: 'relative',
-                      display: 'flex',
-                      alignItems: 'center',
-                      WebkitPrintColorAdjust: 'exact',
-                      printColorAdjust: 'exact'
-                    }} 
-                  >
-                    <div 
-                      style={{ 
-                        width: `${projectProgress}%`, 
-                        height: '100%', 
-                        backgroundColor: '#005ec4',
-                        transition: 'width 0.3s',
-                        WebkitPrintColorAdjust: 'exact',
-                        printColorAdjust: 'exact'
-                      }} 
-                    />
-                    <span style={{
+              <div style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e5e5ea', borderLeft: '1px solid #d1d1d6', borderRight: '1px solid #d1d1d6', padding: '0', height: TIMELINE_HEIGHT, boxSizing: 'border-box', display: 'flex', alignItems: 'center', position: 'relative' }}>
+                <div style={{ position: 'relative', width: '100%', height: '24px', backgroundColor: 'transparent', borderRadius: '4px', overflow: 'visible', display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle }}>
+                  
+                  {/* Рендеримо жовту вертикальну лінію на весь графік, якщо день вибрано */}
+                  {selectedDayIndex !== null && selectedDayIndex >= startIndex && selectedDayIndex < endIndex && (
+                    <div style={{
                       position: 'absolute',
-                      width: '100%',
-                      textAlign: 'center',
-                      fontSize: '10px',
-                      fontWeight: 'bold',
-                      fontStyle: 'italic',
-                      color: '#ffffff',
+                      top: 0,
+                      bottom: 0,
+                      left: `${(selectedDayIndex - startIndex) * 32}px`,
+                      width: '32px',
+                      backgroundColor: 'rgba(255, 235, 59, 0.35)',
+                      borderLeft: '2px solid #ffcc00',
+                      borderRight: '2px solid #ffcc00',
+                      zIndex: 10,
                       pointerEvents: 'none'
-                    }}>
-                      {projectProgress}%
-                    </span>
-                  </div>
+                    }} />
+                  )}
+
+                  {(() => {
+                    const pStartCol = Math.max(1, projStartIndex - startIndex + 1);
+                    const pEndCol = Math.min(slicedTotalDays + 1, projStartIndex - startIndex + projSpanCount + 1);
+                    if (pStartCol > slicedTotalDays || pEndCol < 1) return null;
+                    const spanCol = Math.max(1, pEndCol - pStartCol);
+
+                    return (
+                      <div 
+                        style={{ 
+                          gridColumn: `${pStartCol} / span ${spanCol}`,
+                          gridRow: 1,
+                          backgroundColor: '#007aff', 
+                          borderRadius: '4px',
+                          overflow: 'hidden',
+                          zIndex: 2,
+                          position: 'relative',
+                          display: 'flex',
+                          alignItems: 'center',
+                          WebkitPrintColorAdjust: 'exact',
+                          printColorAdjust: 'exact'
+                        }} 
+                      >
+                        <div 
+                          style={{ 
+                            width: `${projectProgress}%`, 
+                            height: '100%', 
+                            backgroundColor: '#005ec4',
+                            transition: 'width 0.3s',
+                            WebkitPrintColorAdjust: 'exact',
+                            printColorAdjust: 'exact'
+                          }} 
+                        />
+                        <span style={{
+                          position: 'absolute',
+                          width: '100%',
+                          textAlign: 'center',
+                          fontSize: '9px',
+                          fontWeight: 'bold',
+                          fontStyle: 'italic',
+                          color: '#ffffff',
+                          pointerEvents: 'none'
+                        }}>
+                          {projectProgress}%
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -473,7 +561,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
               {(!activeProject.stages || activeProject.stages.length === 0) ? (
                 <div style={{ padding: '20px', textAlign: 'center', color: '#8e8e93', fontStyle: 'italic' }}>Немає стадій</div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', overflow: 'visible', backgroundColor: '#ffffff', borderBottom: '1px solid #d1d1d6', borderLeft: '1px solid #d1d1d6', borderRight: '1px solid #d1d1d6', borderRadius: '0 0 12px 12px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', overflow: 'visible', backgroundColor: '#ffffff', borderBottom: '1px solid #d1d1d6', borderLeft: '1px solid #d1d1d6', borderRight: '1px solid #d1d1d6', borderRadius: '0 0 10px 10px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', position: 'relative' }}>
+                  
                   {activeProject.stages.map((stage: any, sIdx: number) => {
                     const statusLabel = stage.currentStatus || 'В процесі';
                     const progressPct = calculateStageProgress(stage);
@@ -488,11 +577,12 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                     const endD = stage.reviewDate || stage.endDate;
                     const endMs = endD ? new Date(endD).setHours(23,59,59,999) : startMs + 24 * 60 * 60 * 1000;
 
-                    const startIndex = Math.max(0, Math.floor((startMs - adjustedMinTimestamp) / dayWidthMs));
-                    const endIndex = Math.max(startIndex, Math.ceil((endMs - adjustedMinTimestamp) / dayWidthMs));
-                    const spanCount = Math.max(1, endIndex - startIndex);
+                    const startIndexDay = Math.max(0, Math.floor((startMs - adjustedMinTimestamp) / dayWidthMs));
+                    const endIndexDay = Math.max(startIndexDay, Math.ceil((endMs - adjustedMinTimestamp) / dayWidthMs));
 
-                    const gridColumnStart = startIndex + 1;
+                    const colStart = Math.max(1, startIndexDay - startIndex + 1);
+                    const colEnd = Math.min(slicedTotalDays + 1, endIndexDay - startIndex + 1);
+                    const spanCount = Math.max(1, colEnd - colStart);
 
                     let prevEndMs = adjustedMinTimestamp;
                     for (let i = 0; i < sIdx; i++) {
@@ -504,8 +594,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                       }
                     }
 
-                    let gapGridStart = 0;
-                    let gapSpanCount = 0;
+                    let gapStartDay = 0;
+                    let gapSpan = 0;
                     const GAP_THRESHOLD_MS = 2 * 24 * 60 * 60 * 1000;
 
                     if (sIdx > 0 && startMs > prevEndMs + GAP_THRESHOLD_MS) {
@@ -513,11 +603,13 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                       prevEndDateObj.setDate(prevEndDateObj.getDate() + 1);
                       prevEndDateObj.setHours(0, 0, 0, 0);
 
-                      const gStartIndex = Math.max(0, Math.floor((prevEndDateObj.getTime() - adjustedMinTimestamp) / dayWidthMs));
-                      const gEndIndex = Math.max(gStartIndex, Math.floor((startMs - adjustedMinTimestamp) / dayWidthMs));
-                      if (gEndIndex > gStartIndex) {
-                        gapGridStart = gStartIndex + 1;
-                        gapSpanCount = gEndIndex - gStartIndex;
+                      const gStartIdx = Math.max(0, Math.floor((prevEndDateObj.getTime() - adjustedMinTimestamp) / dayWidthMs));
+                      const gEndIdx = Math.max(gStartIdx, Math.floor((startMs - adjustedMinTimestamp) / dayWidthMs));
+                      const gColStart = Math.max(1, gStartIdx - startIndex + 1);
+                      const gColEnd = Math.min(slicedTotalDays + 1, gEndIdx - startIndex + 1);
+                      if (gColEnd > gColStart) {
+                        gapStartDay = gColStart;
+                        gapSpan = gColEnd - gColStart;
                       }
                     }
 
@@ -527,12 +619,28 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                     const isNearBottom = sIdx >= totalStagesCount - 2;
 
                     return (
-                      <div key={stage.id || sIdx} style={{ padding: '0', height: STAGE_ROW_HEIGHT, boxSizing: 'border-box', backgroundColor: sIdx % 2 === 1 ? '#fafafa' : '#ffffff', overflow: 'visible', display: 'flex', alignItems: 'center', borderBottom: sIdx === activeProject.stages.length - 1 ? 'none' : '1px solid #e5e5ea', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
+                      <div key={stage.id || sIdx} style={{ padding: '0', height: STAGE_ROW_HEIGHT, boxSizing: 'border-box', backgroundColor: sIdx % 2 === 1 ? '#fafafa' : '#ffffff', overflow: 'visible', display: 'flex', alignItems: 'center', borderBottom: sIdx === activeProject.stages.length - 1 ? 'none' : '1px solid #e5e5ea', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact', position: 'relative' }}>
                         
-                        <div style={{ position: 'relative', width: '100%', height: '31px', backgroundColor: 'transparent', borderRadius: '4px', overflow: 'visible', display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle }}>
+                        <div style={{ position: 'relative', width: '100%', height: '24px', backgroundColor: 'transparent', borderRadius: '4px', overflow: 'visible', display: 'grid', gridTemplateColumns: gridTemplateColumnsStyle }}>
                           
+                          {/* Жовта вертикальна лінія на рядку стадії */}
+                          {selectedDayIndex !== null && selectedDayIndex >= startIndex && selectedDayIndex < endIndex && (
+                            <div style={{
+                              position: 'absolute',
+                              top: 0,
+                              bottom: 0,
+                              left: `${(selectedDayIndex - startIndex) * 32}px`,
+                              width: '32px',
+                              backgroundColor: 'rgba(255, 235, 59, 0.35)',
+                              borderLeft: '2px solid #ffcc00',
+                              borderRight: '2px solid #ffcc00',
+                              zIndex: 10,
+                              pointerEvents: 'none'
+                            }} />
+                          )}
+
                           {/* Червоний геп */}
-                          {gapSpanCount > 0 && (
+                          {gapSpan > 0 && (
                             <div 
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -541,12 +649,12 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                               }}
                               title={savedComment ? `Коментар: ${savedComment}` : "Клікніть, щоб додати коментар до гепу (паузи)"}
                               style={{
-                                gridColumn: `${gapGridStart} / span ${gapSpanCount}`,
+                                gridColumn: `${gapStartDay} / span ${gapSpan}`,
                                 gridRow: 1,
                                 backgroundColor: '#ff3b30',
                                 borderRadius: '4px',
                                 opacity: 0.9,
-                                zIndex: 2,
+                                zIndex: 3,
                                 cursor: 'pointer',
                                 boxShadow: '0 0 4px rgba(255, 59, 48, 0.4)',
                                 position: 'relative',
@@ -560,7 +668,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                             >
                               {savedComment && (
                                 <span style={{
-                                  fontSize: '10px',
+                                  fontSize: '9px',
                                   fontWeight: 'bold',
                                   fontStyle: 'italic',
                                   color: '#ffffff',
@@ -577,21 +685,21 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                               {isEditing && (
                                 <div className="no-print" style={{
                                   position: 'absolute',
-                                  ...(isNearBottom ? { bottom: '38px' } : { top: '38px' }),
+                                  ...(isNearBottom ? { bottom: '32px' } : { top: '32px' }),
                                   left: '0px',
                                   zIndex: 1000,
                                   backgroundColor: '#ffffff',
                                   border: '1px solid #d1d1d6',
-                                  borderRadius: '8px',
-                                  padding: '8px',
+                                  borderRadius: '6px',
+                                  padding: '6px',
                                   boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
-                                  width: '230px',
+                                  width: '210px',
                                   display: 'flex',
                                   flexDirection: 'column',
-                                  gap: '6px',
+                                  gap: '4px',
                                   cursor: 'default'
                                 }} onClick={(e) => e.stopPropagation()}>
-                                  <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#ff3b30' }}>Причина паузи / гепу:</span>
+                                  <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#ff3b30' }}>Причина паузи / гепу:</span>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                     <input
                                       type="text"
@@ -604,10 +712,10 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                                       }}
                                       placeholder="Введіть причину..."
                                       style={{
-                                        padding: '5px 8px',
+                                        padding: '4px 6px',
                                         border: '1px solid #d1d1d6',
-                                        borderRadius: '6px',
-                                        fontSize: '11px',
+                                        borderRadius: '4px',
+                                        fontSize: '10px',
                                         outline: 'none',
                                         flexGrow: 1,
                                         boxSizing: 'border-box'
@@ -621,14 +729,14 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                                         backgroundColor: '#34c759',
                                         color: '#ffffff',
                                         border: '1px solid #d1d1d6',
-                                        borderRadius: '6px',
-                                        width: '28px',
-                                        height: '28px',
+                                        borderRadius: '4px',
+                                        width: '24px',
+                                        height: '24px',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         cursor: 'pointer',
-                                        fontSize: '14px',
+                                        fontSize: '12px',
                                         fontWeight: 'bold',
                                         flexShrink: 0
                                       }}
@@ -642,24 +750,25 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                           )}
 
                           {/* Смужка стадії */}
-                          <div 
-                            style={{ 
-                              gridColumn: `${gridColumnStart} / span ${spanCount}`,
-                              gridRow: 1,
-                              backgroundColor: '#e5e5ea', 
-                              borderRadius: '4px',
-                              overflow: 'hidden',
-                              zIndex: 1,
-                              position: 'relative',
-                              display: 'flex',
-                              alignItems: 'center',
-                              WebkitPrintColorAdjust: 'exact',
-                              printColorAdjust: 'exact'
-                            }} 
-                          >
+                          {colStart <= slicedTotalDays && colEnd >= 1 && (
                             <div 
                               style={{ 
-                                width: `${progressPct}%`, 
+                                gridColumn: `${colStart} / span ${spanCount}`,
+                                gridRow: 1,
+                                backgroundColor: '#e5e5ea', 
+                                borderRadius: '4px',
+                                overflow: 'hidden',
+                                zIndex: 2,
+                                position: 'relative',
+                                display: 'flex',
+                                alignItems: 'center',
+                                WebkitPrintColorAdjust: 'exact',
+                                printColorAdjust: 'exact'
+                              }} 
+                            >
+                              <div 
+                                style={{ 
+                                  width: `${progressPct}%`, 
                                 height: '100%', 
                                 backgroundColor: statusBg,
                                 transition: 'width 0.3s',
@@ -672,7 +781,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                                 position: 'absolute',
                                 width: '100%',
                                 textAlign: 'center',
-                                fontSize: '10px',
+                                fontSize: '9px',
                                 fontWeight: 'bold',
                                 fontStyle: 'italic',
                                 color: progressPct > 50 ? '#ffffff' : '#1c1c1e',
@@ -682,6 +791,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ projects, teamDatabase, on
                               </span>
                             )}
                           </div>
+                        )}
 
                         </div>
 
